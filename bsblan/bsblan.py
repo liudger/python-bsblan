@@ -119,6 +119,18 @@ class BSBLan:
 
         return await response.text()
 
+    async def state(self):
+
+        pass
+
+    async def info(self):
+
+        pass
+
+    async def currentTemperature(self):
+
+        pass
+
     async def update(self) -> Optional[Device]:
         """Get all information about the device in a single call."""
         try:
@@ -164,20 +176,6 @@ class BSBLan:
                 method="POST",
                 json_data={"transition": device.state.transition},
             )
-
-    async def transition(self, transition: int) -> None:
-        """Set the default transition time for manual control."""
-        await self._request(
-            "state", method="POST", json_data={"transition": transition}
-        )
-
-    async def preset(self, preset: int) -> None:
-        """Set a preset on a WLED device."""
-        await self._request("state", method="POST", json_data={"ps": preset})
-
-    async def playlist(self, playlist: int) -> None:
-        """Set a running playlist on a WLED device."""
-        await self._request("state", method="POST", json_data={"pl": playlist})
 
     async def sync(
         self, send: Optional[bool] = None, receive: Optional[bool] = None

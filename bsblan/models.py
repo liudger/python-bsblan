@@ -6,6 +6,21 @@ import attr
 
 
 @attr.s(auto_attribs=True, frozen=True)
+class State:
+    """object holding the BSBlan state"""
+    current_temperature: float
+    target_temperature: float
+    havoc_mode: str
+
+
+@attr.s(auto_attribs=True, frozen=True)
+class Info:
+    """object holding the BSBlan device info"""
+
+    pass
+
+
+@attr.s(auto_attribs=True, frozen=True)
 class Sync:
     """Object holding sync state in BSBlan."""
 
