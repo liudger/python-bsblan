@@ -10,3 +10,7 @@ bsblan/__pycache__/
 bsblan.egg-info/
 
 tests/__pycache__/
+
+htmlcov/
+
+.coverage
