@@ -21,7 +21,7 @@ class BSBLan:
     def __init__(
         self,
         host: str,
-        base_path: str = "/JQ",
+        # base_path: str = "/JQ",
         # base_path_set: str = "/JS",
         loop: asyncio.events.AbstractEventLoop = None,
         port: int = 80,
@@ -37,7 +37,7 @@ class BSBLan:
         self._session = session
         self._close_session = False
 
-        self.base_path = base_path
+        # self.base_path = base_path
         # self.base_path_set = base_path_set
         self.host = host
         self.port = port
@@ -51,26 +51,28 @@ class BSBLan:
         if user_agent is None:
             self.user_agent = f"PythonBSBLan/{__version__}"
 
-        if self.base_path[-1] != "/":
-            self.base_path += "/"
-
     async def _request(
-        self, uri: str,
+        self,
+        uri: Optional[str],
         method: str = "POST",
         data: Optional[dict] = None,
-        params: Optional[Mapping[str, str]] = None
+        params: Optional[Mapping[str, str]] = None,
     ) -> Any:
         """Handle a request to a BSBLan device."""
         # scheme = "https" if self.tls else "http"
-        # TODO: need a toggle for url to switch between set or get?
+
+        base_path = "/JQ" if data is None else "/JS"
+        if self.passkey is not None:
+            base_path = '/' + self.passkey + base_path
+        print(base_path)
+
         url = URL.build(
             scheme="http",
             host=self.host,
             port=self.port,
-            path=self.base_path
-            # if not self.passkey:
-            #     path =self.base_path + self.passkey,  # not sure if this is right
+            path=base_path,
         ).join(URL(uri))
+        print(url)
 
         auth = None
         if self.username and self.password:
@@ -121,9 +123,8 @@ class BSBLan:
         # TODO: fix this method, now it's an ugly hack
         # state = {}
         # state["Parameter"] = "8740,8000,8006"
-
         data = await self._request(
-            "JQ",
+            '',
             params={"Parameter": "8740,8000,8006,710,700"},
             # construct params values with user input
         )
@@ -143,14 +144,15 @@ class BSBLan:
         state = {}
 
         if target_temperature is not None:
-            state["Parameter"] = '710'
+            state["Parameter"] = "710"
             state["Value"] = target_temperature
         if hvac_modes is not None:
-            state["Parameter"] = '700'
+            state["Parameter"] = "700"
             state["enumValue"] = hvac_modes
 
         data = await self._request(
-            "JS", data={"Parameter": [state], "Value": [state], "Type": "0"}
+            '',
+            data={"Parameter": [state], "Value": [state], "Type": "0"}
         )
         return Thermostat.from_dict(data)
 
