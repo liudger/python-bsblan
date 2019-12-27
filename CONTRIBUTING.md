@@ -25,5 +25,5 @@ Even better: You could submit a pull request with a fix / new feature!
    developers, or if you do not have permission to do that, you may request
    the second reviewer to merge it for you.
 
-[github]: https://github.com/frenck/python-wled/issues
-[prs]: https://github.com/frenck/python-wled/pulls
+[github]: https://github.com/liudger/python-bsblan/issues
+[prs]: https://github.com/liudger/python-bsblan/pulls

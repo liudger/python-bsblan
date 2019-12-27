@@ -1,4 +1,4 @@
-# Python: WLED API Client
+# Python: BSBLan API Client
 
 [![GitHub Release][releases-shield]][releases]
 ![Project Stage][project-stage-shield]
@@ -13,18 +13,18 @@
 
 [![Support my work on Patreon][patreon-shield]][patreon]
 
-Asynchronous Python client for WLED.
+Asynchronous Python client for BSBLan.
 
 ## About
 
-This package allows you to control and monitor an WLED device
+This package allows you to control and monitor an BSBLan device
 programmatically. It is mainly created to allow third-party programs to automate
-the behavior of WLED.
+the behavior of BSBLan.
 
 ## Installation
 
 ```bash
-pip install wled
+pip install bsblan
 ```
 
 ## Usage
@@ -32,12 +32,12 @@ pip install wled
 ```python
 import asyncio
 
-from wled import WLED
+from bsblan import BSBLan
 
 
 async def main(loop):
-    """Show example on controlling your WLED device."""
-    async with WLED("wled-frenck.local", loop=loop) as led:
+    """Show example on controlling your BSBLan device."""
+    async with BSBLan("bsblan.local", loop=loop) as led:
         device = await led.update()
         print(device.info.version)
 
@@ -90,7 +90,7 @@ of all make goals that are available (including description):
 
 ```bash
 $ make
-Asynchronous Python client for WLED.
+Asynchronous Python client for BSBLan.
 
 Usage:
   make help                            Shows this message.
@@ -146,22 +146,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-[build-shield]: https://github.com/frenck/python-wled/workflows/Continuous%20Integration/badge.svg
-[build]: https://github.com/frenck/python-wled/actions
+[build-shield]: https://github.com/frenck/python-bsblan/workflows/Continuous%20Integration/badge.svg
+[build]: https://github.com/frenck/python-bsblan/actions
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
 [buymeacoffee]: https://www.buymeacoffee.com/frenck
-[code-quality-shield]: https://img.shields.io/lgtm/grade/python/g/frenck/python-wled.svg?logo=lgtm&logoWidth=18
-[code-quality]: https://lgtm.com/projects/g/frenck/python-wled/context:python
-[codecov-shield]: https://codecov.io/gh/frenck/python-wled/branch/master/graph/badge.svg
-[codecov]: https://codecov.io/gh/frenck/python-wled
-[contributors]: https://github.com/frenck/python-wled/graphs/contributors
+[code-quality-shield]: https://img.shields.io/lgtm/grade/python/g/frenck/python-bsblan.svg?logo=lgtm&logoWidth=18
+[code-quality]: https://lgtm.com/projects/g/frenck/python-bsblan/context:python
+[codecov-shield]: https://codecov.io/gh/frenck/python-bsblan/branch/master/graph/badge.svg
+[codecov]: https://codecov.io/gh/frenck/python-bsblan
+[contributors]: https://github.com/frenck/python-bsblan/graphs/contributors
 [frenck]: https://github.com/frenck
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
-[license-shield]: https://img.shields.io/github/license/frenck/python-wled.svg
+[license-shield]: https://img.shields.io/github/license/frenck/python-bsblan.svg
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2019.svg
 [patreon-shield]: https://www.frenck.nl/images/patreon.png
 [patreon]: https://www.patreon.com/frenck
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
-[releases-shield]: https://img.shields.io/github/release/frenck/python-wled.svg
-[releases]: https://github.com/frenck/python-wled/releases
+[releases-shield]: https://img.shields.io/github/release/frenck/python-bsblan.svg
+[releases]: https://github.com/frenck/python-bsblan/releases
 [semver]: http://semver.org/spec/v2.0.0.html
