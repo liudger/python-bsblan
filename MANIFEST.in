@@ -1,4 +1,4 @@
 include README.md
 include LICENSE.md
-graft wled
+graft bsblan
 recursive-exclude * *.py[co]

@@ -10,7 +10,7 @@ from setuptools import find_packages, setup
 def get_version():
     """Get current version from code."""
     regex = r"__version__\s=\s\"(?P<version>[\d\.]+?)\""
-    path = ("wled", "__version__.py")
+    path = ("bsblan", "__version__.py")
     return re.search(regex, read(*path)).group("version")
 
 
@@ -26,8 +26,8 @@ with open("README.md") as readme_file:
     readme = readme_file.read()
 
 setup(
-    author="Franck Nijhof",
-    author_email="opensource@frenck.dev",
+    author="Willem-Jan van Rootselaaar",
+    author_email="liudgervr@gmail.com",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Framework :: AsyncIO",
@@ -39,17 +39,17 @@ setup(
         "Programming Language :: Python :: 3",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    description="Asynchronous Python client for WLED.",
+    description="Asynchronous Python client for BSBLan.",
     include_package_data=True,
     install_requires=["aiohttp>=3.0.0", "attrs>=19.0.0", "cattrs", "yarl"],
-    keywords=["wled", "api", "async", "client"],
+    keywords=["bsblan", "api", "async", "client"],
     license="MIT license",
     long_description_content_type="text/markdown",
     long_description=readme,
-    name="wled",
-    packages=find_packages(include=["wled"]),
+    name="bsblan",
+    packages=find_packages(include=["bsblan"]),
     test_suite="tests",
-    url="https://github.com/frenck/python-wled",
+    url="https://github.com/liudger/python-bsblan",
     version=get_version(),
     zip_safe=False,
 )

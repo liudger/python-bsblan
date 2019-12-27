@@ -18,7 +18,7 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 .PHONY: help
 help: ## Shows this message.
-	@echo "Asynchronous Python client for WLED."; \
+	@echo "Asynchronous Python client for BSBLan."; \
 	echo; \
 	echo "Usage:"; \
 	awk -F ':|##' '/^[^\t].+?:.*?##/ {\
@@ -36,24 +36,24 @@ lint: lint-black lint-flake8 lint-pylint lint-mypy ## Run all linters.
 
 .PHONY: lint-black
 lint-black: ## Run linting using black & blacken-docs.
-	black --safe --target-version py36 wled tests examples; \
+	black --safe --target-version py36 bsblan tests examples; \
 	blacken-docs --target-version py36
 
 .PHONY: lint-flake8
 lint-flake8: ## Run linting using flake8 (pycodestyle/pydocstyle).
-	flake8 wled
+	flake8 bsblan
 
 .PHONY: lint-pylint
 lint-pylint: ## Run linting using PyLint.
-	pylint wled
+	pylint bsblan
 
 .PHONY: lint-mypy
 lint-mypy: ## Run linting using MyPy.
-	mypy -p wled
+	mypy -p bsblan
 
 .PHONY: test
 test: ## Run tests quickly with the default Python.
-	pytest --cov-report html --cov-report term --cov=wled .;
+	pytest --cov-report html --cov-report term --cov=bsblan .;
 
 .PHONY: coverage
 coverage: test ## Check code coverage quickly with the default Python.

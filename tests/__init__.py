@@ -1,1 +1,1 @@
-"""Asynchronous Python client for WLED."""
+"""Asynchronous Python client for BSBLan."""
