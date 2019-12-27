@@ -1,9 +1,8 @@
 """Asynchronous Python client for BSB-Lan."""
 
 from .models import (  # noqa
-    Device,
     Info,
     State,
-    Sync,
+    Thermostat,
 )
 from .bsblan import BSBLan, BSBLanConnectionError, BSBLanError  # noqa

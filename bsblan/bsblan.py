@@ -2,7 +2,7 @@
 import asyncio
 import json
 import socket
-from typing import Any, Dict, Mapping, Optional, Tuple, Union
+from typing import Any, Optional, Mapping
 
 import aiohttp
 import async_timeout
@@ -10,18 +10,19 @@ from yarl import URL
 
 from .__version__ import __version__
 from .exceptions import BSBLanConnectionError, BSBLanError
-from .models import Device
+from .models import State, Thermostat
 
 
 class BSBLan:
     """Main class for handling connections with BSBLan."""
 
-    device: Optional[Device] = None
+    # device: Optional[Device] = None
 
     def __init__(
         self,
         host: str,
         base_path: str = "/JQ",
+        # base_path_set: str = "/JS",
         loop: asyncio.events.AbstractEventLoop = None,
         port: int = 80,
         request_timeout: int = 30,
@@ -37,6 +38,7 @@ class BSBLan:
         self._close_session = False
 
         self.base_path = base_path
+        # self.base_path_set = base_path_set
         self.host = host
         self.port = port
         self.socketaddr = None
@@ -53,20 +55,21 @@ class BSBLan:
             self.base_path += "/"
 
     async def _request(
-        self,
-        uri: str,
+        self, uri: str,
         method: str = "POST",
-        data: Optional[Any] = None,
-        json_data: Optional[dict] = None,
-        params: Optional[Mapping[str, str]] = None,
+        data: Optional[dict] = None,
+        params: Optional[Mapping[str, str]] = None
     ) -> Any:
         """Handle a request to a BSBLan device."""
         # scheme = "https" if self.tls else "http"
+        # TODO: need a toggle for url to switch between set or get?
         url = URL.build(
             scheme="http",
             host=self.host,
             port=self.port,
-            path=self.base_path + self.passkey,
+            path=self.base_path
+            # if not self.passkey:
+            #     path =self.base_path + self.passkey,  # not sure if this is right
         ).join(URL(uri))
 
         auth = None
@@ -88,13 +91,7 @@ class BSBLan:
         try:
             with async_timeout.timeout(self.request_timeout):
                 response = await self._session.request(
-                    method,
-                    url,
-                    auth=auth,
-                    data=data,
-                    json=json_data,
-                    params=params,
-                    headers=headers,
+                    method, url, auth=auth, json=data, params=params, headers=headers,
                 )
         except asyncio.TimeoutError as exception:
             raise BSBLanConnectionError(
@@ -119,71 +116,43 @@ class BSBLan:
 
         return await response.text()
 
-    async def state(self):
+    async def state(self) -> State:
+        """Get the current state from BSBLan device."""
+        # TODO: fix this method, now it's an ugly hack
+        # state = {}
+        # state["Parameter"] = "8740,8000,8006"
 
-        pass
+        data = await self._request(
+            "JQ",
+            params={"Parameter": "8740,8000,8006,710,700"},
+            # construct params values with user input
+        )
+        return State.from_dict(data)
 
     async def info(self):
-
+        """Get information about the current heating system config."""
         pass
 
-    async def currentTemperature(self):
-
-        pass
-
-    async def update(self) -> Optional[Device]:
-        """Get all information about the device in a single call."""
-        try:
-            data = await self._request()
-            self.device = Device.from_dict(data)
-        except BSBLanError as exception:
-            self.device = None
-            raise exception
-
-        return self.device
-
-    async def light(
+    async def thermostat(
         self,
-        brightness: Optional[int] = None,
-
+        target_temperature: Optional[float] = None,
+        hvac_modes: Optional[str] = None,
     ) -> None:
-        """Change state of a WLED Light segment."""
-        if self.device is None:
-            await self.update()
+        """Change the state of the thermostat through BSB-Lan."""
 
-        if self.device is None:
-            raise BSBLanError(
-                "Unable to communicate with WLED to get the current state"
-            )
+        state = {}
 
-        device = self.device
+        if target_temperature is not None:
+            state["Parameter"] = '710'
+            state["Value"] = target_temperature
+        if hvac_modes is not None:
+            state["Parameter"] = '700'
+            state["enumValue"] = hvac_modes
 
-        state = {
-            "bri": brightness,
-        }
-
-        # Filter out not set values
-        state = {k: v for k, v in state.items() if v is not None}
-
-        # Determine color set
-
-        await self._request("state", method="POST", json_data=state)
-
-        # Restore previous transition time
-        if transition is None:
-            await self._request(
-                "state",
-                method="POST",
-                json_data={"transition": device.state.transition},
-            )
-
-    async def sync(
-        self, send: Optional[bool] = None, receive: Optional[bool] = None
-    ) -> None:
-        """Set the sync status of the WLED device."""
-        sync = {"send": send, "recv": receive}
-        sync = {k: v for k, v in sync.items() if v is not None}
-        await self._request("state", method="POST", json_data={"udpn": sync})
+        data = await self._request(
+            "JS", data={"Parameter": [state], "Value": [state], "Type": "0"}
+        )
+        return Thermostat.from_dict(data)
 
     async def close(self) -> None:
         """Close open client session."""
