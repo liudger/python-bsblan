@@ -1,0 +1,450 @@
+{
+  "700": {
+    "name": "Bedrijfswijze Groep 1",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Beschermingsmodus" },
+      { "enumValue": "1", "desc": "Automatisch" },
+      { "enumValue": "2", "desc": "Gereduceerd" },
+      { "enumValue": "3", "desc": "Comfort" }
+    ],
+    "dataType": 1
+  },
+  "701": {
+    "name": "Bezettingsknop (tijdelijke afwezigheid)",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "702": {
+    "name": "Bezettingsknop (tijdelijke afwezigheid)",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Zomerstand" },
+      { "enumValue": "1", "desc": "Verwarmingsprogramma 1" },  // don't know if this is correct
+      { "enumValue": "2", "desc": "Eco-programma" },
+      { "enumValue": "3", "desc": "Normale programma" },
+      { "enumValue": "4", "desc": "Onbekent" },
+      { "enumValue": "5", "desc": "Verwarmingsprogramma 2" },
+      { "enumValue": "6", "desc": "Verwarmingsprogramma 3" }
+    ],
+    "dataType": 1
+  },
+  "703": {
+    "name": "Bezettingsknop (tijdelijke afwezigheid)",
+    "possibleValues": [
+      { "enumValue": "256", "desc": "Aanwezig" },
+      { "enumValue": "257", "desc": "Afwezig" }
+    ],
+    "dataType": 1
+  },
+  "710": {
+    "name": "Ruimtemperatuur gewenste waarde Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "711": {
+    "name": "Maximum gewenstewaarde",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "712": {
+    "name": "Ruimtetemp. gew.waarde nacht Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "714": {
+    "name": "Ruimtetemp. gew.waarde vorst Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "720": {
+    "name": "Stooklijn 1 steilheid",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "721": {
+    "name": "Stooklijn-parallelverschuiving",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "726": {
+    "name": "Stooklijn-adaptie Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "730": {
+    "name": "Zomer/winter omschakeltemp. Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "732": {
+    "name": "Dagstookgrens Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "733": {
+    "name": "Verlängerung Tagesheizgrenze",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "734": {
+    "name": "Raumsollabsenkung mit Schaltuhr",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "740": {
+    "name": "Aanvoertemp-min-begrenzing Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "741": {
+    "name": "Aanvoertemp-max-begrenzing Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "742": {
+    "name": "Vorlaufsollwert Raumthermostat HK1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "744": {
+    "name": "Soll Einschaltverh R'stat",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "750": {
+    "name": "Ruimtetemperatuur invloedfactor Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "760": {
+    "name": "Ruimtetemperatuurbegrenzing Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "761": {
+    "name": "Heizgrenze Raumregler",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "770": {
+    "name": "Ruimtetemp-verhoging Gr 1 (Snelaanw)",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "780": {
+    "name": "Snelafkoeling Groep 1",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Uit" },
+      { "enumValue": "1", "desc": "Naar verlaagde waarde" },
+      { "enumValue": "2", "desc": "Naar vorstbeveiliging waarde" }
+    ],
+    "dataType": 1
+  },
+  "781": {
+    "name": "Schnellabsenkung Faktor",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "790": {
+    "name": "Optimalisering max. vervroeging Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "791": {
+    "name": "Uitsch.optim. max. vervroeging Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "794": {
+    "name": "Aufheizgradient",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "800": {
+    "name": "Begin gered.ruimtemp.verhoging Gr 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "801": {
+    "name": "Einde gered.ruimtemp.verhoging Gr 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "810": {
+    "name": "Anl'frostschutz HK-Pumpe",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "820": {
+    "name": "Überhitzschutz Pumpenkreis",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "830": {
+    "name": "Mischerüberhöhung",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "832": {
+    "name": "Antrieb Typ",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "2-punts" },
+      { "enumValue": "1", "desc": "3-punts" }
+    ],
+    "dataType": 1
+  },
+  "833": {
+    "name": "Schaltdifferenz 2-Punkt",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "834": {
+    "name": "Antrieb Laufzeit",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "835": {
+    "name": "Mischer P-Band Xp",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "836": {
+    "name": "Mischer Nachstellzeit Tn",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "850": {
+    "name": "Vloer-uitdrogingsbescherming",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Uit" },
+      { "enumValue": "1", "desc": "Verwarmingseisen" },
+      { "enumValue": "2", "desc": "Belegreifheizen" },
+      { "enumValue": "3", "desc": "Funktions-/Belegreifheizen" },
+      { "enumValue": "4", "desc": "Belegreif-/Funktionsheizen" },
+      { "enumValue": "5", "desc": "Handmatig" }
+    ],
+    "dataType": 1
+  },
+  "851": {
+    "name": "Estrik setpoint hand Groep 1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "855": {
+    "name": "Vorlauftemp-Sollwert Estrich-Austrocknung HK1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "856": {
+    "name": "Estrich Tag aktuell HK1",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "857": {
+    "name": "Estrich Tage erfüllt",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "861": {
+    "name": "Übertemperaturabnahme",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Uit" },
+      { "enumValue": "1", "desc": "Verwarming" },
+      { "enumValue": "2", "desc": "Altijd" }
+    ],
+    "dataType": 1
+  },
+  "864": {
+    "name": "Sperrsignalverstärkung",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "870": {
+    "name": "Mit Pufferspeicher",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "872": {
+    "name": "Mit Vorregler/Zubring`pumpe",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "880": {
+    "name": "HK1 Pumpe Drehzahlreduktion",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Operationeel niveau" },
+      { "enumValue": "1", "desc": "karakteristiek" },
+      { "enumValue": "2", "desc": "Temperatuurslag nominaal" }
+    ],
+    "dataType": 1
+  },
+  "882": {
+    "name": "Pumpendrehzahl Minimum",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "883": {
+    "name": "Pumpendrehzahl Maximum",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "884": {
+    "name": "Toerental ketelpomp bij ontwerpconditie",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "885": {
+    "name": "Mod Pomp PBM min",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "886": {
+    "name": "Buitentemperatuur bij maximale warmtevraag",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "887": {
+    "name": "Gew. keteltemp bij Normbuitentemp",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "888": {
+    "name": "Kennliniekorr bei 50% Drehz",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "890": {
+    "name": "Vorl'sollwertkorr Drehz'reg HK1",
+    "possibleValues": [
+
+    ],
+    "dataType": 1
+  },
+  "894": {
+    "name": "Delta Aanv/Retour bij Norm-buitentemp",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "895": {
+    "name": "dT Spreizung Maximum",
+    "possibleValues": [
+
+    ],
+    "dataType": 0
+  },
+  "898": {
+    "name": "Betriebsniveauumschaltung",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Beschermingsmodus" },
+      { "enumValue": "1", "desc": "Gereduceerd" },
+      { "enumValue": "2", "desc": "Comfort" }
+    ],
+    "dataType": 1
+  },
+  "900": {
+    "name": "Betriebsartumschaltung",
+    "possibleValues": [
+      { "enumValue": "0", "desc": "Geen" },
+      { "enumValue": "1", "desc": "Beschermingsmodus" },
+      { "enumValue": "2", "desc": "Gereduceerd" },
+      { "enumValue": "3", "desc": "Comfort" },
+      { "enumValue": "4", "desc": "Automatisch" }
+    ],
+    "dataType": 1
+  }
+}
