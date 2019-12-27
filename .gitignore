@@ -1,2 +1,12 @@
 
 venv/
+
+.DS_Store
+
+.vscode/
+
+bsblan/__pycache__/
+
+bsblan.egg-info/
+
+tests/__pycache__/
