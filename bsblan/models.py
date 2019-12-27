@@ -53,6 +53,7 @@ class Thermostat:
     def from_dict(data: dict):
         """Return State object from BSBLan API response."""
         print('temp{}'.format(data))
+
         return Thermostat(
             target_temperature=data["710"]["status"],
             # hvac_modes=data["700"]["status"]

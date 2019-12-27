@@ -3,6 +3,7 @@ import asyncio
 
 import aiohttp
 import pytest
+import json
 from bsblan import BSBLan
 from bsblan.__version__ import __version__
 from bsblan.exceptions import BSBLanConnectionError, BSBLanError
@@ -27,29 +28,98 @@ async def test_json_request(event_loop, aresponses):
         assert response["status"] == "ok"
 
 
-# @pytest.mark.asyncio
-# async def test_authenticated_request(event_loop, aresponses):
-#     """Test JSON response is handled correctly."""
-#     aresponses.add(
-#         "example.com",
-#         "/",
-#         "GET",
-#         aresponses.Response(
-#             status=200,
-#             headers={"Content-Type": "application/json"},
-#             text='{"status": "ok"}',
-#         ),
-#     )
-#     async with aiohttp.ClientSession(loop=event_loop) as session:
-#         bsblan = BSBLan(
-#             "example.com",
-#             username="frenck",
-#             password="zerocool",
-#             session=session,
-#             loop=event_loop,
-#         )
-#         response = await bsblan._request("/")
-#         assert response["status"] == "ok"
+@pytest.mark.asyncio
+async def test_json_data_request(event_loop, aresponses):
+    """Test JSON response is handled correctly."""
+
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            status=200,
+            text="OK"
+        ),
+    )
+    async with aiohttp.ClientSession(loop=event_loop) as session:
+        bsblan = BSBLan("example.com", session=session, loop=event_loop)
+        response = await bsblan._request(
+            "/JQ",
+            data=json.dumps(dict(foo='bar')),
+        )
+        assert response == "OK"
+
+
+@pytest.mark.asyncio
+async def test_json_data_send(event_loop, aresponses):
+    """Test JSON response is handled correctly."""
+
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        aresponses.Response(
+            status=200,
+            text="OK"
+        ),
+    )
+    async with aiohttp.ClientSession(loop=event_loop) as session:
+        bsblan = BSBLan("example.com", session=session, loop=event_loop)
+        # thermostat = await bsblan.thermostat(target_temperature=19.0)
+        response = await bsblan._request(
+            "/JS",
+            data=json.dumps(dict(target_temperature=19.0)),
+        )
+        assert response == "OK"
+
+
+@pytest.mark.asyncio
+async def test_passkey_request(event_loop, aresponses):
+    """Test JSON response is handled correctly."""
+    aresponses.add(
+        "example.com",
+        "/",
+        "POST",
+        aresponses.Response(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            text='{"status": "ok"}',
+        ),
+    )
+    async with aiohttp.ClientSession(loop=event_loop) as session:
+        bsblan = BSBLan(
+            "example.com",
+            passkey='1234',
+            session=session,
+            loop=event_loop,
+        )
+        response = await bsblan._request("/")
+        assert response["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_authenticated_request(event_loop, aresponses):
+    """Test JSON response is handled correctly."""
+    aresponses.add(
+        "example.com",
+        "/",
+        "POST",
+        aresponses.Response(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            text='{"status": "ok"}',
+        ),
+    )
+    async with aiohttp.ClientSession(loop=event_loop) as session:
+        bsblan = BSBLan(
+            "example.com",
+            username='liudger',
+            password='1234',
+            session=session,
+            loop=event_loop,
+        )
+        response = await bsblan._request("/")
+        assert response["status"] == "ok"
 
 
 @pytest.mark.asyncio
@@ -108,7 +178,7 @@ async def test_post_request(event_loop, aresponses):
     )
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan("example.com", session=session, loop=event_loop)
-        response = await bsblan._request("/", method="POST")
+        response = await bsblan._request("/", data={})
         assert response == "OK"
 
 
@@ -129,26 +199,6 @@ async def test_request_port(event_loop, aresponses):
 
 
 @pytest.mark.asyncio
-async def test_request_base_path(event_loop, aresponses):
-    """Test BSBLan running on different base path."""
-    aresponses.add(
-        "example.com",
-        "/admin/status",
-        "POST",
-        aresponses.Response(text="OMG PUPPIES!", status=200),
-    )
-
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan(
-            "example.com",
-            base_path="/admin",
-            session=session,
-            loop=event_loop)
-        response = await bsblan._request("status")
-        assert response == "OMG PUPPIES!"
-
-
-@pytest.mark.asyncio
 async def test_request_user_agent(event_loop, aresponses):
     """Test BSBLan client sending correct user agent headers."""
     # Handle to run asserts on request in
@@ -159,7 +209,7 @@ async def test_request_user_agent(event_loop, aresponses):
     aresponses.add("example.com", "/", "POST", response_handler)
 
     async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan("example.com", base_path="/", session=session, loop=event_loop)
+        bsblan = BSBLan("example.com", session=session, loop=event_loop)
         await bsblan._request("/")
 
 
@@ -176,7 +226,6 @@ async def test_request_custom_user_agent(event_loop, aresponses):
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan(
             "example.com",
-            base_path="/",
             session=session,
             loop=event_loop,
             user_agent="LoremIpsum/1.0",
@@ -196,10 +245,7 @@ async def test_timeout(event_loop, aresponses):
 
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan(
-            "example.com",
-            session=session,
-            loop=event_loop,
-            request_timeout=1
+            "example.com", session=session, loop=event_loop, request_timeout=1
         )
         with pytest.raises(BSBLanConnectionError):
             assert await bsblan._request("/")
