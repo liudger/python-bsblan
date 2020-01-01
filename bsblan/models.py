@@ -20,10 +20,10 @@ class State:
     #
     # &deg;C is the return of the unit
 
-    current_temperature: float
     current_havoc_mode: str
     current_heatpump_mode: str
     current_target_temperature: float
+    current_temperature: float
     temperature_unit: str
 
     @staticmethod
@@ -31,11 +31,11 @@ class State:
         """Return State object from BSBLan API response."""
         # print(data)
         return State(
-            current_temperature=data["8740"]["value"],
-            temperature_unit=data["8740"]["unit"],
             current_havoc_mode=data["8000"]["desc"],
             current_heatpump_mode=data["8006"]["desc"],
             current_target_temperature=data["710"]["value"],
+            current_temperature=data["8740"]["value"],
+            temperature_unit=data["8740"]["unit"],
 
         )
 
