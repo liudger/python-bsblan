@@ -30,18 +30,18 @@ pip install bsblan
 ```python
 import asyncio
 
-from bsblan import BSBLan
+from bsblan import BSBLan, State
 
 
 async def main(loop):
     """Show example on controlling your BSBLan device."""
-    async with BSBLan("bsblan.local", loop=loop) as led:
-        device = await led.update()
-        print(device.info.version)
+    async with BSBLan('10.0.1.60', loop=loop) as bsblan:
+        state: State = await bsblan.state()
+        print(state)
 
-        # Turn strip on, full brightness
-        await led.light(on=True, brightness=255)
-
+        thermostat = await bsblan.thermostat(target_temperature=19.0)
+        # await asyncio.
+        print(thermostat)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
