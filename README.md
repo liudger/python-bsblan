@@ -11,8 +11,6 @@
 
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
-[![Support my work on Patreon][patreon-shield]][patreon]
-
 Asynchronous Python client for BSBLan.
 
 ## About
@@ -117,7 +115,7 @@ Usage:
 
 ## Authors & contributors
 
-The original setup of this repository is by [Franck Nijhof][liudger].
+The original setup of this repository is by [Franck Nijhof][frenck].
 
 For a full list of all authors and contributors,
 check [the contributor's page][contributors].
@@ -126,7 +124,7 @@ check [the contributor's page][contributors].
 
 MIT License
 
-Copyright (c) 2019 Franck Nijhof
+Copyright (c) 2020 WJ van Rootselaar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -156,6 +154,7 @@ SOFTWARE.
 [codecov]: https://codecov.io/gh/liudger/python-bsblan
 [contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
 [liudger]: https://github.com/liudger
+[frenck]: https://github.com/frenck
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2019.svg
