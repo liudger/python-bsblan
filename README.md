@@ -117,7 +117,7 @@ Usage:
 
 ## Authors & contributors
 
-The original setup of this repository is by [Franck Nijhof][frenck].
+The original setup of this repository is by [Franck Nijhof][liudger].
 
 For a full list of all authors and contributors,
 check [the contributor's page][contributors].
@@ -146,22 +146,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-[build-shield]: https://github.com/frenck/python-bsblan/workflows/Continuous%20Integration/badge.svg
-[build]: https://github.com/frenck/python-bsblan/actions
+[build-shield]: https://github.com/liudger/python-bsblan/workflows/Continuous%20Integration/badge.svg
+[build]: https://github.com/liudger/python-bsblan/actions
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
-[buymeacoffee]: https://www.buymeacoffee.com/frenck
-[code-quality-shield]: https://img.shields.io/lgtm/grade/python/g/frenck/python-bsblan.svg?logo=lgtm&logoWidth=18
-[code-quality]: https://lgtm.com/projects/g/frenck/python-bsblan/context:python
-[codecov-shield]: https://codecov.io/gh/frenck/python-bsblan/branch/master/graph/badge.svg
-[codecov]: https://codecov.io/gh/frenck/python-bsblan
-[contributors]: https://github.com/frenck/python-bsblan/graphs/contributors
-[frenck]: https://github.com/frenck
+[buymeacoffee]: https://www.buymeacoffee.com/liudger
+[code-quality-shield]: https://img.shields.io/lgtm/grade/python/g/liudger/python-bsblan.svg?logo=lgtm&logoWidth=18
+[code-quality]: https://lgtm.com/projects/g/liudger/python-bsblan/context:python
+[codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/master/graph/badge.svg
+[codecov]: https://codecov.io/gh/liudger/python-bsblan
+[contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
+[liudger]: https://github.com/liudger
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
-[license-shield]: https://img.shields.io/github/license/frenck/python-bsblan.svg
+[license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2019.svg
-[patreon-shield]: https://www.frenck.nl/images/patreon.png
-[patreon]: https://www.patreon.com/frenck
+
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
-[releases-shield]: https://img.shields.io/github/release/frenck/python-bsblan.svg
-[releases]: https://github.com/frenck/python-bsblan/releases
+[releases-shield]: https://img.shields.io/github/release/liudger/python-bsblan.svg
+[releases]: https://github.com/liudger/python-bsblan/releases
 [semver]: http://semver.org/spec/v2.0.0.html
