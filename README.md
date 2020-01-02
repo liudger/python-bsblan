@@ -35,7 +35,7 @@ from bsblan import BSBLan, State
 
 async def main(loop):
     """Show example on controlling your BSBLan device."""
-    async with BSBLan('10.0.1.60', loop=loop) as bsblan:
+    async with BSBLan('ip-adress', loop=loop) as bsblan:
         state: State = await bsblan.state()
         print(state)
 
@@ -115,7 +115,9 @@ Usage:
 
 ## Authors & contributors
 
-The original setup of this repository is by [Franck Nijhof][frenck].
+The template is from the repository 'wled' by [Franck Nijhof][frenck].
+Folowing the cool [live-coding] feed from frenck!
+The original setup of this repository is by [Willem-Jan van Rootselaar][liudger].
 
 For a full list of all authors and contributors,
 check [the contributor's page][contributors].
@@ -158,6 +160,7 @@ SOFTWARE.
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2019.svg
+[live-coding]: https://www.youtube.com/watch?v=6LHeoUS1R40
 
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [releases-shield]: https://img.shields.io/github/release/liudger/python-bsblan.svg
