@@ -63,14 +63,11 @@ class BSBLan:
 
         base_path = "/JQ" if data is None else "/JS"
         if self.passkey is not None:
-            base_path = '/' + self.passkey + base_path
+            base_path = "/" + self.passkey + base_path
         print(base_path)
 
         url = URL.build(
-            scheme="http",
-            host=self.host,
-            port=self.port,
-            path=base_path,
+            scheme="http", host=self.host, port=self.port, path=base_path,
         ).join(URL(uri))
         print(url)
 
@@ -124,7 +121,7 @@ class BSBLan:
         # state = {}
         # state["Parameter"] = "8740,8000,8006"
         data = await self._request(
-            '',
+            "",
             params={"Parameter": "8740,8000,8006,710,700"},
             # construct params values with user input
         )
@@ -151,8 +148,7 @@ class BSBLan:
             state["enumValue"] = hvac_modes
 
         data = await self._request(
-            '',
-            data={"Parameter": [state], "Value": [state], "Type": "0"}
+            "", data={"Parameter": [state], "Value": [state], "Type": "0"}
         )
         return Thermostat.from_dict(data)
 

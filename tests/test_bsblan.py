@@ -47,20 +47,11 @@ async def test_json_data_request(event_loop, aresponses):
     """Test JSON response is handled correctly."""
 
     aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            text="OK"
-        ),
+        "example.com", "/JQ", "POST", aresponses.Response(status=200, text="OK"),
     )
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan("example.com", session=session, loop=event_loop)
-        response = await bsblan._request(
-            "/JQ",
-            data=json.dumps(dict(foo='bar')),
-        )
+        response = await bsblan._request("/JQ", data=json.dumps(dict(foo="bar")),)
         assert response == "OK"
 
 
@@ -69,20 +60,13 @@ async def test_json_data_send(event_loop, aresponses):
     """Test JSON response is handled correctly."""
 
     aresponses.add(
-        "example.com",
-        "/JS",
-        "POST",
-        aresponses.Response(
-            status=200,
-            text="OK"
-        ),
+        "example.com", "/JS", "POST", aresponses.Response(status=200, text="OK"),
     )
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan("example.com", session=session, loop=event_loop)
         # thermostat = await bsblan.thermostat(target_temperature=19.0)
         response = await bsblan._request(
-            "/JS",
-            data=json.dumps(dict(target_temperature=19.0)),
+            "/JS", data=json.dumps(dict(target_temperature=19.0)),
         )
         assert response == "OK"
 
@@ -102,10 +86,7 @@ async def test_passkey_request(event_loop, aresponses):
     )
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan(
-            "example.com",
-            passkey='1234',
-            session=session,
-            loop=event_loop,
+            "example.com", passkey="1234", session=session, loop=event_loop,
         )
         response = await bsblan._request("/")
         assert response["status"] == "ok"
@@ -127,8 +108,8 @@ async def test_authenticated_request(event_loop, aresponses):
     async with aiohttp.ClientSession(loop=event_loop) as session:
         bsblan = BSBLan(
             "example.com",
-            username='liudger',
-            password='1234',
+            username="liudger",
+            password="1234",
             session=session,
             loop=event_loop,
         )
