@@ -2,7 +2,7 @@
 import asyncio
 import json
 import socket
-from typing import Any, Optional, Mapping
+from typing import Any, Mapping, Optional
 
 import aiohttp
 import async_timeout
