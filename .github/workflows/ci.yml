@@ -47,7 +47,7 @@ jobs:
           pip install -r requirements.txt
           pip list
       - name: Pytest with coverage reporting
-        run: pytest --cov=elgato --cov-report=xml
+        run: pytest --cov=bsblan --cov-report=xml
       - name: Upload coverage to Codecov
         if: matrix.python == 3.8 && matrix.os == 'ubuntu'
         uses: codecov/codecov-action@v1.0.3
