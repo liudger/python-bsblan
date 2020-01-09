@@ -8,6 +8,20 @@ from bsblan import BSBLan
 from bsblan.__version__ import __version__
 from bsblan.exceptions import BSBLanConnectionError, BSBLanError
 
+# from .models import State, Thermostat
+
+
+# @pytest.mark.asyncio
+# async def test_json_request(event_loop, aresponses):
+#     """Test JSON response is handled correctly."""
+#     assert State.from_dict == {
+#         "current_havoc_mode" = 'Heizbetrieb Komfort',
+#         "current_heatpump_mode" = 'Compressor 1 aan',
+#         "current_target_temperature" = '19.0',
+#         "current_temperature" = "18.6",
+#         "temperature_unit" = '&deg;C')
+# # return State
+
 
 @pytest.mark.asyncio
 async def test_json_request(event_loop, aresponses):
