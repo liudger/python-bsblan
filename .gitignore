@@ -18,3 +18,7 @@ htmlcov/
 *.code-workspace
 
 .mypy_cache/
+
+build/
+
+dist/
