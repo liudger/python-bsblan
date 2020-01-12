@@ -4,7 +4,6 @@ import json
 
 import aiohttp
 import pytest
-
 from bsblan import BSBLan
 from bsblan.__version__ import __version__
 from bsblan.exceptions import BSBLanConnectionError, BSBLanError
