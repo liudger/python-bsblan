@@ -133,7 +133,7 @@ class BSBLan:
 
     async def thermostat(
         self,
-        target_temperature: Optional[float] = None,
+        target_temperature: Optional[str] = None,
         hvac_modes: Optional[str] = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan."""
