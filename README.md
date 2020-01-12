@@ -17,7 +17,7 @@ Asynchronous Python client for BSBLan.
 
 This package allows you to control and monitor an BSBLan device
 programmatically. It is mainly created to allow third-party programs to automate
-the behavior of BSBLan.
+the behavior of [BSBLan][bsblanmodule].
 
 ## Installation
 
@@ -117,7 +117,7 @@ Usage:
 ## Authors & contributors
 
 The template is from the repository 'wled' by [Franck Nijhof][frenck].
-Folowing the cool [live-coding] feed from frenck!
+Folowing the cool [live coding][live-coding] feed from frenck!
 The original setup of this repository is by [Willem-Jan van Rootselaar][liudger].
 
 For a full list of all authors and contributors,
@@ -159,11 +159,12 @@ SOFTWARE.
 [liudger]: https://github.com/liudger
 [frenck]: https://github.com/frenck
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
+[bsblanmodule]: https://github.com/fredlcore/bsb_lan
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2020.svg
 [live-coding]: https://www.youtube.com/watch?v=6LHeoUS1R40
 
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
-[releases-shield]: https://img.shields.io/github/release/liudger/python-bsblan.svg
+[releases-shield]: https://img.shields.io/github/v/release/liudger/python-bsblan.svg
 [releases]: https://github.com/liudger/python-bsblan/releases
 [semver]: http://semver.org/spec/v2.0.0.html
