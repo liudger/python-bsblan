@@ -51,7 +51,7 @@ class Thermostat:
     @staticmethod
     def from_dict(data: dict):
         """Return State object from BSBLan API response."""
-        print("temp{}".format(data))
+        print(f"temp{data}")
 
         return Thermostat(
             target_temperature=data["710"]["status"],
