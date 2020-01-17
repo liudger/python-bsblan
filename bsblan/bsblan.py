@@ -10,7 +10,7 @@ from yarl import URL
 
 from .__version__ import __version__
 from .exceptions import BSBLanConnectionError, BSBLanError
-from .models import State, Thermostat
+from .models import Info, State
 
 
 class BSBLan:
@@ -64,12 +64,12 @@ class BSBLan:
         base_path = "/JQ" if data is None else "/JS"
         if self.passkey is not None:
             base_path = "/" + self.passkey + base_path
-        print(base_path)
+        # print(base_path)
 
         url = URL.build(
             scheme="http", host=self.host, port=self.port, path=base_path,
         ).join(URL(uri))
-        print(url)
+        # print(url)
 
         auth = None
         if self.username and self.password:
@@ -129,7 +129,12 @@ class BSBLan:
 
     async def info(self):
         """Get information about the current heating system config."""
-        pass
+        data = await self._request(
+            "",
+            params={"Parameter": "6224,6225,6226"},
+            # construct params values with user input
+        )
+        return Info.from_dict(data)
 
     async def thermostat(
         self,
@@ -150,7 +155,7 @@ class BSBLan:
         data = await self._request(
             "", data={"Parameter": [state], "Value": [state], "Type": "0"}
         )
-        return Thermostat.from_dict(data)
+        print(data)
 
     async def close(self) -> None:
         """Close open client session."""
