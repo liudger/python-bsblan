@@ -53,7 +53,7 @@ class BSBLan:
 
     async def _request(
         self,
-        uri: Optional[str],
+        uri: str,
         method: str = "POST",
         data: Optional[dict] = None,
         params: Optional[Mapping[str, str]] = None,
