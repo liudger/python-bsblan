@@ -21,26 +21,31 @@ import attr
 class State:
     """Object holding the BSBlan state."""
 
-    current_havoc_mode: str
+    away_mode: int
+    cooling_setpoint: float
     current_heatpump_mode: str
-    current_target_temperature: float
+    current_hvac_mode: int
+    current_hvac_operation: str
     current_temperature: float
-    hvac_modes: str
     target_temperature: float
     temperature_unit: str
+    switching_mode: bool
 
     @staticmethod
     def from_dict(data: dict):
         """Return State object from BSBLan API response."""
 
+        # no desc if it needs automatic translation
         return State(
-            current_havoc_mode=data["8000"]["desc"],
+            away_mode=data["703"]["value"],  # 256=home , 257=away
+            cooling_setpoint=data["912"]["value"],
             current_heatpump_mode=data["8006"]["desc"],
-            current_target_temperature=data["710"]["value"],
+            current_hvac_mode=data["700"]["value"],
+            current_hvac_operation=data["8000"]["desc"],  # this can also stay
             current_temperature=data["8740"]["value"],
-            hvac_modes=data["700"]["desc"],
             target_temperature=data["710"]["value"],
             temperature_unit=data["8740"]["unit"],
+            switching_mode=data["969"]["value"],
         )
 
 

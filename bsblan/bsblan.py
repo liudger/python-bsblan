@@ -122,7 +122,7 @@ class BSBLan:
         # state["Parameter"] = "8740,8000,8006"
         data = await self._request(
             "",
-            params={"Parameter": "8740,8000,8006,710,700"},
+            params={"Parameter": "8740,8000,8006,710,700,703,912,969"},
             # construct params values with user input
         )
         return State.from_dict(data)
