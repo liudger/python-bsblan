@@ -9,6 +9,7 @@ from bsblan import BSBLan, Info, State
 async def main(loop):
     """Show example on controlling your BSBLan device."""
     async with BSBLan("10.0.1.60", loop=loop) as bsblan:
+        # get state from bsblan device
         state: State = await bsblan.state()
         print(state)
 
@@ -18,6 +19,7 @@ async def main(loop):
         # set hvac_modes (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_modes=3)
 
+        # get some generic info from the heater
         info: Info = await bsblan.info()
         print(info)
 

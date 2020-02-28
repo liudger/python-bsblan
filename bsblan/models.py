@@ -15,13 +15,18 @@ import attr
 # 8 = PPS-Uhrzeit (Wochentag, Stunde:Minute))
 #
 # &deg;C is the return of the unit
+# @attr.s(auto_attribs=True, frozen=True)
+# class Scan:
+#     """Object Scans the BSBlan params."""
+
+#     pass
 
 
 @attr.s(auto_attribs=True, frozen=True)
 class State:
     """Object holding the BSBlan state."""
 
-    away_mode: int
+    # away_mode: int
     cooling_setpoint: float
     current_heatpump_mode: str
     current_hvac_mode: int
@@ -37,7 +42,7 @@ class State:
 
         # no desc if it needs automatic translation
         return State(
-            away_mode=data["703"]["value"],  # 256=home , 257=away
+            # away_mode=data["703"]["value"],  # 256=home , 257=away
             cooling_setpoint=data["912"]["value"],
             current_heatpump_mode=data["8006"]["desc"],
             current_hvac_mode=data["700"]["value"],

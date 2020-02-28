@@ -47,6 +47,7 @@ class BSBLan:
         self.password = password
         self.user_agent = user_agent
         self.passkey = passkey
+        self._parameters = None
 
         if user_agent is None:
             self.user_agent = f"PythonBSBLan/{__version__}"
@@ -59,7 +60,6 @@ class BSBLan:
         params: Optional[Mapping[str, str]] = None,
     ) -> Any:
         """Handle a request to a BSBLan device."""
-        # scheme = "https" if self.tls else "http"
 
         base_path = "/JQ" if data is None else "/JS"
         if self.passkey is not None:
@@ -115,14 +115,42 @@ class BSBLan:
 
         return await response.text()
 
+    async def scan(self):
+        """Scan params that return a value."""
+
+        data = await self._request(
+            uri="", params={"Parameter": "8740,8000,8006,710,700,703,912,969"}
+        )
+        notValidData = []
+        for k, v in data.items():
+            # print(k, v)
+            if not v.get("value"):
+                notValidData.append(k)
+
+        # remove parameters with no returning value
+        for i in notValidData:
+            data.pop(i)
+
+        # join prameters to create one string
+        parameters = []
+        for i in data.keys():
+            parameters.append(i)
+        parameters = ",".join(parameters)
+
+        self._parameters = parameters
+        return self._parameters
+
     async def state(self) -> State:
         """Get the current state from BSBLan device."""
-        # TODO: fix this method, now it's an ugly hack
-        # state = {}
-        # state["Parameter"] = "8740,8000,8006"
+
+        if self._parameters is None:
+            self._parameters = await self.scan()
+            # return self._parameters
+        parameters = self._parameters
+
         data = await self._request(
             "",
-            params={"Parameter": "8740,8000,8006,710,700,703,912,969"},
+            params={"Parameter": f"{parameters}"},
             # construct params values with user input
         )
         return State.from_dict(data)
@@ -152,10 +180,12 @@ class BSBLan:
             state["Parameter"] = "700"
             state["enumValue"] = hvac_modes
 
+        # Type needs to be 1 to really set value.
+        # Now it only checks if it could set value.
         data = await self._request(
             "", data={"Parameter": [state], "Value": [state], "Type": "0"}
         )
-        print(data)
+        print(data)  # print to check info
 
     async def close(self) -> None:
         """Close open client session."""
