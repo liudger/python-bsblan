@@ -182,10 +182,11 @@ class BSBLan:
 
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
-        data = await self._request(
-            "", data={"Parameter": [state], "Value": [state], "Type": "0"}
+        await self._request(
+            "", data={"Parameter": [state], "Value": [state], "Type": "1"}
         )
-        print(data)  # print to check info
+        # return Thermostat.from_dict(data)
+        # print(data)  # print to check info
 
     async def close(self) -> None:
         """Close open client session."""
