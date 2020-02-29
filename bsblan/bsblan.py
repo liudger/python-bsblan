@@ -119,7 +119,7 @@ class BSBLan:
         """Scan params that return a value."""
 
         data = await self._request(
-            uri="", params={"Parameter": "8740,8000,8006,710,700,703,912,969"}
+            uri="", params={"Parameter": "8740,8000,8006,710,700,912,969"}
         )
         notValidData = []
         for k, v in data.items():
@@ -165,9 +165,7 @@ class BSBLan:
         return Info.from_dict(data)
 
     async def thermostat(
-        self,
-        target_temperature: Optional[str] = None,
-        hvac_modes: Optional[str] = None,
+        self, target_temperature: Optional[str] = None, hvac_mode: Optional[str] = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan."""
 
@@ -176,17 +174,17 @@ class BSBLan:
         if target_temperature is not None:
             state["Parameter"] = "710"
             state["Value"] = target_temperature
-        if hvac_modes is not None:
+            state["Type"] = "1"
+        if hvac_mode is not None:
             state["Parameter"] = "700"
-            state["enumValue"] = hvac_modes
-
+            state["EnumValue"] = hvac_mode
+            state["Type"] = "1"
+        print(state)
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
-        await self._request(
-            "", data={"Parameter": [state], "Value": [state], "Type": "1"}
-        )
+        data = await self._request("", data=state)
         # return Thermostat.from_dict(data)
-        # print(data)  # print to check info
+        print(data)  # print to check info
 
     async def close(self) -> None:
         """Close open client session."""

@@ -16,8 +16,8 @@ async def main(loop):
         # set temp thermostat
         await bsblan.thermostat(target_temperature=19.0)
 
-        # set hvac_modes (0-3) (protection,auto,reduced,comfort)
-        await bsblan.thermostat(hvac_modes=3)
+        # set hvac_mode (0-3) (protection,auto,reduced,comfort)
+        await bsblan.thermostat(hvac_mode=3)
 
         # get some generic info from the heater
         info: Info = await bsblan.info()
