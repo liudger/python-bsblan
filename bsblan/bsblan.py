@@ -64,12 +64,10 @@ class BSBLan:
         base_path = "/JQ" if data is None else "/JS"
         if self.passkey is not None:
             base_path = "/" + self.passkey + base_path
-        # print(base_path)
 
         url = URL.build(
             scheme="http", host=self.host, port=self.port, path=base_path,
         ).join(URL(uri))
-        # print(url)
 
         auth = None
         if self.username and self.password:
