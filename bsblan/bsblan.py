@@ -1,6 +1,5 @@
 """Asynchronous Python client for BSB-Lan."""
 import asyncio
-import json
 import socket
 from typing import Any, Mapping, Optional
 
@@ -15,8 +14,6 @@ from .models import Info, State
 
 class BSBLan:
     """Main class for handling connections with BSBLan."""
-
-    # device: Optional[Device] = None
 
     def __init__(
         self,
@@ -34,12 +31,8 @@ class BSBLan:
         self._loop = loop
         self._session = session
         self._close_session = False
-
-        # self.base_path = base_path
-        # self.base_path_set = base_path_set
         self.host = host
         self.port = port
-        self.socketaddr = None
         self.request_timeout = request_timeout
         self.username = username
         self.password = password
@@ -102,18 +95,14 @@ class BSBLan:
             ) from exception
 
         content_type = response.headers.get("Content-Type", "")
-        if (response.status // 100) in [4, 5]:
-            contents = await response.read()
-            response.close()
+        if "application/json" not in content_type:
+            text = await response.text()
+            raise BSBLanError(
+                "Unexpected response from the BSBLan device",
+                {"Content-Type": content_type, "response": text},
+            )
 
-            if content_type == "application/json":
-                raise BSBLanError(response.status, json.loads(contents.decode("utf8")))
-            raise BSBLanError(response.status, {"message": contents.decode("utf8")})
-
-        if "application/json" in content_type:
-            return await response.json()
-
-        return await response.text()
+        return await response.json()
 
     async def scan(self):
         """Scan params that return a value."""
