@@ -15,14 +15,14 @@ async def main(loop):
 
     """
     async with BSBLan(
-        host="10.0.1.60", passkey=None, username=None, password=None, loop=loop
+        host="10.0.1.60", passkey=1234, username=None, password=None, loop=loop
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()
         print(state)
 
         # set temp thermostat
-        await bsblan.thermostat(target_temperature=19.0)
+        await bsblan.thermostat(target_temperature=18.5)
 
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_mode=3)
