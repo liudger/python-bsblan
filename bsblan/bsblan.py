@@ -21,11 +21,9 @@ class BSBLan:
     def __init__(
         self,
         host: str,
-        # base_path: str = "/JQ",
-        # base_path_set: str = "/JS",
         loop: asyncio.events.AbstractEventLoop = None,
         port: int = 80,
-        request_timeout: int = 30,
+        request_timeout: int = 10,
         session: aiohttp.client.ClientSession = None,
         username: str = None,
         password: str = None,
@@ -63,7 +61,7 @@ class BSBLan:
 
         base_path = "/JQ" if data is None else "/JS"
         if self.passkey is not None:
-            base_path = "/" + self.passkey + base_path
+            base_path = f"/{self.passkey}{base_path}"
 
         url = URL.build(
             scheme="http", host=self.host, port=self.port, path=base_path,
@@ -94,7 +92,11 @@ class BSBLan:
             raise BSBLanConnectionError(
                 "Timeout occurred while connecting to BSBLan device."
             ) from exception
-        except (aiohttp.ClientError, socket.gaierror) as exception:
+        except (
+            aiohttp.ClientError,
+            aiohttp.ClientResponseError,
+            socket.gaierror,
+        ) as exception:
             raise BSBLanConnectionError(
                 "Error occurred while communicating with BSBLan device."
             ) from exception
@@ -116,6 +118,8 @@ class BSBLan:
     async def scan(self):
         """Scan params that return a value."""
 
+        # We should add parameters here using scan function.
+        # By default we need a list with basic params.
         data = await self._request(
             uri="", params={"Parameter": "8740,8000,8006,710,700,912,969"}
         )
@@ -129,7 +133,7 @@ class BSBLan:
         for i in notValidData:
             data.pop(i)
 
-        # join prameters to create one string
+        # join parameters to create one string
         parameters = []
         for i in data.keys():
             parameters.append(i)
