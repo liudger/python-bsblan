@@ -176,12 +176,10 @@ class BSBLan:
             state["Parameter"] = "700"
             state["EnumValue"] = hvac_mode
             state["Type"] = "1"
-        print(state)
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
-        data = await self._request("", data=state)
+        await self._request("", data=state)
         # return Thermostat.from_dict(data)
-        print(data)  # print to check info
 
     async def close(self) -> None:
         """Close open client session."""
