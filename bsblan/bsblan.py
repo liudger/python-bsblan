@@ -82,6 +82,7 @@ class BSBLan:
                 response = await self._session.request(
                     method, url, auth=auth, json=data, params=params, headers=headers,
                 )
+                response.raise_for_status()
         except asyncio.TimeoutError as exception:
             raise BSBLanConnectionError(
                 "Timeout occurred while connecting to BSBLan device."
