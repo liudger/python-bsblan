@@ -105,10 +105,14 @@ class BSBLan:
                 raise BSBLanError(response.status, json.loads(contents.decode("utf8")))
             raise BSBLanError(response.status, {"message": contents.decode("utf8")})
 
+        if "text/plain" in content_type:
+            raise BSBLanConnectionError(
+                "Error occurred while communicating with BSBLan device. "
+                "Passkey could be missing."
+            )
+
         if "application/json" in content_type:
             return await response.json()
-
-        return await response.text()
 
     async def scan(self):
         """Scan params that return a value."""
