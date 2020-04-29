@@ -1,52 +1,10 @@
 
 {
-  "8740": {
-    "name": "Ruimtetemperatuur 1",
-    "value": "18.8",
-    "unit": "&deg;C",
-    "desc": "",
-    "dataType": 0
-  },
-  "8000": {
-    "name": "Status Verw.groep 1",
-    "value": "114",
-    "unit": "",
-    "desc": "Heizbetrieb Komfort",
-    "dataType": 1
-  },
-  "8006": {
-    "name": "Status Warmptepomp",
-    "value": "46",
-    "unit": "",
-    "desc": "Compressor 1 aan",
-    "dataType": 1
-  },
   "710": {
     "name": "Ruimtemperatuur gewenste waarde Groep 1",
     "value": "19.0",
     "unit": "&deg;C",
     "desc": "",
     "dataType": 0
-  },
-  "700": {
-    "name": "Bedrijfswijze Groep 1",
-    "value": "3",
-    "unit": "",
-    "desc": "Comfort",
-    "dataType": 1
-  },
-  "912": {
-    "name": "Kühlgrenze bei TA",
-    "value": "23.0",
-    "unit": "&deg;C",
-    "desc": "",
-    "dataType": 0
-  },
-  "969": {
-    "name": "Betriebsartumschaltung",
-    "value": "1",
-    "unit": "",
-    "desc": "Ein",
-    "dataType": 1
   }
 }
