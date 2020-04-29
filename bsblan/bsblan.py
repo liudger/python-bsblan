@@ -1,6 +1,5 @@
 """Asynchronous Python client for BSB-Lan."""
 import asyncio
-import json
 import socket
 from typing import Any, Mapping, Optional
 
@@ -92,22 +91,14 @@ class BSBLan:
             ) from exception
 
         content_type = response.headers.get("Content-Type", "")
-        if (response.status // 100) in [4, 5]:
-            contents = await response.read()
-            response.close()
-
-            if content_type == "application/json":
-                raise BSBLanError(response.status, json.loads(contents.decode("utf8")))
-            raise BSBLanError(response.status, {"message": contents.decode("utf8")})
-
-        if "text/plain" in content_type:
-            raise BSBLanConnectionError(
-                "Error occurred while communicating with BSBLan device. "
-                "Passkey could be missing."
+        if "application/json" not in content_type:
+            text = await response.text()
+            raise BSBLanError(
+                "Unexpected response from the BSBLan device",
+                {"Content-Type": content_type, "response": text},
             )
 
-        if "application/json" in content_type:
-            return await response.json()
+        return await response.json()
 
     async def scan(self):
         """Scan params that return a value."""
