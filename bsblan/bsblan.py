@@ -25,7 +25,6 @@ class BSBLan:
         session: aiohttp.client.ClientSession = None,
         username: str = None,
         password: str = None,
-        user_agent: str = None,
         passkey: str = None,
     ) -> None:
         """Initialize connection with BSBLan."""
@@ -37,12 +36,8 @@ class BSBLan:
         self.request_timeout = request_timeout
         self.username = username
         self.password = password
-        self.user_agent = user_agent
         self.passkey = passkey
         self._parameters = None
-
-        if user_agent is None:
-            self.user_agent = f"PythonBSBLan/{__version__}"
 
     async def _request(
         self,
@@ -66,8 +61,8 @@ class BSBLan:
             auth = aiohttp.BasicAuth(self.username, self.password)
 
         headers = {
-            "User-Agent": self.user_agent,
-            "Accept": "application/json, text/plain, */*",
+            "User-Agent": f"PythonBSBLan/{__version__}",
+            "Accept": "application/json",  # text/plain, */*",
         }
 
         if self._loop is None:
