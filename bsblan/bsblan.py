@@ -102,12 +102,9 @@ class BSBLan:
 
     async def scan(self):
         """Scan params that return a value."""
-
         # We should add parameters here using scan function.
         # By default we need a list with basic params.
-        data = await self._request(
-            uri="", params={"Parameter": "8740,8000,8006,710,700,912,969"}
-        )
+        data = await self._request(uri="", params={"Parameter": "8740,710,700"})
         notValidData = []
         for k, v in data.items():
             # print(k, v)
