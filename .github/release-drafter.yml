@@ -2,9 +2,9 @@
 ---
 _extends: .github
 # We use the 2-digit versioning in Jenkins weekly releases.
-version-template: $MAJOR.$MINOR
+version-template: v.$MAJOR.$MINOR.$PATCH
 name-template: $NEXT_MINOR_VERSION
-tag-template: jenkins-$NEXT_MINOR_VERSION
+tag-template: $NEXT_MINOR_VERSION
 
 template: |
   **Disclaimer**: This is an automatically generated changelog draft.
