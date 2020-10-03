@@ -6,7 +6,7 @@ import asyncio
 from bsblan import BSBLan, Info, State
 
 
-async def main(loop):
+async def main():
     """Show example on controlling your BSBLan device.
 
     Options:
@@ -15,7 +15,7 @@ async def main(loop):
 
     """
     async with BSBLan(
-        host="10.0.1.60", passkey=1234, username=None, password=None, loop=loop
+        host="10.0.1.60", passkey=None, username=None, password=None,
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()
@@ -34,4 +34,4 @@ async def main(loop):
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(loop))
+    loop.run_until_complete(main())
