@@ -18,7 +18,6 @@ class BSBLan:
     def __init__(
         self,
         host: str,
-        loop: asyncio.events.AbstractEventLoop = None,
         port: int = 80,
         request_timeout: int = 10,
         session: aiohttp.client.ClientSession = None,
@@ -27,7 +26,6 @@ class BSBLan:
         passkey: str = None,
     ) -> None:
         """Initialize connection with BSBLan."""
-        self._loop = loop
         self._session = session
         self._close_session = False
         self.host = host
@@ -64,11 +62,8 @@ class BSBLan:
             "Accept": "application/json",  # text/plain, */*",
         }
 
-        if self._loop is None:
-            self._loop = asyncio.get_event_loop()
-
         if self._session is None:
-            self._session = aiohttp.ClientSession(loop=self._loop)
+            self._session = aiohttp.ClientSession()
             self._close_session = True
 
         try:

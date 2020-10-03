@@ -8,7 +8,7 @@ from bsblan.exceptions import BSBLanConnectionError, BSBLanError
 
 
 @pytest.mark.asyncio
-async def test_json_request(event_loop, aresponses):
+async def test_json_request(aresponses):
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -20,14 +20,14 @@ async def test_json_request(event_loop, aresponses):
             text='{"status": "ok"}',
         ),
     )
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan("example.com", session=session, loop=event_loop)
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", session=session)
         response = await bsblan._request("/JQ")
         assert response["status"] == "ok"
 
 
 @pytest.mark.asyncio
-async def test_passkey_request(event_loop, aresponses):
+async def test_passkey_request(aresponses):
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -39,59 +39,35 @@ async def test_passkey_request(event_loop, aresponses):
             text='{"status": "ok"}',
         ),
     )
-    async with aiohttp.ClientSession(loop=event_loop) as session:
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", passkey="1234", session=session,)
+        response = await bsblan._request("/JQ")
+        assert response["status"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_authenticated_request(aresponses):
+    """Test JSON response is handled correctly."""
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            text='{"status": "ok"}',
+        ),
+    )
+    async with aiohttp.ClientSession() as session:
         bsblan = BSBLan(
-            "example.com", passkey="1234", session=session, loop=event_loop,
+            "example.com", username="liudger", password="1234", session=session,
         )
         response = await bsblan._request("/JQ")
         assert response["status"] == "ok"
 
 
 @pytest.mark.asyncio
-async def test_authenticated_request(event_loop, aresponses):
-    """Test JSON response is handled correctly."""
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            text='{"status": "ok"}',
-        ),
-    )
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan(
-            "example.com",
-            username="liudger",
-            password="1234",
-            session=session,
-            loop=event_loop,
-        )
-        response = await bsblan._request("/JQ")
-        assert response["status"] == "ok"
-
-
-@pytest.mark.asyncio
-async def test_internal_session(event_loop, aresponses):
-    """Test JSON response is handled correctly."""
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            text='{"status": "ok"}',
-        ),
-    )
-    async with BSBLan("example.com", loop=event_loop) as bsblan:
-        response = await bsblan._request("/JQ")
-        assert response["status"] == "ok"
-
-
-@pytest.mark.asyncio
-async def test_internal_eventloop(aresponses):
+async def test_internal_session(aresponses):
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -108,8 +84,26 @@ async def test_internal_eventloop(aresponses):
         assert response["status"] == "ok"
 
 
+# @pytest.mark.asyncio
+# async def test_internal_eventloop(aresponses):
+#     """Test JSON response is handled correctly."""
+#     aresponses.add(
+#         "example.com",
+#         "/JQ",
+#         "POST",
+#         aresponses.Response(
+#             status=200,
+#             headers={"Content-Type": "application/json"},
+#             text='{"status": "ok"}',
+#         ),
+#     )
+#     async with BSBLan("example.com") as bsblan:
+#         response = await bsblan._request("/JQ")
+#         assert response["status"] == "ok"
+
+
 @pytest.mark.asyncio
-async def test_request_port(event_loop, aresponses):
+async def test_request_port(aresponses):
     """Test BSBLan running on non-standard port."""
     aresponses.add(
         "example.com:3333",
@@ -122,14 +116,14 @@ async def test_request_port(event_loop, aresponses):
         ),
     )
 
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan("example.com", port=3333, session=session, loop=event_loop)
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", port=3333, session=session)
         response = await bsblan._request("/JQ")
         assert response["status"] == "ok"
 
 
 @pytest.mark.asyncio
-async def test_timeout(event_loop, aresponses):
+async def test_timeout(aresponses):
     """Test request timeout from BSBLan."""
     # Faking a timeout by sleeping
     async def response_handler(_):
@@ -138,29 +132,27 @@ async def test_timeout(event_loop, aresponses):
 
     aresponses.add("example.com", "/JQ", "POST", response_handler)
 
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan(
-            "example.com", session=session, loop=event_loop, request_timeout=1
-        )
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", session=session, request_timeout=1)
         with pytest.raises(BSBLanConnectionError):
             assert await bsblan._request("/JQ")
 
 
 @pytest.mark.asyncio
-async def test_http_error400(event_loop, aresponses):
+async def test_http_error400(aresponses):
     """Test HTTP 404 response handling."""
     aresponses.add(
         "example.com", "/", "POST", aresponses.Response(text="OMG PUPPIES!", status=404)
     )
 
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan("example.com", session=session, loop=event_loop)
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", session=session)
         with pytest.raises(BSBLanError):
             assert await bsblan._request("/")
 
 
 @pytest.mark.asyncio
-async def test_http_error500(event_loop, aresponses):
+async def test_http_error500(aresponses):
     """Test HTTP 500 response handling."""
     aresponses.add(
         "example.com",
@@ -173,8 +165,8 @@ async def test_http_error500(event_loop, aresponses):
         ),
     )
 
-    async with aiohttp.ClientSession(loop=event_loop) as session:
-        bsblan = BSBLan("example.com", session=session, loop=event_loop)
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", session=session)
         with pytest.raises(BSBLanError):
             assert await bsblan._request("/JQ")
 
