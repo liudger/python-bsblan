@@ -1,5 +1,6 @@
 """Asynchronous Python client for BSB-Lan."""
 import asyncio
+import logging
 import socket
 from typing import Any, Mapping, Optional
 
@@ -10,6 +11,8 @@ from yarl import URL
 from .__version__ import __version__
 from .exceptions import BSBLanConnectionError, BSBLanError
 from .models import Info, State
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class BSBLan:
