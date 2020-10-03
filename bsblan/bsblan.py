@@ -41,7 +41,6 @@ class BSBLan:
 
     async def _request(
         self,
-        uri: str,
         method: str = "POST",
         data: Optional[dict] = None,
         params: Optional[Mapping[str, str]] = None,
@@ -54,7 +53,7 @@ class BSBLan:
 
         url = URL.build(
             scheme="http", host=self.host, port=self.port, path=base_path,
-        ).join(URL(uri))
+        ).join(URL())
 
         auth = None
         if self.username and self.password:
@@ -111,7 +110,7 @@ class BSBLan:
 
         # convert list to string
         parameters = ",".join(str(e) for e in parameters)
-        data = await self._request(uri="", params={"Parameter": f"{parameters}"})
+        data = await self._request(params={"Parameter": f"{parameters}"})
         # print(f"data: {data}")
         notValidData = []
         notValidData2 = []
@@ -136,6 +135,7 @@ class BSBLan:
         # print(f"string: {parameters}")
         # parameters = data
         logging.info("Scanning complete")
+        logging.debug("params: %s", parameters)
         return parameters
 
     async def state(self) -> State:
@@ -147,7 +147,7 @@ class BSBLan:
             # parameters = Params.heatingcircuit1['Parameter'].keys()
 
             self._heatingcircuit1 = await self._scan(parameters)
-
+        logging.info("get state heatingcircuit1")
         data = await self._request(
             "",
             params={"Parameter": f"{self._heatingcircuit1}"},
