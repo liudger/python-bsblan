@@ -37,7 +37,7 @@ class BSBLan:
         self.username = username
         self.password = password
         self.passkey = passkey
-        self._parameters = None
+        self._heatingcircuit1 = None
 
     async def _request(
         self,
@@ -72,7 +72,7 @@ class BSBLan:
         try:
             with async_timeout.timeout(self.request_timeout):
                 response = await self._session.request(
-                    method, url, auth=auth, json=data, params=params, headers=headers,
+                    method, url, auth=auth, params=params, headers=headers,
                 )
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
@@ -98,19 +98,34 @@ class BSBLan:
 
         return await response.json()
 
-    async def scan(self):
-        """Scan params that return a value."""
+    async def _scan(self, parameters):
+        """Scan params that return a value.
+
+        input: dict to scan
+
+        output: string for scanning the params
+
+        """
         # We should add parameters here using scan function.
         # By default we need a list with basic params.
-        data = await self._request(uri="", params={"Parameter": "8740,710,700"})
+
+        # convert list to string
+        parameters = ",".join(str(e) for e in parameters)
+        data = await self._request(uri="", params={"Parameter": f"{parameters}"})
+        # print(f"data: {data}")
         notValidData = []
+        notValidData2 = []
         for k, v in data.items():
             # print(k, v)
             if not v.get("value"):
+                # print(f"Invalid: {k}")
                 notValidData.append(k)
+            if v.get("value") == "---":
+                notValidData2.append(k)
 
         # remove parameters with no returning value
-        for i in notValidData:
+        # print(f"DataNotValid: {notValidData} and {notValidData2}")
+        for i in notValidData or notValidData2:
             data.pop(i)
 
         # join parameters to create one string
@@ -118,26 +133,31 @@ class BSBLan:
         for i in data.keys():
             parameters.append(i)
         parameters = ",".join(parameters)
-
-        self._parameters = parameters
-        return self._parameters
+        # print(f"string: {parameters}")
+        # parameters = data
+        logging.info("Scanning complete")
+        return parameters
 
     async def state(self) -> State:
         """Get the current state from BSBLan device."""
 
-        if self._parameters is None:
-            self._parameters = await self.scan()
-            # return self._parameters
-        parameters = self._parameters
+        if self._heatingcircuit1 is None:
+            logging.info("scanning for state Parameters")
+            parameters = State.heating_circuit1
+            # parameters = Params.heatingcircuit1['Parameter'].keys()
+
+            self._heatingcircuit1 = await self._scan(parameters)
 
         data = await self._request(
             "",
-            params={"Parameter": f"{parameters}"},
+            params={"Parameter": f"{self._heatingcircuit1}"},
             # construct params values with user input
         )
+
+        # print(f"data: {data}")
         return State.from_dict(data)
 
-    async def info(self):
+    async def info(self) -> Info:
         """Get information about the current heating system config."""
         data = await self._request(
             "",
