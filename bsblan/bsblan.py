@@ -37,7 +37,7 @@ class BSBLan:
         self.username = username
         self.password = password
         self.passkey = passkey
-        self._heatingcircuit1 = None
+        self._heatingcircuit1: list = []
 
     async def _request(
         self,
@@ -97,10 +97,10 @@ class BSBLan:
 
         return await response.json()
 
-    async def _scan(self, parameters):
-        """Scan params that return a value.
+    async def _scan(self, parameters) -> list:
+        """Scan for parameters that return a value.
 
-        input: dict to scan
+        input: list to scan
 
         output: string for scanning the params
 
@@ -141,7 +141,7 @@ class BSBLan:
     async def state(self) -> State:
         """Get the current state from BSBLan device."""
 
-        if self._heatingcircuit1 is None:
+        if len(self._heatingcircuit1) == 0:
             logging.info("scanning for state Parameters")
             parameters = State.heating_circuit1
             # parameters = Params.heatingcircuit1['Parameter'].keys()
