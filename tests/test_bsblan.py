@@ -21,8 +21,8 @@ async def test_json_request(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
-        response = await bsblan._request("/JQ")
+        bsblan = BSBLan(host="example.com", session=session)
+        response = await bsblan._request()
         assert response["status"] == "ok"
 
 
@@ -31,7 +31,7 @@ async def test_passkey_request(aresponses):
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
-        "/JQ",
+        "/1234/JQ",
         "POST",
         aresponses.Response(
             status=200,
@@ -40,8 +40,8 @@ async def test_passkey_request(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", passkey="1234", session=session,)
-        response = await bsblan._request("/JQ")
+        bsblan = BSBLan(host="example.com", session=session, passkey="1234")
+        response = await bsblan._request()
         assert response["status"] == "ok"
 
 
@@ -62,7 +62,7 @@ async def test_authenticated_request(aresponses):
         bsblan = BSBLan(
             "example.com", username="liudger", password="1234", session=session,
         )
-        response = await bsblan._request("/JQ")
+        response = await bsblan._request()
         assert response["status"] == "ok"
 
 
@@ -80,7 +80,7 @@ async def test_internal_session(aresponses):
         ),
     )
     async with BSBLan("example.com") as bsblan:
-        response = await bsblan._request("/JQ")
+        response = await bsblan._request()
         assert response["status"] == "ok"
 
 
@@ -118,7 +118,7 @@ async def test_request_port(aresponses):
 
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLan("example.com", port=3333, session=session)
-        response = await bsblan._request("/JQ")
+        response = await bsblan._request()
         assert response["status"] == "ok"
 
 
