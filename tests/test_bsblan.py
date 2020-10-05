@@ -60,7 +60,10 @@ async def test_authenticated_request(aresponses):
     )
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLan(
-            "example.com", username="liudger", password="1234", session=session,
+            "example.com",
+            username="liudger",
+            password="1234",
+            session=session,
         )
         response = await bsblan._request()
         assert response["status"] == "ok"

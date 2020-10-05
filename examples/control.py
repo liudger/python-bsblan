@@ -15,7 +15,10 @@ async def main():
 
     """
     async with BSBLan(
-        host="10.0.1.60", passkey=None, username=None, password=None,
+        host="10.0.1.60",
+        passkey=None,
+        username=None,
+        password=None,
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()

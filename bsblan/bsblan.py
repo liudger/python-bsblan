@@ -52,7 +52,10 @@ class BSBLan:
             base_path = f"/{self.passkey}{base_path}"
 
         url = URL.build(
-            scheme="http", host=self.host, port=self.port, path=base_path,
+            scheme="http",
+            host=self.host,
+            port=self.port,
+            path=base_path,
         ).join(URL())
 
         auth = None
@@ -71,7 +74,11 @@ class BSBLan:
         try:
             with async_timeout.timeout(self.request_timeout):
                 response = await self._session.request(
-                    method, url, auth=auth, params=params, headers=headers,
+                    method,
+                    url,
+                    auth=auth,
+                    params=params,
+                    headers=headers,
                 )
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
@@ -167,7 +174,9 @@ class BSBLan:
         return Info.from_dict(data)
 
     async def thermostat(
-        self, target_temperature: Optional[str] = None, hvac_mode: Optional[str] = None,
+        self,
+        target_temperature: Optional[str] = None,
+        hvac_mode: Optional[str] = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan."""
 
