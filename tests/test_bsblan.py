@@ -87,24 +87,6 @@ async def test_internal_session(aresponses):
         assert response["status"] == "ok"
 
 
-# @pytest.mark.asyncio
-# async def test_internal_eventloop(aresponses):
-#     """Test JSON response is handled correctly."""
-#     aresponses.add(
-#         "example.com",
-#         "/JQ",
-#         "POST",
-#         aresponses.Response(
-#             status=200,
-#             headers={"Content-Type": "application/json"},
-#             text='{"status": "ok"}',
-#         ),
-#     )
-#     async with BSBLan("example.com") as bsblan:
-#         response = await bsblan._request("/JQ")
-#         assert response["status"] == "ok"
-
-
 @pytest.mark.asyncio
 async def test_request_port(aresponses):
     """Test BSBLan running on non-standard port."""
@@ -174,19 +156,17 @@ async def test_http_error500(aresponses):
             assert await bsblan._request("/JQ")
 
 
-# @pytest.mark.asyncio
-# async def test_unexpected_response(event_loop, aresponses):
-#     """Test unexpected response handling."""
-#     aresponses.add(
-#         "example.com",
-#         "/",
-#         "POST",
-#         aresponses.Response(
-#             text="OMG PUPPIES!",
-#             status=200),
-#     )
+@pytest.mark.asyncio
+async def test_unexpected_response(aresponses):
+    """Test unexpected response handling."""
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(text="OMG PUPPIES!", status=200),
+    )
 
-#     async with aiohttp.ClientSession(loop=event_loop) as session:
-#         bsblan = BSBLan("example.com", session=session, loop=event_loop)
-#         with pytest.raises(BSBLanConnectionError):
-#             assert await bsblan._request("/JQ")
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", session=session)
+        with pytest.raises(BSBLanConnectionError):
+            assert await bsblan._request("/JQ")
