@@ -22,10 +22,13 @@ async def main():
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()
+        # state give all the parameters needed for climate device
         print(state)
+        print("hvac_action: %s" % state.hvac_action.desc)
+        print("hvac_mode: %s" % state.hvac_mode.desc)
 
         # set temp thermostat
-        await bsblan.thermostat(target_temperature=18.5)
+        await bsblan.thermostat(target_temperature=19)
 
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_mode=3)
