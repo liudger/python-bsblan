@@ -161,7 +161,7 @@ class BSBLan:
             # construct params values with user input
         )
 
-        # print(f"data: {data}")
+        logging.debug("data: %s", data)
         return State.from_dict(data)
 
     async def info(self) -> Info:

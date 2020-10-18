@@ -1,18 +1,22 @@
 """Models for BSB-Lan."""
 
+import json
+from types import SimpleNamespace as Namespace
+
 import attr
 
 
 class State:
-    """Object holding the BSBlan state."""
+    """Convert Data to valid keys and convert to object attributes."""
 
+    # list of parameter needed for climate device
     heating_circuit1 = [
         700,  # hvac_mode
         710,  # target_temperature
-        711,  # max_temp
+        711,  # target_temperature_high
         712,  # target_temperature_low
         714,  # min_temp
-        730,  # target_temperature_high
+        730,  # max_temp
         900,  # hvac_action?
         8000,  # status_heating_circuit1
         8740,  # current_temperature room1
@@ -35,15 +39,17 @@ class State:
     def from_dict(data: dict):
         """Return State object from BSBLan API response."""
 
+        # need the states fom homeassistant
         KEYS_TO_STATE = {
-            "700": "current_hvac_mode",
+            "700": "hvac_mode",
             "710": "target_temperature",
-            "902": "target_temperature_high",
-            "711": "max_temp",  # comfort max temp
+            # "902": "target_temperature_high",
+            "711": "target_temperature_high",  # comfort max temp
             "712": "target_temperature_low",
             "714": "min_temp",  # frost_protection_temp
-            "730": "changeover_temperature",  # changeover_temperature
-            "8000": "status_heating_circuit1",
+            "730": "max_temp",  # changeover_temperature
+            "900": "hvac_action",
+            "8000": "status_heatingcircuit1",
             "8740": "current_temperature",
         }
         RETURN_CIRCUIT1_DICT = {}
@@ -55,8 +61,9 @@ class State:
             KEYS_TO_STATE.get(k, k): v for k, v in RETURN_CIRCUIT1_DICT.items()
         }
 
-        # print(f"new_dict keys:{new_dict}")
-        return RETURN_CIRCUIT1_DICT
+        return json.loads(
+            json.dumps(RETURN_CIRCUIT1_DICT), object_hook=lambda d: Namespace(**d)
+        )
 
 
 @attr.s(auto_attribs=True, frozen=True)
