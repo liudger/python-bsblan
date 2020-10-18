@@ -64,7 +64,8 @@ class BSBLan:
 
         headers = {
             "User-Agent": f"PythonBSBLan/{__version__}",
-            "Accept": "application/json",  # text/plain, */*",
+            # "Accept": "application/json, text/plain, */*",
+            "Accept": "application/json, */*",
         }
 
         if self._session is None:
@@ -78,6 +79,7 @@ class BSBLan:
                     url,
                     auth=auth,
                     params=params,
+                    json=data,
                     headers=headers,
                 )
                 response.raise_for_status()
@@ -156,18 +158,16 @@ class BSBLan:
             self._heatingcircuit1 = await self._scan(parameters)
         logging.info("get state heatingcircuit1")
         data = await self._request(
-            "",
             params={"Parameter": f"{self._heatingcircuit1}"},
             # construct params values with user input
         )
 
-        logging.debug("data: %s", data)
+        # logging.debug("data: %s", data)
         return State.from_dict(data)
 
     async def info(self) -> Info:
         """Get information about the current heating system config."""
         data = await self._request(
-            "",
             params={"Parameter": "6224,6225,6226"},
             # construct params values with user input
         )
