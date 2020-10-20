@@ -142,7 +142,7 @@ class BSBLan:
     async def state(self) -> State:
         """Get the current state from BSBLan device."""
 
-        if len(self._heatingcircuit1) == 0:
+        if not self._heatingcircuit1:
             logging.info("scanning for state Parameters")
             parameters = State.heating_circuit1
 
