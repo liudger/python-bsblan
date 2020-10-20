@@ -52,10 +52,7 @@ class BSBLan:
             base_path = f"/{self.passkey}{base_path}"
 
         url = URL.build(
-            scheme="http",
-            host=self.host,
-            port=self.port,
-            path=base_path,
+            scheme="http", host=self.host, port=self.port, path=base_path
         ).join(URL())
 
         auth = None
@@ -64,7 +61,6 @@ class BSBLan:
 
         headers = {
             "User-Agent": f"PythonBSBLan/{__version__}",
-            # "Accept": "application/json, text/plain, */*",
             "Accept": "application/json, */*",
         }
 
@@ -103,7 +99,6 @@ class BSBLan:
                 "Unexpected response from the BSBLan device",
                 {"Content-Type": content_type, "response": text},
             )
-
         return await response.json()
 
     async def _scan(self, parameters) -> list:
@@ -120,11 +115,10 @@ class BSBLan:
         # convert list to string
         parameters = ",".join(str(e) for e in parameters)
         data = await self._request(params={"Parameter": f"{parameters}"})
-        # print(f"data: {data}")
+        logging.debug("data: %s", data)
         notValidData = []
         notValidData2 = []
         for k, v in data.items():
-            # print(k, v)
             if not v.get("value"):
                 # print(f"Invalid: {k}")
                 notValidData.append(k)
@@ -141,10 +135,8 @@ class BSBLan:
         for i in data.keys():
             parameters.append(i)
         parameters = ",".join(parameters)
-        # print(f"string: {parameters}")
-        # parameters = data
-        logging.info("Scanning complete")
         logging.debug("params: %s", parameters)
+
         return parameters
 
     async def state(self) -> State:
@@ -153,24 +145,16 @@ class BSBLan:
         if len(self._heatingcircuit1) == 0:
             logging.info("scanning for state Parameters")
             parameters = State.heating_circuit1
-            # parameters = Params.heatingcircuit1['Parameter'].keys()
 
             self._heatingcircuit1 = await self._scan(parameters)
         logging.info("get state heatingcircuit1")
-        data = await self._request(
-            params={"Parameter": f"{self._heatingcircuit1}"},
-            # construct params values with user input
-        )
+        data = await self._request(params={"Parameter": f"{self._heatingcircuit1}"})
 
-        # logging.debug("data: %s", data)
         return State.from_dict(data)
 
     async def info(self) -> Info:
         """Get information about the current heating system config."""
-        data = await self._request(
-            params={"Parameter": "6224,6225,6226"},
-            # construct params values with user input
-        )
+        data = await self._request(params={"Parameter": "6224,6225,6226"})
         return Info.from_dict(data)
 
     async def thermostat(
