@@ -1,4 +1,5 @@
 """Tests for BSBLan Library."""
+# file deepcode ignore W0212: this is a testfile
 import asyncio
 
 import aiohttp

@@ -1,4 +1,5 @@
 """Tests for scanning list of params from the BSBLan device."""
+# file deepcode ignore W0212: this is a testfile
 import aiohttp
 import pytest
 from bsblan import BSBLan
