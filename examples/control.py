@@ -27,6 +27,11 @@ async def main():
         print("hvac_action: %s" % state.hvac_action.desc)
         print("hvac_mode: %s" % state.hvac_mode.desc)
 
+        # a new call won't trigger scan,
+        # because it already knows the parameters
+        state: State = await bsblan.state()
+        print("current temperature: %s" % state.current_temperature.value)
+
         # set temp thermostat
         await bsblan.thermostat(target_temperature=19)
 
