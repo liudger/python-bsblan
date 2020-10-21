@@ -170,7 +170,7 @@ SOFTWARE.
 [buymeacoffee]: https://www.buymeacoffee.com/liudger
 [code-quality-shield]: https://img.shields.io/lgtm/grade/python/g/liudger/python-bsblan.svg?logo=lgtm&logoWidth=18
 [code-quality]: https://lgtm.com/projects/g/liudger/python-bsblan/context:python
-[codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/master/graph/badge.svg
+[codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/Dev/graph/badge.svg?token=ypos87GGxv
 [codecov]: https://codecov.io/gh/liudger/python-bsblan
 [contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
 [liudger]: https://github.com/liudger
