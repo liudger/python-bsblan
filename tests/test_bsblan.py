@@ -116,10 +116,10 @@ async def test_timeout(aresponses):
         await asyncio.sleep(2)
         return aresponses.Response(body="Goodmorning!")
 
-    aresponses.add("example.com", "/JQ", "POST", response_handler)
+    aresponses.add("example.com:80", "/JQ", "POST", response_handler)
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session, request_timeout=1)
+        bsblan = BSBLan("example.com", session=session, request_timeout=2)
         with pytest.raises(BSBLanConnectionError):
             assert await bsblan._request("/JQ")
 
@@ -138,26 +138,6 @@ async def test_http_error400(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_http_error500(aresponses):
-    """Test HTTP 500 response handling."""
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            body='{"status":"ok"}',
-            status=500,
-            headers={"Content-Type": "application/json"},
-        ),
-    )
-
-    async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
-        with pytest.raises(BSBLanError):
-            assert await bsblan._request("/JQ")
-
-
-@pytest.mark.asyncio
 async def test_unexpected_response(aresponses):
     """Test unexpected response handling."""
     aresponses.add(
@@ -169,5 +149,25 @@ async def test_unexpected_response(aresponses):
 
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLan("example.com", session=session)
-        with pytest.raises(BSBLanConnectionError):
+        with pytest.raises(BSBLanError):
             assert await bsblan._request("/JQ")
+
+
+@pytest.mark.asyncio
+async def test_not_authorized_401_response(aresponses):
+    """Test wrong username and password response handling."""
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            status=401,
+            headers={"Content-Type": "text/html"},
+        ),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan("example.com", session=session)
+        with pytest.raises(BSBLanError):
+            response = await bsblan._request("/JQ")
+            assert response.status == 401

@@ -22,7 +22,7 @@ class BSBLan:
         self,
         host: str,
         port: int = 80,
-        request_timeout: int = 10,
+        request_timeout: int = 8,
         session: aiohttp.client.ClientSession = None,
         username: str = None,
         password: str = None,
@@ -106,7 +106,7 @@ class BSBLan:
 
         input: list to scan
 
-        output: string for scanning the params
+        output: string for scanning the valid params
 
         """
         # We should add parameters here using scan function.
