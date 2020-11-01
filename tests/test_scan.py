@@ -27,3 +27,25 @@ async def test_scan(aresponses):
         assert scan
         # assert state.hvac_mode.name == "Operating mode"
         # assert state.hvac_mode.value == "3"
+
+
+@pytest.mark.asyncio
+async def test_scan_pop_data(aresponses):
+    """Test scan params BSBLan and pop data."""
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            status=200,
+            headers={"Content-Type": "application/json"},
+            text=load_fixture("scan.json"),
+        ),
+    )
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLan(host="example.com", session=session)
+        params = [700, 701, 710, 711, 712, 714, 730, 800, 900, 8000, 8740, 8749]
+        scan = await bsblan._scan(params)
+        assert scan
+        # assert state.hvac_mode.name == "Operating mode"
+        # assert state.hvac_mode.value == "3"
