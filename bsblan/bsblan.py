@@ -176,7 +176,8 @@ class BSBLan:
             state["Type"] = "1"
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
-        await self._request("", data=state)
+        response = await self._request(data=state)
+        logging.info("response: %s", response)
         # return Thermostat.from_dict(data)
 
     async def close(self) -> None:

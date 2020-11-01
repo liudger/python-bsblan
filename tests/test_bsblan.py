@@ -116,12 +116,12 @@ async def test_timeout(aresponses):
         await asyncio.sleep(2)
         return aresponses.Response(body="Goodmorning!")
 
-    aresponses.add("example.com:80", "/JQ", "POST", response_handler)
+    aresponses.add("example.com", "/JQ", "POST", response_handler)
 
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLan("example.com", session=session, request_timeout=2)
         with pytest.raises(BSBLanConnectionError):
-            assert await bsblan._request("/JQ")
+            assert await bsblan._request()
 
 
 @pytest.mark.asyncio
@@ -150,7 +150,7 @@ async def test_unexpected_response(aresponses):
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLan("example.com", session=session)
         with pytest.raises(BSBLanError):
-            assert await bsblan._request("/JQ")
+            assert await bsblan._request()
 
 
 @pytest.mark.asyncio
