@@ -1,4 +1,4 @@
 aiohttp==3.7.2
-attrs==20.2.0
+attrs==20.3.0
 cattrs==1.1.1
 yarl==1.6.2
