@@ -178,7 +178,7 @@ SOFTWARE.
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [bsblanmodule]: https://github.com/fredlcore/bsb_lan
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2021.svg
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2022.svg
 [live-coding]: https://www.youtube.com/watch?v=6LHeoUS1R40
 
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
