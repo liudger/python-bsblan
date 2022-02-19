@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 88
-ignore = D202
+ignore = D202,E501,W503,W0212
 per-file-ignores = tests/*:DAR,S101

@@ -105,7 +105,7 @@ good-names = [
 ]
 
 [tool.pylint.DESIGN]
-max-attributes = 8
+max-attributes = 15
 
 [tool.pylint.SIMILARITIES]
 ignore-imports = true

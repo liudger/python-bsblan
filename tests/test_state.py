@@ -1,4 +1,7 @@
 """Tests for retrieving information from the BSBLAN device."""
+# pylint: disable=duplicate-code
+# pylint: disable=protected-access
+# file deepcode ignore W0212: this is a testfile
 import asyncio
 
 import aiohttp
@@ -21,7 +24,7 @@ async def test_state(aresponses, mocker, monkeypatch):
             headers={"Content-Type": "application/json"},
             text=load_fixture("state.json"),
         ),
-    )
+    )  # noqa R0801
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(host="example.com", session=session)
 

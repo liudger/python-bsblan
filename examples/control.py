@@ -4,6 +4,7 @@
 import asyncio
 
 from bsblan import BSBLAN, Info, State
+from bsblan.models import Device
 
 
 async def main():
@@ -37,7 +38,13 @@ async def main():
         await bsblan.thermostat(hvac_mode="comfort")
 
         # get some generic info from the heater
+        device: Device = await bsblan.device()
+        print(f"device dict: {device.dict()}")
+        print(f"device: {device.name}")
+        print(f"version: {device.version}")
+
         info: Info = await bsblan.info()
+        print(f"device: {info.device_identification.dict()}")
         print(f"name: {info.device_identification.name}")
 
 

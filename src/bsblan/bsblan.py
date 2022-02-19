@@ -13,19 +13,18 @@ import async_timeout
 from aiohttp.client import ClientError, ClientResponseError, ClientSession
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
-from packaging import version
+from packaging import version as pkg_version
 from yarl import URL
 
-from .exceptions import BSBLANConnectionError, BSBLANError
-from .models import (
+from .constants import (
     DEVICE_INFO_API_V1,
     DEVICE_INFO_API_V2,
     HEATING_CIRCUIT1_API_V1,
     HEATING_CIRCUIT1_API_V2,
-    Device,
-    Info,
-    State,
+    HVAC_MODE_DICT,
 )
+from .exceptions import BSBLANConnectionError, BSBLANError
+from .models import Device, Info, State
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -41,7 +40,6 @@ class BSBLAN:
     port: int = 80
     request_timeout: int = 8
     session: ClientSession | None = None
-
     _version: str = ""
     _heatingcircuit1: str | None = None
     _heating_params: list[str] | None = None
@@ -153,16 +151,16 @@ class BSBLAN:
         # convert list to string
         _parameters = ",".join(map(str, parameters))
         data = await self._request(params={"Parameter": f"{_parameters}"})
-        notValidData = []
-        notValidData2 = []
-        for k, v in data.items():
-            if not v.get("value"):
-                notValidData.append(k)
-            if v.get("value") == "---":
-                notValidData2.append(k)
+        not_valid_data = []
+        not_valid_data2 = []
+        for key, value in data.items():
+            if not value.get("value"):
+                not_valid_data.append(key)
+            if value.get("value") == "":
+                not_valid_data2.append(key)
 
         # remove parameters with no returning value
-        for i in notValidData or notValidData2:
+        for i in not_valid_data or not_valid_data2:
             data.pop(i)
 
         # join parameters to create one string
@@ -173,77 +171,46 @@ class BSBLAN:
 
         return _parameters
 
-    def _getList(self, dictionary) -> list[str]:
-        """Get list of keys from a dictionary.
-
-        Args:
-            dictionary: Dictionary to get keys from.
-
-        Returns:
-            List of keys from the dictionary.
-        """
-        return [*dictionary]
-
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
 
         Returns:
             A BSBLAN state object.
-
-        Raises:
-            BSBLANError: If version from the BSBLAN device an unsupported.
-
         """
-        # get version
-        if not self._version:
-            await self.get_version()
+        if not self._heatingcircuit1 or not self._heating_params:
+            data = await self._get_dict_version()
+            logger.debug("data: %s", data)
+            data = await self._get_parameters(data["heating"])
+            self._heatingcircuit1 = str(data["string_par"])
+            self._heating_params = list(data["list"])
 
         # retrieve heating circuit 1 and heating params so we can build the
         # data structure (its circuit 1 because it can support 2 circuits)
-        if not self._heatingcircuit1 and not self._heating_params:
-            await self._get_data_heatingcircuit()
-
-        logging.debug("get state heatingcircuit1")
+        logger.debug("get state")
         data = await self._request(params={"Parameter": f"{self._heatingcircuit1}"})
-        if self._heating_params is None:
-            raise BSBLANError("state data is empty")
-        else:
-            data = dict(zip(self._heating_params, list(data.values())))
-            return State.parse_obj(data)
+        data = dict(zip(self._heating_params, list(data.values())))
+        return State.parse_obj(data)
 
-    async def _get_data_heatingcircuit(self) -> None:
-        """Get the data structure from BSBLAN device.
+    async def _get_dict_version(self) -> dict:
+        """Get the version from device.
 
-        Raises:
-            BSBLANError: If version from the BSBLAN device an unsupported.
+        Returns:
+            A dictionary with dicts
 
         """
-
-        try:
-            if version.parse(self._version) < version.parse("1.2.0"):
-                logging.debug("scanning for state Parameters api version < 1.2")
-                parameters = self._getList(HEATING_CIRCUIT1_API_V1)
-                self._heatingcircuit1 = await self._scan(parameters)
-                self._heating_params = list(HEATING_CIRCUIT1_API_V1.values())
-            if (
-                version.parse("3.0.0")
-                > version.parse(self._version)  # noqa: W503
-                >= version.parse("2.0.0")  # noqa: W503
-            ):
-                logging.debug("scanning for state Parameters api version 2.0")
-                parameters = self._getList(HEATING_CIRCUIT1_API_V2)
-                self._heatingcircuit1 = await self._scan(parameters)
-                self._heating_params = list(HEATING_CIRCUIT1_API_V2.values())
-        except BSBLANError as exception:
-            raise BSBLANError(
-                "BSBLAN device version is not supported, version: ", self._version
-            ) from exception
-
-    async def get_version(self) -> None:
-        """Get the version from device."""
-        self._device = await self.device()
-        self._version = self._device.version
-        logger.debug("version: %s", self._version)
+        if not self._version:
+            device = await self.device()
+            self._version = device.version
+            logger.debug("BSBLAN version: %s", self._version)
+        if pkg_version.parse(self._version) < pkg_version.parse("1.2.0"):
+            return {"heating": HEATING_CIRCUIT1_API_V1, "device": DEVICE_INFO_API_V1}
+        if (
+            pkg_version.parse("3.0.0")
+            > pkg_version.parse(self._version)  # noqa: W503
+            >= pkg_version.parse("2.0.0")  # noqa: W503
+        ):
+            return {"heating": HEATING_CIRCUIT1_API_V2, "device": DEVICE_INFO_API_V2}
+        return {}
 
     async def device(self) -> Device:
         """Get BSBLAN device info.
@@ -252,9 +219,8 @@ class BSBLAN:
             A BSBLAN device info object.
 
         """
-        _device = await self._request(base_path="/JI")
-        logger.debug("device: %s", _device)
-        return Device.parse_obj(_device)
+        device_info = await self._request(base_path="/JI")
+        return Device.parse_obj(device_info)
 
     async def info(self) -> Info:
         """Get information about the current heating system config.
@@ -262,31 +228,31 @@ class BSBLAN:
         Returns:
             A BSBLAN info object about the heating system.
         """
-        if not self._version:
-            await self.get_version()
-
-        if not self._info:
-            await self._get_data_info()
+        if not self._info or not self._device_params:
+            device_dict = await self._get_dict_version()
+            data = await self._get_parameters(device_dict["device"])
+            self._info = str(data["string_par"])
+            self._device_params = data["list"]
 
         data = await self._request(params={"Parameter": f"{self._info}"})
         data = dict(zip(self._device_params, list(data.values())))
         return Info.parse_obj(data)
 
-    async def _get_data_info(self) -> None:
-        """Get the parameters info from BSBLAN device."""
+    async def _get_parameters(self, params: dict) -> dict:
+        """Get the parameters info from BSBLAN device.
 
-        if version.parse(self._version) < version.parse("1.2.0"):
-            params = self._getList(DEVICE_INFO_API_V1)
-            self._info = await self._scan(params)
-            self._device_params = list(DEVICE_INFO_API_V1.values())
-        if (
-            version.parse("3.0.0")
-            > version.parse(self._version)  # noqa: W503
-            >= version.parse("2.0.0")  # noqa: W503
-        ):
-            params = self._getList(DEVICE_INFO_API_V2)
-            self._info = await self._scan(params)
-            self._device_params = list(DEVICE_INFO_API_V2.values())
+        Args:
+            params: A dictionary with the parameters to get.
+
+        Returns:
+            A list of 2 objects [str, list].
+        """
+        list_params = [*params]
+        parameters = await self._scan(list_params)
+        logger.debug("parameters from scan: %s", parameters)
+        object_parameters = list(params.values())
+
+        return {"string_par": parameters, "list": object_parameters}
 
     async def thermostat(
         self,
@@ -322,25 +288,15 @@ class BSBLAN:
                 raise BSBLANError(
                     "Target temperature is not valid, must be between 7 and 40"
                 )
-            # TODO: create a basemodel object
             state["Parameter"] = "710"
             state["Value"] = target_temperature
             state["Type"] = "1"
 
-        # TODO: clean up this code with basemodel
-        _dict_hvac_mode = {
-            "protection": 0,
-            "auto": 1,
-            "reduced": 2,
-            "comfort": 3,
-        }
-
         if hvac_mode is not None:
-            if hvac_mode not in _dict_hvac_mode:
+            if hvac_mode not in HVAC_MODE_DICT:
                 raise BSBLANError("HVAC mode is not valid")
-            # TODO: create a basemodel object
             state["Parameter"] = "700"
-            state["EnumValue"] = _dict_hvac_mode[hvac_mode]
+            state["EnumValue"] = HVAC_MODE_DICT[hvac_mode]
             state["Type"] = "1"
 
         if not state:

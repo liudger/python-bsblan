@@ -1,4 +1,5 @@
 """Tests for retrieving BSBLAN info Library."""
+# file deepcode ignore W0212: this is a testfile
 import asyncio
 
 import aiohttp
@@ -21,14 +22,14 @@ async def test_info(aresponses, mocker, monkeypatch):
             headers={"Content-Type": "application/json"},
             text=load_fixture("info.json"),
         ),
-    )
+    )  # noqa R0801
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session)
 
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
         future = asyncio.Future()
-        future.set_result("700,710,711,712,714,730,900,8000,8740,8749")
+        future.set_result("6224,6225,6226")
         mocker.patch(
             # need to patch _scan
             "bsblan.BSBLAN._scan",

@@ -1,5 +1,6 @@
 """Tests for scanning list of params from the BSBLAN device."""
 # file deepcode ignore W0212: this is a testfile
+# pylint: disable=protected-access
 import aiohttp
 import pytest
 
@@ -26,6 +27,7 @@ async def test_scan(aresponses):
         params = [700, 710, 711, 712, 714, 730, 900, 8000, 8740, 8749]
         scan = await bsblan._scan(params)
         assert scan
+        assert scan == "700,710,711,712,714,730,800,900,8000,8740,8749"
 
 
 @pytest.mark.asyncio
@@ -45,4 +47,4 @@ async def test_scan_pop_data(aresponses):
         bsblan = BSBLAN(host="example.com", session=session)
         params = [700, 701, 710, 711, 712, 714, 730, 800, 900, 8000, 8740, 8749]
         scan = await bsblan._scan(params)
-        assert scan
+        assert scan == "700,710,711,712,714,730,800,900,8000,8740,8749"
