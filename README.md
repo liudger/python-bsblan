@@ -154,6 +154,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+[bsblanmodule]: https://github.com/fredlcore/bsb_lan
 [build-shield]: https://github.com/liudger/python-bsblan/workflows/Continuous%20Integration/badge.svg
 [build]: https://github.com/liudger/python-bsblan/actions
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
@@ -163,13 +164,14 @@ SOFTWARE.
 [codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/Dev/graph/badge.svg?token=ypos87GGxv
 [codecov]: https://codecov.io/gh/liudger/python-bsblan
 [contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
-[liudger]: https://github.com/liudger
 [frenck]: https://github.com/frenck
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
-[bsblanmodule]: https://github.com/fredlcore/bsb_lan
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2022.svg
+[liudger]: https://github.com/liudger
 [live-coding]: https://www.youtube.com/watch?v=6LHeoUS1R40
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2022.svg
+[poetry]: https://python-poetry.org
+[poetry-install]: https://python-poetry.org/docs/#installation
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [releases-shield]: https://img.shields.io/github/v/release/liudger/python-bsblan.svg
 [releases]: https://github.com/liudger/python-bsblan/releases
