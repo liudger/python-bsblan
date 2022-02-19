@@ -1,15 +1,16 @@
-"""Tests for scanning list of params from the BSBLan device."""
+"""Tests for scanning list of params from the BSBLAN device."""
 # file deepcode ignore W0212: this is a testfile
 import aiohttp
 import pytest
-from bsblan import BSBLan
+
+from bsblan import BSBLAN
 
 from . import load_fixture
 
 
 @pytest.mark.asyncio
 async def test_scan(aresponses):
-    """Test scan params BSBLan."""
+    """Test scan params BSBLAN."""
     aresponses.add(
         "example.com",
         "/JQ",
@@ -21,17 +22,15 @@ async def test_scan(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan(host="example.com", session=session)
+        bsblan = BSBLAN(host="example.com", session=session)
         params = [700, 710, 711, 712, 714, 730, 900, 8000, 8740, 8749]
         scan = await bsblan._scan(params)
         assert scan
-        # assert state.hvac_mode.name == "Operating mode"
-        # assert state.hvac_mode.value == "3"
 
 
 @pytest.mark.asyncio
 async def test_scan_pop_data(aresponses):
-    """Test scan params BSBLan and pop data."""
+    """Test scan params BSBLAN and pop data."""
     aresponses.add(
         "example.com",
         "/JQ",
@@ -43,9 +42,7 @@ async def test_scan_pop_data(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan(host="example.com", session=session)
+        bsblan = BSBLAN(host="example.com", session=session)
         params = [700, 701, 710, 711, 712, 714, 730, 800, 900, 8000, 8740, 8749]
         scan = await bsblan._scan(params)
         assert scan
-        # assert state.hvac_mode.name == "Operating mode"
-        # assert state.hvac_mode.value == "3"

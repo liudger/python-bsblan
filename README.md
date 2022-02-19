@@ -74,12 +74,12 @@ functionality. The format of the log is based on
 [Keep a Changelog][keepchangelog].
 
 Releases are based on [Semantic Versioning][semver], and use the format
-of ``MAJOR.MINOR.PATCH``. In a nutshell, the version will be incremented
+of `MAJOR.MINOR.PATCH`. In a nutshell, the version will be incremented
 based on the following:
 
-- ``MAJOR``: Incompatible or major changes.
-- ``MINOR``: Backwards-compatible new features and enhancements.
-- ``PATCH``: Backwards-compatible bugfixes and package updates.
+- `MAJOR`: Incompatible or major changes.
+- `MINOR`: Backwards-compatible new features and enhancements.
+- `PATCH`: Backwards-compatible bugfixes and package updates.
 
 ## Contributing
 
@@ -93,49 +93,39 @@ Thank you for being involved! :heart_eyes:
 
 ## Setting up development environment
 
-In case you'd like to contribute, a `Makefile` has been included to ensure a
-quick start.
+This Python project is fully managed using the [Poetry][poetry] dependency manager. But also relies on the use of NodeJS for certain checks during development.
+
+You need at least:
+
+- Python 3.9+
+- [Poetry][poetry-install]
+- NodeJS 16+ (including NPM)
+
+To install all packages, including all development requirements:
 
 ```bash
-make venv
-source ./venv/bin/activate
-make dev
+npm install
+poetry install
 ```
 
-Now you can start developing, run `make` without arguments to get an overview
-of all make goals that are available (including description):
+As this repository uses the [pre-commit][pre-commit] framework, all changes
+are linted and tested with each commit. You can run all checks and tests
+manually, using the following command:
 
 ```bash
-$ make
-Asynchronous Python client for BSBLan.
+poetry run pre-commit run --all-files
+```
 
-Usage:
-  make help                            Shows this message.
-  make dev                             Set up a development environment.
-  make lint                            Run all linters.
-  make lint-black                      Run linting using black & blacken-docs.
-  make lint-flake8                     Run linting using flake8 (pycodestyle/pydocstyle).
-  make lint-pylint                     Run linting using PyLint.
-  make lint-mypy                       Run linting using MyPy.
-  make test                            Run tests quickly with the default Python.
-  make coverage                        Check code coverage quickly with the default Python.
-  make install                         Install the package to the active Python's site-packages.
-  make clean                           Removes build, test, coverage and Python artifacts.
-  make clean-all                       Removes all venv, build, test, coverage and Python artifacts.
-  make clean-build                     Removes build artifacts.
-  make clean-pyc                       Removes Python file artifacts.
-  make clean-test                      Removes test and coverage artifacts.
-  make clean-venv                      Removes Python virtual environment artifacts.
-  make dist                            Builds source and wheel package.
-  make release                         Release build on PyP
-  make venv                            Create Python venv environment.
+To run just the Python tests:
+
+```bash
+poetry run pytest
 ```
 
 ## Authors & contributors
 
-The template is from the repository 'wled' by [Franck Nijhof][frenck].
-Folowing the cool [live coding][live-coding] feed from frenck!
-The original setup of this repository is by [Willem-Jan van Rootselaar][liudger].
+The template is from the repository 'elgato' by [Franck Nijhof][frenck].
+The setup of this repository is by [Willem-Jan van Rootselaar][liudger].
 
 For a full list of all authors and contributors,
 check [the contributor's page][contributors].
@@ -180,7 +170,6 @@ SOFTWARE.
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2022.svg
 [live-coding]: https://www.youtube.com/watch?v=6LHeoUS1R40
-
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [releases-shield]: https://img.shields.io/github/v/release/liudger/python-bsblan.svg
 [releases]: https://github.com/liudger/python-bsblan/releases

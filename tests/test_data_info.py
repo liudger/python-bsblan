@@ -1,17 +1,16 @@
-"""Tests for retrieving information from the BSBLAN device."""
+"""Tests for scanning list of params from the BSBLAN device."""
+# file deepcode ignore W0212: this is a testfile
 import asyncio
 
 import aiohttp
 import pytest
 
-from bsblan import BSBLAN, State
-
-from . import load_fixture
+from bsblan import BSBLAN
 
 
 @pytest.mark.asyncio
-async def test_state(aresponses, mocker, monkeypatch):
-    """Test getting BSBLAN state."""
+async def test_scan_v1(aresponses, mocker, monkeypatch):
+    """Test scan params BSBLAN."""
     aresponses.add(
         "example.com",
         "/JQ",
@@ -19,25 +18,27 @@ async def test_state(aresponses, mocker, monkeypatch):
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=load_fixture("state.json"),
         ),
     )
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(host="example.com", session=session)
 
+        # set _version
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
-
+        # patch scan
         future = asyncio.Future()
-        future.set_result("700,710,711,712,714,730,900,8000,8740,8749")
+        future.set_result("6224,6225,6226")
         mocker.patch(
             # need to patch _scan
             "bsblan.BSBLAN._scan",
             return_value=future,
         )
+        # test _info and _device_params
 
-        # await bsblan._scan(params)
-        state: State = await bsblan.state()
-        assert state
-        assert state.hvac_mode.name == "Operating mode"
-        assert state.hvac_mode.value == "3"
-        assert state.current_temperature.value == "18.2"
+        await bsblan._get_data_info()
+        assert bsblan._info == future
+        assert bsblan._device_params == [
+            "device_identification",
+            "controller_family",
+            "controller_variant",
+        ]

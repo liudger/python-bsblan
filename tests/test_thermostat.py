@@ -1,16 +1,16 @@
-"""Tests for sending values to the BSBLan device."""
-# import asyncio
+"""Tests for sending values to the BSBLAN device."""
 
 import aiohttp
 import pytest
-from bsblan import BSBLan
+
+from bsblan import BSBLAN
 
 from . import load_fixture
 
 
 @pytest.mark.asyncio
 async def test_change_temperature(aresponses):
-    """Test changing BSBLan temperature."""
+    """Test changing BSBLAN temperature."""
 
     async def response_handler(request):
         data = await request.json()
@@ -25,17 +25,17 @@ async def test_change_temperature(aresponses):
     aresponses.add("example.com", "/JS", "POST", response_handler)
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
+        bsblan = BSBLAN("example.com", session=session)
         await bsblan.thermostat(target_temperature="19")
 
 
 @pytest.mark.asyncio
 async def test_change_hvac_mode(aresponses):
-    """Test changing BSBLan hvac mode."""
+    """Test changing BSBLAN hvac mode."""
 
     async def response_handler(request):
         data = await request.json()
-        assert data == {"Parameter": "700", "EnumValue": "3", "Type": "1"}
+        assert data == {"Parameter": "700", "EnumValue": 3, "Type": "1"}
 
         return aresponses.Response(
             status=200,
@@ -46,5 +46,5 @@ async def test_change_hvac_mode(aresponses):
     aresponses.add("example.com", "/JS", "POST", response_handler)
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
-        await bsblan.thermostat(hvac_mode="3")
+        bsblan = BSBLAN("example.com", session=session)
+        await bsblan.thermostat(hvac_mode="comfort")
