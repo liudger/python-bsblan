@@ -269,9 +269,9 @@ class BSBLAN:
             BSBLANError: The provided values are invalid.
         """
 
-        class ThermostatState(
+        class ThermostatState(  # lgtm [py/unused-local-variable]
             TypedDict, total=False
-        ):  # lgtm [py/unused-local-variable]
+        ):
             """Describe state dictionary that can be set on the thermostat."""
 
             target_temperature: str
