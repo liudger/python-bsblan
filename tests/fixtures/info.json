@@ -1,29 +1,29 @@
 {
   "6224": {
-      "name": "Geräte-Identifikation",
-      "error": 0,
-      "value": "RVS21.831F/127",
-      "desc": "",
-      "dataType": 7,
-      "readonly": 0,
-      "unit": ""
+    "name": "Geräte-Identifikation",
+    "error": 0,
+    "value": "RVS21.831F/127",
+    "desc": "",
+    "dataType": 7,
+    "readonly": 0,
+    "unit": ""
   },
   "6225": {
-      "name": "Device family",
-      "error": 0,
-      "value": "211",
-      "desc": "",
-      "dataType": 0,
-      "readonly": 0,
-      "unit": ""
+    "name": "Device family",
+    "error": 0,
+    "value": "211",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 0,
+    "unit": ""
   },
   "6226": {
-      "name": "Device variant",
-      "error": 0,
-      "value": "127",
-      "desc": "",
-      "dataType": 0,
-      "readonly": 0,
-      "unit": ""
+    "name": "Device variant",
+    "error": 0,
+    "value": "127",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 0,
+    "unit": ""
   }
 }

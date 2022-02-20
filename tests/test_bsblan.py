@@ -1,11 +1,15 @@
-"""Tests for BSBLan Library."""
+"""Tests for BSBLAN Library."""
 # file deepcode ignore W0212: this is a testfile
+# pylint: disable=protected-access
 import asyncio
 
 import aiohttp
 import pytest
-from bsblan import BSBLan
-from bsblan.exceptions import BSBLanConnectionError, BSBLanError
+
+from bsblan import BSBLAN
+from bsblan.exceptions import BSBLANConnectionError, BSBLANError
+
+from . import load_fixture
 
 
 @pytest.mark.asyncio
@@ -22,7 +26,7 @@ async def test_json_request(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan(host="example.com", session=session)
+        bsblan = BSBLAN(host="example.com", session=session)
         response = await bsblan._request()
         assert response["status"] == "ok"
 
@@ -41,7 +45,7 @@ async def test_passkey_request(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan(host="example.com", session=session, passkey="1234")
+        bsblan = BSBLAN(host="example.com", session=session, passkey="1234")
         response = await bsblan._request()
         assert response["status"] == "ok"
 
@@ -60,10 +64,10 @@ async def test_authenticated_request(aresponses):
         ),
     )
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan(
+        bsblan = BSBLAN(
             "example.com",
-            username="liudger",
-            password="1234",
+            username=load_fixture("password.txt"),
+            password=load_fixture("password.txt"),
             session=session,
         )
         response = await bsblan._request()
@@ -83,14 +87,14 @@ async def test_internal_session(aresponses):
             text='{"status": "ok"}',
         ),
     )
-    async with BSBLan("example.com") as bsblan:
+    async with BSBLAN("example.com") as bsblan:
         response = await bsblan._request()
         assert response["status"] == "ok"
 
 
 @pytest.mark.asyncio
 async def test_request_port(aresponses):
-    """Test BSBLan running on non-standard port."""
+    """Test BSBLAN running on non-standard port."""
     aresponses.add(
         "example.com:3333",
         "/JQ",
@@ -103,14 +107,14 @@ async def test_request_port(aresponses):
     )
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", port=3333, session=session)
+        bsblan = BSBLAN("example.com", port=3333, session=session)
         response = await bsblan._request()
         assert response["status"] == "ok"
 
 
 @pytest.mark.asyncio
 async def test_timeout(aresponses):
-    """Test request timeout from BSBLan."""
+    """Test request timeout from BSBLAN."""
     # Faking a timeout by sleeping
     async def response_handler(_):
         await asyncio.sleep(2)
@@ -119,8 +123,8 @@ async def test_timeout(aresponses):
     aresponses.add("example.com", "/JQ", "POST", response_handler)
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session, request_timeout=2)
-        with pytest.raises(BSBLanConnectionError):
+        bsblan = BSBLAN("example.com", session=session, request_timeout=2)
+        with pytest.raises(BSBLANConnectionError):
             assert await bsblan._request()
 
 
@@ -132,8 +136,8 @@ async def test_http_error400(aresponses):
     )
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
-        with pytest.raises(BSBLanError):
+        bsblan = BSBLAN("example.com", session=session)
+        with pytest.raises(BSBLANError):
             assert await bsblan._request("/")
 
 
@@ -148,8 +152,8 @@ async def test_unexpected_response(aresponses):
     )
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
-        with pytest.raises(BSBLanError):
+        bsblan = BSBLAN("example.com", session=session)
+        with pytest.raises(BSBLANError):
             assert await bsblan._request()
 
 
@@ -167,7 +171,6 @@ async def test_not_authorized_401_response(aresponses):
     )
 
     async with aiohttp.ClientSession() as session:
-        bsblan = BSBLan("example.com", session=session)
-        with pytest.raises(BSBLanError):
-            response = await bsblan._request("/JQ")
-            assert response.status == 401
+        bsblan = BSBLAN("example.com", session=session)
+        with pytest.raises(BSBLANError):
+            assert await bsblan._request("/JQ")
