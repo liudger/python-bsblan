@@ -12,7 +12,7 @@ documentation = "https://github.com/liudger/python-bsblan"
 keywords = ["bsblan", "thermostat", "client" , "api"]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "Frameworks :: AsyncIO",
+  "Framework :: AsyncIO",
   "Intended Audience :: Developers",
   "Natural Language :: English",
   "Programming Language :: Python :: 3.9",

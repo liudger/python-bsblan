@@ -3,8 +3,7 @@
 
 import asyncio
 
-from bsblan import BSBLAN, Info, State
-from bsblan.models import Device
+from bsblan import BSBLAN, Device, Info, State
 
 
 async def main():
@@ -19,21 +18,17 @@ async def main():
         host="10.0.2.60",
         passkey=None,
         username=None,
+        password=None,
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()
         # state give all the parameters needed for climate device
         print(f"hvac_action: {state.hvac_action.desc}")
         print(f"hvac_mode: {state.hvac_mode.desc}")
-
-        # a new call won't trigger scan,
-        # because it already knows the parameters
-        # state: State = await bsblan.state()
         print(f"current temperature: {state.current_temperature.value}")
 
         # set temp thermostat
         await bsblan.thermostat(target_temperature="18.5")
-
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_mode="comfort")
 
