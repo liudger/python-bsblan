@@ -19,8 +19,9 @@ HEATING_CIRCUIT1_API_V1 = {
     "712": "target_temperature_low",
     "714": "min_temp",
     "730": "max_temp",
-    "900": "hvac_action",
-    "8000": "status_heating_circuit1",
+    "900": "hvac_mode2",
+    "8000": "hvac_action",
+    "8700": "outside_temperature",
     "8740": "current_temperature",
     "8749": "room1_thermostat_mode",
 }
@@ -31,8 +32,9 @@ HEATING_CIRCUIT1_API_V2 = {
     "712": "target_temperature_low",
     "714": "min_temp",
     "730": "max_temp",
-    "900": "hvac_action",
-    "8000": "status_heating_circuit1",
+    "900": "hvac_mode2",
+    "8000": "hvac_action",
+    "8700": "outside_temperature",
     "8740": "current_temperature room1",
     "8749": "room1_thermostat_mode",
 }
@@ -47,10 +49,10 @@ HEATING_CIRCUIT2 = [
     "8001",  # status_heating_circuit2
     "8770",
 ]
-
+# homeassistant values
 HVAC_MODE_DICT = {
-    "protection": 0,
+    "off": 0,
     "auto": 1,
-    "reduced": 2,
-    "comfort": 3,
+    "eco": 2,
+    "heat": 3,
 }

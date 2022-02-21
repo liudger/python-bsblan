@@ -47,4 +47,4 @@ async def test_change_hvac_mode(aresponses):
 
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session)
-        await bsblan.thermostat(hvac_mode="comfort")
+        await bsblan.thermostat(hvac_mode="heat")

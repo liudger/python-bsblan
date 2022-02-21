@@ -31,7 +31,7 @@ async def test_state(aresponses, mocker, monkeypatch):
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
         future = asyncio.Future()
-        future.set_result("700,710,711,712,714,730,900,8000,8740,8749")
+        future.set_result("700,710,711,712,714,730,900,8000,8700,8740,8749")
         mocker.patch(
             # need to patch _scan
             "bsblan.BSBLAN._scan",
