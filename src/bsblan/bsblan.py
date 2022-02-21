@@ -188,6 +188,8 @@ class BSBLAN:
         # data structure (its circuit 1 because it can support 2 circuits)
         logger.debug("get state")
         data = await self._request(params={"Parameter": f"{self._heatingcircuit1}"})
+        if len(self._heating_params) != len(list(data.values())):
+            BSBLANError("not able to retrieve all parameters")
         data = dict(zip(self._heating_params, list(data.values())))
         return State.parse_obj(data)
 
@@ -235,6 +237,8 @@ class BSBLAN:
             self._device_params = data["list"]
 
         data = await self._request(params={"Parameter": f"{self._info}"})
+        if len(self._device_params) != len(list(data.values())):
+            BSBLANError("not able to retrieve all parameters")
         data = dict(zip(self._device_params, list(data.values())))
         return Info.parse_obj(data)
 
