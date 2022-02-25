@@ -21,7 +21,8 @@ from .constants import (
     DEVICE_INFO_API_V2,
     HEATING_CIRCUIT1_API_V1,
     HEATING_CIRCUIT1_API_V2,
-    HVAC_MODE_DICT,
+    PRESET_MODE_DICT,
+    PRESET_MODE_DICT_REVERSE,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
 from .models import Device, Info, State
@@ -188,9 +189,10 @@ class BSBLAN:
         # data structure (its circuit 1 because it can support 2 circuits)
         logger.debug("get state")
         data = await self._request(params={"Parameter": f"{self._heatingcircuit1}"})
-        if len(self._heating_params) != len(list(data.values())):
-            BSBLANError("not able to retrieve all parameters")
         data = dict(zip(self._heating_params, list(data.values())))
+        data["preset_mode"]["value"] = PRESET_MODE_DICT[
+            int(data["preset_mode"]["value"])
+        ]
         return State.parse_obj(data)
 
     async def _get_dict_version(self) -> dict:
@@ -237,8 +239,6 @@ class BSBLAN:
             self._device_params = data["list"]
 
         data = await self._request(params={"Parameter": f"{self._info}"})
-        if len(self._device_params) != len(list(data.values())):
-            BSBLANError("not able to retrieve all parameters")
         data = dict(zip(self._device_params, list(data.values())))
         return Info.parse_obj(data)
 
@@ -261,13 +261,13 @@ class BSBLAN:
     async def thermostat(
         self,
         target_temperature: str | None = None,
-        hvac_mode: str | None = None,
+        preset_mode: str | None = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan.
 
         Args:
             target_temperature: Target temperature to set.
-            hvac_mode: HVAC mode to set.
+            preset_mode: Preset mode to set.
 
         Raises:
             BSBLANError: The provided values are invalid.
@@ -279,7 +279,7 @@ class BSBLAN:
             """Describe state dictionary that can be set on the thermostat."""
 
             target_temperature: str
-            hvac_mode: str
+            preset_mode: str
             Parameter: str
             Value: str
             Type: str
@@ -296,11 +296,11 @@ class BSBLAN:
             state["Value"] = target_temperature
             state["Type"] = "1"
 
-        if hvac_mode is not None:
-            if hvac_mode not in HVAC_MODE_DICT:
-                raise BSBLANError("HVAC mode is not valid")
+        if preset_mode is not None:
+            if preset_mode not in PRESET_MODE_DICT_REVERSE:
+                raise BSBLANError("Preset mode is not valid")
             state["Parameter"] = "700"
-            state["EnumValue"] = HVAC_MODE_DICT[hvac_mode]
+            state["EnumValue"] = PRESET_MODE_DICT_REVERSE[preset_mode]
             state["Type"] = "1"
 
         if not state:

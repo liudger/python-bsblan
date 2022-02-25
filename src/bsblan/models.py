@@ -22,8 +22,8 @@ class EntityInfo(BaseModel):
 class State(BaseModel):
     """This object holds info about object for state climate."""
 
-    hvac_mode: EntityInfo
-    hvac_mode2: EntityInfo
+    preset_mode: EntityInfo
+    preset_mode2: EntityInfo
     target_temperature: EntityInfo
     target_temperature_high: EntityInfo
     target_temperature_low: EntityInfo

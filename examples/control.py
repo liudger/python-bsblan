@@ -24,13 +24,13 @@ async def main():
         state: State = await bsblan.state()
         # state give all the parameters needed for climate device
         print(f"hvac_action: {state.hvac_action.desc}")
-        print(f"hvac_mode: {state.hvac_mode.desc}")
+        print(f"hvac_mode: {state.preset_mode.desc}")
         print(f"current temperature: {state.current_temperature.value}")
 
         # set temp thermostat
         await bsblan.thermostat(target_temperature="18.5")
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
-        await bsblan.thermostat(hvac_mode="comfort")
+        await bsblan.thermostat(preset_mode="comfort")
 
         # get some generic info from the heater
         device: Device = await bsblan.device()
