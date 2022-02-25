@@ -22,7 +22,7 @@ the behavior of [BSBLan][bsblanmodule].
 ## Installation
 
 ```bash
-pip install bsblan
+pip install python-bsblan
 ```
 
 ## Usage
