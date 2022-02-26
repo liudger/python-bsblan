@@ -30,8 +30,8 @@ async def test_change_temperature(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_change_preset_mode(aresponses):
-    """Test changing BSBLAN preset mode."""
+async def test_change_hvac_mode(aresponses):
+    """Test changing BSBLAN hvac mode."""
 
     async def response_handler(request):
         data = await request.json()
@@ -40,11 +40,11 @@ async def test_change_preset_mode(aresponses):
         return aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=load_fixture("thermostat_preset.json"),
+            text=load_fixture("thermostat_hvac.json"),
         )
 
     aresponses.add("example.com", "/JS", "POST", response_handler)
 
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session)
-        await bsblan.thermostat(preset_mode="comfort")
+        await bsblan.thermostat(hvac_mode="heat")

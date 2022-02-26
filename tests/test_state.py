@@ -41,6 +41,6 @@ async def test_state(aresponses, mocker, monkeypatch):
         # await bsblan._scan(params)
         state: State = await bsblan.state()
         assert state
-        assert state.preset_mode.name == "Operating mode"
-        assert state.preset_mode.value == "comfort"
+        assert state.hvac_mode.name == "Operating mode"
+        assert state.hvac_mode.value == "heat"
         assert state.current_temperature.value == "18.2"
