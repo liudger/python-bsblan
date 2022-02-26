@@ -1,5 +1,4 @@
 """Models for BSB-Lan."""
-
 from pydantic import BaseModel, Field
 
 
@@ -14,16 +13,28 @@ class EntityInfo(BaseModel):
     """
 
     name: str = Field(..., alias="name")
-    value: str = Field(..., alias="value")
     unit: str = Field(..., alias="unit")
     desc: str = Field(..., alias="desc")
+    value: str = Field(..., alias="value")
+    dataType: int = Field(..., alias="dataType")
+
+    # "DataType" (
+    # 0 = plain value (number),
+    # 1 = ENUM (value (8/16 Bit) followed by space followed by text),
+    # 2 = bit value (bit value (decimal) followed by bitmask followed by text/chosen option),
+    # 3 = weekday,
+    # 4 = hour:minute,
+    # 5 = date and time,
+    # 6 = day and month,
+    # 7 = string,
+    # 8 = PPS time (day of week, hour:minute))
 
 
 class State(BaseModel):
     """This object holds info about object for state climate."""
 
-    preset_mode: EntityInfo
-    preset_mode2: EntityInfo
+    hvac_mode: EntityInfo
+    hvac_mode2: EntityInfo
     target_temperature: EntityInfo
     target_temperature_high: EntityInfo
     target_temperature_low: EntityInfo
@@ -42,7 +53,6 @@ class Device(BaseModel):
         name: Name of the device.
         version: Firmware version of the device.
         MAC: MAC address of the device.
-
     """
 
     name: str = Field(..., alias="name")
