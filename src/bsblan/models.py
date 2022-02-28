@@ -21,7 +21,8 @@ class EntityInfo(BaseModel):
     # "DataType" (
     # 0 = plain value (number),
     # 1 = ENUM (value (8/16 Bit) followed by space followed by text),
-    # 2 = bit value (bit value (decimal) followed by bitmask followed by text/chosen option),
+    # 2 = bit value (bit value (decimal)
+    #   followed by bitmask followed by text/chosen option),
     # 3 = weekday,
     # 4 = hour:minute,
     # 5 = date and time,

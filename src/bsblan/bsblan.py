@@ -296,7 +296,7 @@ class BSBLAN:
 
         if hvac_mode is not None:
             if hvac_mode not in HVAC_MODE_DICT_REVERSE:
-                raise BSBLANError("Preset mode is not valid")
+                raise BSBLANError("HVAC mode is not valid")
             state["Parameter"] = "700"
             state["EnumValue"] = HVAC_MODE_DICT_REVERSE[hvac_mode]
             state["Type"] = "1"

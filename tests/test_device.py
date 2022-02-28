@@ -10,7 +10,7 @@ from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_device(aresponses, mocker, monkeypatch):
+async def test_device(aresponses):
     """Test scan params BSBLAN."""
     aresponses.add(
         "example.com",
