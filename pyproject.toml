@@ -109,6 +109,8 @@ max-attributes = 15
 
 [tool.pylint.SIMILARITIES]
 ignore-imports = true
+# Minimum lines number of a similarity.
+min-similarity-lines = 4
 
 [tool.pylint.FORMAT]
 max-line-length=88

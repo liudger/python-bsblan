@@ -140,12 +140,12 @@ repos:
         language: system
         types: [python]
         entry: poetry run pylint
-      # - id: pyright
-      #   name: 🆎 Static type checking using pyright
-      #   language: system
-      #   types: [python]
-      #   entry: npm run pyright
-      #   pass_filenames: false
+      - id: pyright
+        name: 🆎 Static type checking using pyright
+        language: system
+        types: [python]
+        entry: npm run pyright
+        pass_filenames: false
       - id: pytest
         name: 🧪 Running tests and test coverage with pytest
         language: system
