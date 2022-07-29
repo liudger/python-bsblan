@@ -36,8 +36,8 @@ jobs:
             name: Check for broken symlinks
           - id: check-toml
             name: Check TOML files
-          - id: check-xml
-            name: Check XML files
+          # - id: check-xml
+          #   name: Check XML files
           - id: check-yaml
             name: Check YAML files
           - id: codespell
