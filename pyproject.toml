@@ -104,8 +104,16 @@ good-names = [
     "T",
 ]
 
+[tool.pylint."MESSAGES CONTROL"]
+disable= [
+    "too-few-public-methods",
+    "duplicate-code",
+    "format",
+    "unsubscriptable-object",
+]
+
 [tool.pylint.DESIGN]
-max-attributes = 15
+max-attributes = 20
 
 [tool.pylint.SIMILARITIES]
 ignore-imports = true
