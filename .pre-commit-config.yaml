@@ -61,11 +61,6 @@ repos:
         language: system
         types: [toml]
         entry: poetry run check-toml
-      - id: check-xml
-        name: ✅ Check XML files
-        entry: check-xml
-        language: system
-        types: [xml]
       - id: check-yaml
         name: ✅ Check YAML files
         language: system
@@ -132,7 +127,7 @@ repos:
       - id: prettier
         name: 💄 Ensuring files are prettier
         language: system
-        types: [yaml, json, markdown]
+        types: [text]
         entry: npm run prettier
         pass_filenames: false
       - id: pylint
@@ -140,12 +135,12 @@ repos:
         language: system
         types: [python]
         entry: poetry run pylint
-      - id: pyright
-        name: 🆎 Static type checking using pyright
-        language: system
-        types: [python]
-        entry: npm run pyright
-        pass_filenames: false
+      # - id: pyright
+      #   name: 🆎 Static type checking using pyright
+      #   language: system
+      #   types: [python]
+      #   entry: npm run pyright
+      #   pass_filenames: false
       - id: pytest
         name: 🧪 Running tests and test coverage with pytest
         language: system
@@ -157,20 +152,20 @@ repos:
         language: system
         types: [python]
         entry: poetry run pyupgrade
-        args: [--py39-plus, --keep-runtime-typing]
+        args: [--py36-plus]
       - id: trailing-whitespace
         name: ✄  Trim Trailing Whitespace
         language: system
         types: [text]
         entry: poetry run trailing-whitespace-fixer
         stages: [commit, push, manual]
-      # - id: vulture
-      #   name: 🔍 Find unused Python code with Vulture
-      #   language: system
-      #   types: [python]
-      #   entry: poetry run vulture
-      #   pass_filenames: false
-      #   require_serial: true
+      - id: vulture
+        name: 🔍 Find unused Python code with Vulture
+        language: system
+        types: [python]
+        entry: poetry run vulture
+        pass_filenames: false
+        require_serial: true
       - id: yamllint
         name: 🎗  Check YAML files with yamllint
         language: system

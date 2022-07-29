@@ -5,7 +5,7 @@
   "description": "Asynchronous Python client for BSBLAN device",
   "scripts": {
     "pyright": "pyright",
-    "prettier": "prettier --write **/*.{json,md,yml,yaml}"
+    "prettier": "prettier --write **/*.{json,md,yml,yaml} *.{json,md,yaml}"
   },
   "author": "WJL van Rootselaar <liudgervr@gmail.com>",
   "license": "MIT",

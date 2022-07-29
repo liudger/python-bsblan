@@ -323,10 +323,10 @@ class BSBLAN:
 
         return self
 
-    async def __aexit__(self, *exc_info) -> None:
+    async def __aexit__(self, *_exc_info: Any) -> None:
         """Async exit.
 
         Args:
-            *exc_info: Exec type.
+            *_exc_info: Exec type.
         """
         await self.close()
