@@ -22,7 +22,7 @@ async def test_info(aresponses, mocker, monkeypatch):
             headers={"Content-Type": "application/json"},
             text=load_fixture("info.json"),
         ),
-    )  # noqa R0801
+    )  # disable=duplicate-code
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session)
 
