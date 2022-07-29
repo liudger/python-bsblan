@@ -118,6 +118,8 @@ max-line-length=88
 [tool.pytest.ini_options]
 addopts = "--cov"
 
+[tool.pyright]
+
 [tool.vulture]
 min_confidence = 80
 paths = ["src", "tests"]
