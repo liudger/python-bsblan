@@ -33,7 +33,7 @@ packaging = "^21.3"
 
 [tool.poetry.dev-dependencies]
 aresponses = "^2.1.6"
-black = "^22.8.0"
+black = "^22.10.0"
 blacken-docs = "^1.12.1"
 coverage = "^6.5.0"
 flake8 = "^4.0.1"
