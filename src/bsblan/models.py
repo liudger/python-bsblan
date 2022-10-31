@@ -47,6 +47,13 @@ class State(BaseModel):
     outside_temperature: EntityInfo
 
 
+class Sensor(BaseModel):
+    """This object holds info about object for sensor climate."""
+
+    current_temperature: EntityInfo
+    outside_temperature: EntityInfo
+
+
 class Device(BaseModel):
     """This object holds bsblan device information.
 

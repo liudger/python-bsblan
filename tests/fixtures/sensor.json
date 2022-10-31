@@ -1,0 +1,20 @@
+{
+  "8700": {
+    "name": "Outside temp sensor local",
+    "error": 0,
+    "value": "7.6",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 0,
+    "unit": "&deg;C"
+  },
+  "8740": {
+    "name": "Room temp 1 actual value",
+    "error": 0,
+    "value": "18.2",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  }
+}
