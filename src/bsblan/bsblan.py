@@ -23,9 +23,11 @@ from .constants import (
     HEATING_CIRCUIT1_API_V2,
     HVAC_MODE_DICT,
     HVAC_MODE_DICT_REVERSE,
+    SENSORS_API_V1,
+    SENSORS_API_V2,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
-from .models import Device, Info, State
+from .models import Device, Info, State, Sensor
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -42,7 +44,9 @@ class BSBLAN:
     request_timeout: int = 8
     session: ClientSession | None = None
     _version: str = ""
-    _heatingcircuit1: str | None = None
+    _heating_circuit1: str | None = None
+    _sensor_params: list[str] | None = None
+    _sensor_list: str | None = None
     _heating_params: list[str] | None = None
     _info: str | None = None
     _device_params: list = field(default_factory=list)
@@ -178,20 +182,40 @@ class BSBLAN:
         Returns:
             A BSBLAN state object.
         """
-        if not self._heatingcircuit1 or not self._heating_params:
+        if not self._heating_circuit1 or not self._heating_params:
             data = await self._get_dict_version()
             logger.debug("data: %s", data)
             data = await self._get_parameters(data["heating"])
-            self._heatingcircuit1 = str(data["string_par"])
+            self._heating_circuit1 = str(data["string_par"])
             self._heating_params = list(data["list"])
 
         # retrieve heating circuit 1 and heating params so we can build the
         # data structure (its circuit 1 because it can support 2 circuits)
         logger.debug("get state")
-        data = await self._request(params={"Parameter": f"{self._heatingcircuit1}"})
+        data = await self._request(params={"Parameter": f"{self._heating_circuit1}"})
         data = dict(zip(self._heating_params, list(data.values())))
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
         return State.parse_obj(data)
+
+    async def sensor(self) -> Sensor:
+        """Get the sensor information from BSBLAN device.
+
+        Returns:
+            A BSBLAN sensor object.
+        """
+        if not self._sensor_params:
+            data = await self._get_dict_version()
+            logger.debug("data: %s", data)
+            data = await self._get_parameters(data["sensor"])
+            logger.debug("data: %s", data)
+            self._sensor_list = str(data["string_par"])
+            self._sensor_params = list(data["list"])
+
+        # retrieve sensor params so we can build the data structure
+        logger.debug("get sensor data")
+        data = await self._request(params={"Parameter": f"{self._sensor_list}"})
+        data = dict(zip(self._sensor_params, list(data.values())))
+        return Sensor.parse_obj(data)
 
     async def _get_dict_version(self) -> dict:
         """Get the version from device.
@@ -205,13 +229,21 @@ class BSBLAN:
             self._version = device.version
             logger.debug("BSBLAN version: %s", self._version)
         if pkg_version.parse(self._version) < pkg_version.parse("1.2.0"):
-            return {"heating": HEATING_CIRCUIT1_API_V1, "device": DEVICE_INFO_API_V1}
+            return {
+                "heating": HEATING_CIRCUIT1_API_V1,
+                "device": DEVICE_INFO_API_V1,
+                "sensor": SENSORS_API_V1,
+            }
         if (
             pkg_version.parse("3.0.0")
             > pkg_version.parse(self._version)  # noqa: W503
             >= pkg_version.parse("2.0.0")  # noqa: W503
         ):
-            return {"heating": HEATING_CIRCUIT1_API_V2, "device": DEVICE_INFO_API_V2}
+            return {
+                "heating": HEATING_CIRCUIT1_API_V2,
+                "device": DEVICE_INFO_API_V2,
+                "sensor": SENSORS_API_V2,
+            }
         return {}
 
     async def device(self) -> Device:

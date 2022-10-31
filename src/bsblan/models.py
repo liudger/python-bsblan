@@ -44,6 +44,13 @@ class State(BaseModel):
     hvac_action: EntityInfo
     current_temperature: EntityInfo
     room1_thermostat_mode: EntityInfo
+    # outside_temperature: EntityInfo
+
+
+class Sensor(BaseModel):
+    """This object holds info about object for sensor climate."""
+
+    # current_temperature: EntityInfo
     outside_temperature: EntityInfo
 
 

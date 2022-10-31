@@ -5,11 +5,13 @@ DEVICE_INFO_API_V1 = {
     "6225": "controller_family",
     "6226": "controller_variant",
 }
+
 DEVICE_INFO_API_V2 = {
     "6224": "device_identification",
     "6225": "controller_family",
     "6226": "controller_variant",
 }
+
 # dict of parameter needed for climate device.
 # need to update values and request less?
 HEATING_CIRCUIT1_API_V1 = {
@@ -21,10 +23,11 @@ HEATING_CIRCUIT1_API_V1 = {
     "730": "max_temp",
     "900": "hvac_mode2",
     "8000": "hvac_action",
-    "8700": "outside_temperature",
+    # "8700": "outside_temperature",
     "8740": "current_temperature",
     "8749": "room1_thermostat_mode",
 }
+
 HEATING_CIRCUIT1_API_V2 = {
     "700": "hvac_mode",
     "710": "target_temperature",
@@ -38,6 +41,15 @@ HEATING_CIRCUIT1_API_V2 = {
     "8740": "current_temperature room1",
     "8749": "room1_thermostat_mode",
 }
+
+SENSORS_API_V1 = {
+    "8700": "outside_temperature",
+    # "8740": "current_temperature",
+}
+SENSORS_API_V2 = {
+    # get sensor values
+}
+
 HEATING_CIRCUIT2 = [
     "1000",
     "1010",
@@ -49,6 +61,7 @@ HEATING_CIRCUIT2 = [
     "8001",  # status_heating_circuit2
     "8770",
 ]
+
 # homeassistant values
 HVAC_MODE_DICT = {
     0: "off",
@@ -56,6 +69,7 @@ HVAC_MODE_DICT = {
     2: "eco",  # presetmode?
     3: "heat",
 }
+
 HVAC_MODE_DICT_REVERSE = {
     "off": 0,
     "auto": 1,

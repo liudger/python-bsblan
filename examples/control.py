@@ -3,7 +3,7 @@
 
 import asyncio
 
-from bsblan import BSBLAN, Device, Info, State
+from bsblan import BSBLAN, Device, Info, State, Sensor
 
 
 async def main():
@@ -31,6 +31,10 @@ async def main():
         await bsblan.thermostat(target_temperature="18.5")
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_mode="heat")
+
+        # get sensor from bsblan device
+        sensor: Sensor = await bsblan.sensor()
+        print(f"outside temperature: {sensor.outside_temperature.value}")
 
         # get some generic info from the heater
         device: Device = await bsblan.device()
