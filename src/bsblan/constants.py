@@ -23,7 +23,7 @@ HEATING_CIRCUIT1_API_V1 = {
     "730": "max_temp",
     "900": "hvac_mode2",
     "8000": "hvac_action",
-    # "8700": "outside_temperature",
+    "8700": "outside_temperature",
     "8740": "current_temperature",
     "8749": "room1_thermostat_mode",
 }
@@ -44,7 +44,7 @@ HEATING_CIRCUIT1_API_V2 = {
 
 SENSORS_API_V1 = {
     "8700": "outside_temperature",
-    # "8740": "current_temperature",
+    "8740": "current_temperature",
 }
 SENSORS_API_V2 = {
     # get sensor values
