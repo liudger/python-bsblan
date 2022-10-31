@@ -27,7 +27,7 @@ from .constants import (
     SENSORS_API_V2,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
-from .models import Device, Info, State, Sensor
+from .models import Device, Info, Sensor, State
 
 logging.basicConfig(level=logging.DEBUG)
 

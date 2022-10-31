@@ -3,7 +3,7 @@
 
 import asyncio
 
-from bsblan import BSBLAN, Device, Info, State, Sensor
+from bsblan import BSBLAN, Device, Info, Sensor, State
 
 
 async def main():
