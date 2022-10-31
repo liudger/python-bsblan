@@ -22,7 +22,7 @@ async def test_sensor(aresponses, mocker, monkeypatch):
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=load_fixture("state.json"),
+            text=load_fixture("sensor.json"),
         ),
     )  # noqa R0801
     async with aiohttp.ClientSession() as session:

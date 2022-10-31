@@ -48,6 +48,7 @@ SENSORS_API_V1 = {
 }
 SENSORS_API_V2 = {
     # get sensor values
+    "8700": "outside_temperature",
 }
 
 HEATING_CIRCUIT2 = [
