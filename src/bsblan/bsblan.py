@@ -18,13 +18,13 @@ from yarl import URL
 
 from .constants import (
     DEVICE_INFO_API_V1,
-    DEVICE_INFO_API_V2,
+    DEVICE_INFO_API_V3,
     HEATING_CIRCUIT1_API_V1,
-    HEATING_CIRCUIT1_API_V2,
+    HEATING_CIRCUIT1_API_V3,
     HVAC_MODE_DICT,
     HVAC_MODE_DICT_REVERSE,
     SENSORS_API_V1,
-    SENSORS_API_V2,
+    SENSORS_API_V3,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
 from .models import Device, Info, Sensor, State
@@ -142,8 +142,8 @@ class BSBLAN:
 
         return await response.json()
 
-    async def _scan(self, parameters: list) -> str:
-        """Scan for parameters that return a value.
+    async def _scan(self, parameters: list) -> list:
+        """Scan for parameters that return a value collect and return as list.
 
         Args:
             parameters: List of parameters to scan.
@@ -169,12 +169,21 @@ class BSBLAN:
             data.pop(i)
 
         # join parameters to create one string
-        parameters = []
-        for i in data.keys():
-            parameters.append(i)
-        _parameters = ",".join(map(str, parameters))
+        parametersOut = []
+        # The scan removes .0 from the end of the parameter.
+        # TODO: Find a better way to handle this. as there could be a .1 or other value.
 
-        return _parameters
+        if pkg_version.parse(self._version) > pkg_version.parse("3.0.0"):  # noqa: W503
+            # logger.debug("scan data: %s", data)
+            # logger.debug("input parameters: %s", parameters)
+            # temp solution to add .0 to the end of the parameter
+            for key in data.keys():
+                parametersOut.append(key + ".0")
+        else:
+            for i in data.keys():
+                parametersOut.append(i)
+
+        return parametersOut
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
@@ -184,7 +193,6 @@ class BSBLAN:
         """
         if not self._heating_circuit1 or not self._heating_params:
             data = await self._get_dict_version()
-            logger.debug("data: %s", data)
             data = await self._get_parameters(data["heating"])
             self._heating_circuit1 = str(data["string_par"])
             self._heating_params = list(data["list"])
@@ -193,7 +201,20 @@ class BSBLAN:
         # data structure (its circuit 1 because it can support 2 circuits)
         logger.debug("get state")
         data = await self._request(params={"Parameter": f"{self._heating_circuit1}"})
+        logger.debug("length of data: %s", len(data))
+        if (len(self._heating_params) == len(data)) is False:
+            raise BSBLANError("Missing data from BSBLAN device")
+
         data = dict(zip(self._heating_params, list(data.values())))
+
+        # check if we have data
+        if not data:
+            raise BSBLANError("No data returned from BSBLAN device.")
+        # check if we have hvac_mode value
+
+        if not data.get("hvac_mode"):
+            raise BSBLANError("No hvac_mode returned from BSBLAN device.")
+
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
         return State.parse_obj(data)
 
@@ -205,9 +226,7 @@ class BSBLAN:
         """
         if not self._sensor_params:
             data = await self._get_dict_version()
-            logger.debug("data: %s", data)
             data = await self._get_parameters(data["sensor"])
-            logger.debug("data: %s", data)
             self._sensor_list = str(data["string_par"])
             self._sensor_params = list(data["list"])
 
@@ -234,15 +253,11 @@ class BSBLAN:
                 "device": DEVICE_INFO_API_V1,
                 "sensor": SENSORS_API_V1,
             }
-        if (
-            pkg_version.parse("3.0.0")
-            > pkg_version.parse(self._version)  # noqa: W503
-            >= pkg_version.parse("2.0.0")  # noqa: W503
-        ):
+        if pkg_version.parse(self._version) > pkg_version.parse("3.0.0"):  # noqa: W503
             return {
-                "heating": HEATING_CIRCUIT1_API_V2,
-                "device": DEVICE_INFO_API_V2,
-                "sensor": SENSORS_API_V2,
+                "heating": HEATING_CIRCUIT1_API_V3,
+                "device": DEVICE_INFO_API_V3,
+                "sensor": SENSORS_API_V3,
             }
         return {}
 
@@ -283,8 +298,15 @@ class BSBLAN:
         """
         list_params = [*params]
         parameters = await self._scan(list_params)
-        logger.debug("parameters from scan: %s", parameters)
+        # remove from param dict the parameters that are missing
+        for i in list_params:
+            if i not in parameters:
+                params.pop(i)
         object_parameters = list(params.values())
+        # logger.debug("parameters: %s", parameters)
+        # logger.debug("object_parameters: %s", object_parameters)
+        # convert parameters to string
+        parameters = ",".join(map(str, parameters))
 
         return {"string_par": parameters, "list": object_parameters}
 
