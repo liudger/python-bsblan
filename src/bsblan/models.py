@@ -70,7 +70,7 @@ class Device(BaseModel):
 
 
 class Info(BaseModel):
-    """Object holding the heatingsystem info.
+    """Object holding the heatingSystem info.
 
     Attributes:
         name: Name of the sub-device.
