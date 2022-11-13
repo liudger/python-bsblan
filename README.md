@@ -61,10 +61,18 @@ async def main(loop):
         info: Info = await bsblan.info()
         print(info)
 
+        # get device info
+        device: Device = await bsblan.device()
+        print(device)
+
+        # get sensor from bsblan device
+        sensor: Sensor = await bsblan.sensor()
+        print(f"outside temperature: {sensor.outside_temperature.value}")
+
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(loop))
+    loop = asyncio.get_event_loop_policy().get_event_loop()
+    loop.run_until_complete(main())
 ```
 
 ## Changelog & Releases
