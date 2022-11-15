@@ -17,13 +17,8 @@ DEVICE_INFO_API_V3 = {
 HEATING_CIRCUIT1_API_V1 = {
     "700": "hvac_mode",
     "710": "target_temperature",
-    "711": "target_temperature_high",
-    "712": "target_temperature_low",
-    "714": "min_temp",
-    "730": "max_temp",
     "900": "hvac_mode2",
     "8000": "hvac_action",
-    "8700": "outside_temperature",
     "8740": "current_temperature",
     "8749": "room1_thermostat_mode",
 }
@@ -31,15 +26,20 @@ HEATING_CIRCUIT1_API_V1 = {
 HEATING_CIRCUIT1_API_V3 = {
     "700.0": "hvac_mode",
     "710.0": "target_temperature",
-    "711.0": "target_temperature_high",
-    "712.0": "target_temperature_low",
-    "714.0": "min_temp",
-    "730.0": "max_temp",
     "900.0": "hvac_mode2",
     "8000.0": "hvac_action",
-    "8700.0": "outside_temperature",
-    "8740.0": "current_temperature room1",
+    "8740.0": "current_temperature",
     "8749.0": "room1_thermostat_mode",
+}
+
+STATIC_VALUES_API_V1 = {
+    "714": "min_temp",
+    "730": "max_temp",
+}
+
+STATIC_VALUES_API_V3 = {
+    "714.0": "min_temp",
+    "730.0": "max_temp",
 }
 
 SENSORS_API_V1 = {

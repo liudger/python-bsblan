@@ -25,9 +25,11 @@ from .constants import (
     HVAC_MODE_DICT_REVERSE,
     SENSORS_API_V1,
     SENSORS_API_V3,
+    STATIC_VALUES_API_V1,
+    STATIC_VALUES_API_V3,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
-from .models import Device, Info, Sensor, State
+from .models import Device, Info, Sensor, State, StaticState
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -48,6 +50,8 @@ class BSBLAN:
     _sensor_params: list[str] | None = None
     _sensor_list: str | None = None
     _heating_params: list[str] | None = None
+    _static_params: list[str] | None = None
+    _static_list: str | None = None
     _info: str | None = None
     _device_params: list = field(default_factory=list)
     _auth: BasicAuth | None = None
@@ -140,7 +144,14 @@ class BSBLAN:
                 {"Content-Type": content_type, "response": text},
             )
 
-        return await response.json()
+        try:
+            response_json = await response.json()
+        except response.json.JSONDecodeError as exception:
+            raise BSBLANError(
+                "Error decoding JSON response from BSBLAN device."
+            ) from exception
+
+        return response_json
 
     async def _scan(self, parameters: list) -> list:
         """Scan for parameters that return a value collect and return as list.
@@ -167,23 +178,11 @@ class BSBLAN:
         # remove parameters with no returning value
         for i in not_valid_data or not_valid_data2:
             data.pop(i)
+            parameters.remove(i)
+        if len(data) != len(parameters):
+            logger.debug("filtering parameters did not work")
 
-        # join parameters to create one string
-        parametersOut = []
-        # The scan removes .0 from the end of the parameter.
-        # TODO: Find a better way to handle this. as there could be a .1 or other value.
-
-        if pkg_version.parse(self._version) > pkg_version.parse("3.0.0"):  # noqa: W503
-            # logger.debug("scan data: %s", data)
-            # logger.debug("input parameters: %s", parameters)
-            # temp solution to add .0 to the end of the parameter
-            for key in data.keys():
-                parametersOut.append(key + ".0")
-        else:
-            for i in data.keys():
-                parametersOut.append(i)
-
-        return parametersOut
+        return parameters
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
@@ -201,21 +200,11 @@ class BSBLAN:
         # data structure (its circuit 1 because it can support 2 circuits)
         logger.debug("get state")
         data = await self._request(params={"Parameter": f"{self._heating_circuit1}"})
-        logger.debug("length of data: %s", len(data))
-        if (len(self._heating_params) == len(data)) is False:
-            raise BSBLANError("Missing data from BSBLAN device")
-
         data = dict(zip(self._heating_params, list(data.values())))
 
-        # check if we have data
-        if not data:
-            raise BSBLANError("No data returned from BSBLAN device.")
-        # check if we have hvac_mode value
-
-        if not data.get("hvac_mode"):
-            raise BSBLANError("No hvac_mode returned from BSBLAN device.")
-
+        # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
+
         return State.parse_obj(data)
 
     async def sensor(self) -> Sensor:
@@ -236,6 +225,24 @@ class BSBLAN:
         data = dict(zip(self._sensor_params, list(data.values())))
         return Sensor.parse_obj(data)
 
+    async def static_values(self) -> StaticState:
+        """Get the static information from BSBLAN device.
+
+        Returns:
+            A BSBLAN staticState object.
+        """
+        if not self._static_params:
+            data = await self._get_dict_version()
+            data = await self._get_parameters(data["staticValues"])
+            self._static_list = str(data["string_par"])
+            self._static_params = list(data["list"])
+
+        # retrieve sensor params so we can build the data structure
+        logger.debug("get static data")
+        data = await self._request(params={"Parameter": f"{self._static_list}"})
+        data = dict(zip(self._static_params, list(data.values())))
+        return StaticState.parse_obj(data)
+
     async def _get_dict_version(self) -> dict:
         """Get the version from device.
 
@@ -250,12 +257,14 @@ class BSBLAN:
         if pkg_version.parse(self._version) < pkg_version.parse("1.2.0"):
             return {
                 "heating": HEATING_CIRCUIT1_API_V1,
+                "staticValues": STATIC_VALUES_API_V1,
                 "device": DEVICE_INFO_API_V1,
                 "sensor": SENSORS_API_V1,
             }
-        if pkg_version.parse(self._version) > pkg_version.parse("3.0.0"):  # noqa: W503
+        if pkg_version.parse(self._version) > pkg_version.parse("3.0.0"):
             return {
                 "heating": HEATING_CIRCUIT1_API_V3,
+                "staticValues": STATIC_VALUES_API_V3,
                 "device": DEVICE_INFO_API_V3,
                 "sensor": SENSORS_API_V3,
             }
@@ -303,12 +312,10 @@ class BSBLAN:
             if i not in parameters:
                 params.pop(i)
         object_parameters = list(params.values())
-        # logger.debug("parameters: %s", parameters)
-        # logger.debug("object_parameters: %s", object_parameters)
         # convert parameters to string
-        parameters = ",".join(map(str, parameters))
+        string_params = ",".join(map(str, parameters))
 
-        return {"string_par": parameters, "list": object_parameters}
+        return {"string_par": string_params, "list": object_parameters}
 
     async def thermostat(
         self,
@@ -340,7 +347,13 @@ class BSBLAN:
         state: ThermostatState = {}
 
         if target_temperature is not None:
-            if not 7 <= float(target_temperature) <= 40:
+            # get static state values
+            static_state = await self.static_values()
+            if not (
+                float(static_state.min_temp.value)
+                <= float(target_temperature)
+                <= float(static_state.max_temp.value)
+            ):
                 raise BSBLANError(
                     "Target temperature is not valid, must be between 7 and 40"
                 )
@@ -361,7 +374,7 @@ class BSBLAN:
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
         response = await self._request(base_path="/JS", data=dict(state))
-        logger.debug("response: %s", response)
+        logger.debug("response for setting: %s", response)
 
     async def close(self) -> None:
         """Close open client session."""
