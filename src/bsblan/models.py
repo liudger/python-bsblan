@@ -35,16 +35,18 @@ class State(BaseModel):
     """This object holds info about object for state climate."""
 
     hvac_mode: EntityInfo
-    hvac_mode2: EntityInfo
+    hvac_mode2: EntityInfo | None = None
     target_temperature: EntityInfo
-    target_temperature_high: EntityInfo
-    target_temperature_low: EntityInfo
-    min_temp: EntityInfo
-    max_temp: EntityInfo
     hvac_action: EntityInfo
     current_temperature: EntityInfo
     room1_thermostat_mode: EntityInfo
-    outside_temperature: EntityInfo
+
+
+class StaticState(BaseModel):
+    """Class for entities that are not changing"""
+
+    min_temp: EntityInfo
+    max_temp: EntityInfo
 
 
 class Sensor(BaseModel):
