@@ -1,7 +1,7 @@
 """Asynchronous Python client for BSBLAN."""
 
 from .bsblan import BSBLAN, BSBLANConnectionError, BSBLANError
-from .models import Device, Info, Sensor, State
+from .models import Device, Info, Sensor, State, StaticState
 
 __all__ = [
     "BSBLAN",
@@ -11,4 +11,5 @@ __all__ = [
     "State",
     "Device",
     "Sensor",
+    "StaticState",
 ]
