@@ -12,8 +12,6 @@ DEVICE_INFO_API_V3 = {
     "6226.0": "controller_variant",
 }
 
-# dict of parameter needed for climate device.
-# need to update values and request less?
 HEATING_CIRCUIT1_API_V1 = {
     "700": "hvac_mode",
     "710": "target_temperature",
@@ -47,7 +45,6 @@ SENSORS_API_V1 = {
     "8740": "current_temperature",
 }
 SENSORS_API_V3 = {
-    # get sensor values
     "8700.0": "outside_temperature",
     "8740.0": "current_temperature",
 }
@@ -68,7 +65,7 @@ HEATING_CIRCUIT2 = [
 HVAC_MODE_DICT = {
     0: "off",
     1: "auto",
-    2: "eco",  # presetmode?
+    2: "eco",
     3: "heat",
 }
 

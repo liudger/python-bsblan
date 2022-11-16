@@ -35,7 +35,7 @@ class State(BaseModel):
     """This object holds info about object for state climate."""
 
     hvac_mode: EntityInfo
-    hvac_mode2: EntityInfo | None = None
+    hvac_mode2: EntityInfo
     target_temperature: EntityInfo
     hvac_action: EntityInfo
     current_temperature: EntityInfo

@@ -29,12 +29,18 @@ async def test_info(aresponses, mocker, monkeypatch):
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
         future = asyncio.Future()
-        future.set_result("6224,6225,6226")
-        mocker.patch(
-            # need to patch _scan
-            "bsblan.BSBLAN._scan",
-            return_value=future,
-        )
+        future.set_result([6224, 6225, 6226])
+        # patch _scan
+        mocker.patch("bsblan.BSBLAN._scan", return_value=future)
+
+        # future2 = asyncio.Future()
+        # future2.set_result((load_fixture("dict_version.json")))
+        # mocker.patch("bsblan.BSBLAN._get_dict_version", return_value=future2)
+
+        # future3 = asyncio.Future()
+        # future3.set_result(({"string_par": "6224,6225,6226", "list": ["device_identification", "controller_family", "controller_variant"]}))
+        # mocker.patch("bsblan.BSBLAN._get_parameters", return_value=future3)
+
 
         info: Info = await bsblan.info()
         assert info

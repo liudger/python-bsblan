@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import socket
 from asyncio.log import logger
@@ -46,14 +47,14 @@ class BSBLAN:
     request_timeout: int = 8
     session: ClientSession | None = None
     _version: str = ""
+    _heating_params: list[str] | None = None
     _heating_circuit1: str | None = None
     _sensor_params: list[str] | None = None
     _sensor_list: str | None = None
-    _heating_params: list[str] | None = None
     _static_params: list[str] | None = None
     _static_list: str | None = None
-    _info: str | None = None
     _device_params: list = field(default_factory=list)
+    _info: str | None = None
     _auth: BasicAuth | None = None
     _close_session: bool = False
 
@@ -146,7 +147,7 @@ class BSBLAN:
 
         try:
             response_json = await response.json()
-        except response.json.JSONDecodeError as exception:
+        except json.JSONDecodeError as exception:
             raise BSBLANError(
                 "Error decoding JSON response from BSBLAN device."
             ) from exception
@@ -177,10 +178,7 @@ class BSBLAN:
 
         # remove parameters with no returning value
         for i in not_valid_data or not_valid_data2:
-            data.pop(i)
-            parameters.remove(i)
-        if len(data) != len(parameters):
-            logger.debug("filtering parameters did not work")
+            logger.debug("Parameter had no data %s", i)
 
         return parameters
 
@@ -294,6 +292,7 @@ class BSBLAN:
 
         data = await self._request(params={"Parameter": f"{self._info}"})
         data = dict(zip(self._device_params, list(data.values())))
+        logger.debug("data_info: %s", data)
         return Info.parse_obj(data)
 
     async def _get_parameters(self, params: dict) -> dict:
@@ -314,6 +313,7 @@ class BSBLAN:
         object_parameters = list(params.values())
         # convert parameters to string
         string_params = ",".join(map(str, parameters))
+        logger.debug("string_params: %s", string_params)
 
         return {"string_par": string_params, "list": object_parameters}
 

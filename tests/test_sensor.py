@@ -24,14 +24,14 @@ async def test_sensor(aresponses, mocker, monkeypatch):
             headers={"Content-Type": "application/json"},
             text=load_fixture("sensor.json"),
         ),
-    )  # noqa R0801
+    )
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(host="example.com", session=session)
 
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
         future = asyncio.Future()
-        future.set_result("8700,8740")
+        future.set_result([8700, 8740])
         mocker.patch(
             # need to patch _scan
             "bsblan.BSBLAN._scan",

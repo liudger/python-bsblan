@@ -24,7 +24,7 @@ async def test_state(aresponses, mocker, monkeypatch):
             headers={"Content-Type": "application/json"},
             text=load_fixture("state.json"),
         ),
-    )  # noqa R0801
+    )
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(host="example.com", session=session)
 

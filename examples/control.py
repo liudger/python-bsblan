@@ -48,9 +48,9 @@ async def main():
         print(f"device: {info.device_identification.dict()}")
         print(f"name: {info.device_identification.value}")
 
-        staticState: StaticState = await bsblan.static_values()
-        print(f"min temp: {staticState.min_temp.value}")
-        print(f"max temp: {staticState.max_temp.value}")
+        static_state: StaticState = await bsblan.static_values()
+        print(f"min temp: {static_state.min_temp.value}")
+        print(f"max temp: {static_state.max_temp.value}")
 
 
 if __name__ == "__main__":
