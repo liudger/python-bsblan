@@ -146,12 +146,6 @@ class BSBLAN:
                 "Unexpected response from the BSBLAN device",
                 {"Content-Type": content_type, "response": text},
             )
-        try:
-            await response.json()
-        except json.JSONDecodeError as exception:
-            raise BSBLANError(
-                "Error decoding JSON response from BSBLAN device."
-            ) from exception
 
         return await response.json()
 
