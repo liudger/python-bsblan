@@ -4,6 +4,7 @@
 import asyncio
 
 from bsblan import BSBLAN, Device, Info, Sensor, State
+from bsblan.models import StaticState
 
 
 async def main():
@@ -28,6 +29,7 @@ async def main():
         print(f"current temperature: {state.current_temperature.value}")
 
         # set temp thermostat
+        print("Setting temperature to 18.5")
         await bsblan.thermostat(target_temperature="18.5")
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_mode="heat")
@@ -44,9 +46,13 @@ async def main():
 
         info: Info = await bsblan.info()
         print(f"device: {info.device_identification.dict()}")
-        print(f"name: {info.device_identification.name}")
+        print(f"name: {info.device_identification.value}")
+
+        static_state: StaticState = await bsblan.static_values()
+        print(f"min temp: {static_state.min_temp.value}")
+        print(f"max temp: {static_state.max_temp.value}")
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop_policy().get_event_loop()
     loop.run_until_complete(main())

@@ -1,0 +1,23 @@
+{
+  "heating": {
+    "700": "hvac_mode",
+    "710": "target_temperature",
+    "900": "hvac_mode2",
+    "8000": "hvac_action",
+    "8740": "current_temperature",
+    "8749": "room1_thermostat_mode"
+  },
+  "staticValues": {
+    "714": "min_temp",
+    "730": "max_temp"
+  },
+  "device": {
+    "6224": "device_identification",
+    "6225": "controller_family",
+    "6226": "controller_variant"
+  },
+  "sensor": {
+    "8700": "outside_temperature",
+    "8740": "current_temperature"
+  }
+}

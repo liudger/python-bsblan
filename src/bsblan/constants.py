@@ -6,49 +6,47 @@ DEVICE_INFO_API_V1 = {
     "6226": "controller_variant",
 }
 
-DEVICE_INFO_API_V2 = {
-    "6224": "device_identification",
-    "6225": "controller_family",
-    "6226": "controller_variant",
+DEVICE_INFO_API_V3 = {
+    "6224.0": "device_identification",
+    "6225.0": "controller_family",
+    "6226.0": "controller_variant",
 }
 
-# dict of parameter needed for climate device.
-# need to update values and request less?
 HEATING_CIRCUIT1_API_V1 = {
     "700": "hvac_mode",
     "710": "target_temperature",
-    "711": "target_temperature_high",
-    "712": "target_temperature_low",
-    "714": "min_temp",
-    "730": "max_temp",
     "900": "hvac_mode2",
     "8000": "hvac_action",
-    "8700": "outside_temperature",
     "8740": "current_temperature",
     "8749": "room1_thermostat_mode",
 }
 
-HEATING_CIRCUIT1_API_V2 = {
-    "700": "hvac_mode",
-    "710": "target_temperature",
-    "711": "target_temperature_high",
-    "712": "target_temperature_low",
+HEATING_CIRCUIT1_API_V3 = {
+    "700.0": "hvac_mode",
+    "710.0": "target_temperature",
+    "900.0": "hvac_mode2",
+    "8000.0": "hvac_action",
+    "8740.0": "current_temperature",
+    "8749.0": "room1_thermostat_mode",
+}
+
+STATIC_VALUES_API_V1 = {
     "714": "min_temp",
     "730": "max_temp",
-    "900": "hvac_mode2",
-    "8000": "hvac_action",
-    "8700": "outside_temperature",
-    "8740": "current_temperature room1",
-    "8749": "room1_thermostat_mode",
+}
+
+STATIC_VALUES_API_V3 = {
+    "714.0": "min_temp",
+    "730.0": "max_temp",
 }
 
 SENSORS_API_V1 = {
     "8700": "outside_temperature",
     "8740": "current_temperature",
 }
-SENSORS_API_V2 = {
-    # get sensor values
-    "8700": "outside_temperature",
+SENSORS_API_V3 = {
+    "8700.0": "outside_temperature",
+    "8740.0": "current_temperature",
 }
 
 HEATING_CIRCUIT2 = [
@@ -67,7 +65,7 @@ HEATING_CIRCUIT2 = [
 HVAC_MODE_DICT = {
     0: "off",
     1: "auto",
-    2: "eco",  # presetmode?
+    2: "eco",
     3: "heat",
 }
 

@@ -6,13 +6,13 @@
 import aiohttp
 import pytest
 
-from bsblan import BSBLAN, State
+from bsblan import BSBLAN, StaticState
 
 from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_state(aresponses, monkeypatch):
+async def test_sensor(aresponses, monkeypatch):
     """Test getting BSBLAN state."""
     aresponses.add(
         "example.com",
@@ -21,7 +21,7 @@ async def test_state(aresponses, monkeypatch):
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=load_fixture("state.json"),
+            text=load_fixture("static_state.json"),
         ),
     )
     async with aiohttp.ClientSession() as session:
@@ -29,8 +29,9 @@ async def test_state(aresponses, monkeypatch):
 
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
-        state: State = await bsblan.state()
-        assert state
-        assert state.hvac_mode.name == "Operating mode"
-        assert state.hvac_mode.value == "heat"
-        assert state.current_temperature.value == "18.4"
+        static: StaticState = await bsblan.static_values()
+        assert static
+        assert static.min_temp.value == "8.0"
+        assert static.max_temp.value == "20.0"
+        assert bsblan._min_temp == "8.0"
+        assert bsblan._max_temp == "20.0"
