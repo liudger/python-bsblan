@@ -1,56 +1,76 @@
 {
   "700": {
     "name": "Operating mode",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
     "error": 0,
     "value": "3",
-    "desc": "Komfort",
+    "desc": "Comfort",
     "dataType": 1,
     "readonly": 0,
+    "readwrite": 0,
     "unit": ""
   },
   "710": {
-    "name": "Room temperature Comfort setpoint",
+    "name": "Comfort setpoint ",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
     "error": 0,
     "value": "18.5",
     "desc": "",
+    "precision": 0.1,
     "dataType": 0,
     "readonly": 0,
-    "unit": "&deg;C"
+    "readwrite": 0,
+    "unit": "°C"
   },
   "900": {
-    "name": "Operating mode",
+    "name": "Operating mode changeover",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
     "error": 0,
     "value": "2",
-    "desc": "Reduziert",
+    "desc": "Reduced",
     "dataType": 1,
     "readonly": 0,
+    "readwrite": 0,
     "unit": ""
   },
   "8000": {
     "name": "Status heating circuit 1",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
     "error": 0,
     "value": "114",
-    "desc": "Heizbetrieb Komfort",
+    "desc": "Heating mode Comfort",
     "dataType": 1,
     "readonly": 1,
+    "readwrite": 1,
     "unit": ""
   },
   "8740": {
-    "name": "Room temp 1 actual value",
+    "name": "Room temperature actual value 1",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
     "error": 0,
-    "value": "18.2",
+    "value": "18.4",
     "desc": "",
+    "precision": 0.1,
     "dataType": 0,
     "readonly": 1,
-    "unit": "&deg;C"
+    "readwrite": 1,
+    "unit": "°C"
   },
   "8749": {
-    "name": "Raumthermostat 1",
+    "name": "Room thermostat heating circuit 1",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
     "error": 0,
     "value": "0",
-    "desc": "Kein Bedarf",
+    "desc": "No demand",
     "dataType": 1,
     "readonly": 1,
+    "readwrite": 1,
     "unit": ""
   }
 }

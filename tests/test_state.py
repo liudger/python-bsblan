@@ -2,7 +2,6 @@
 # pylint: disable=duplicate-code
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
-import asyncio
 
 import aiohttp
 import pytest
@@ -13,7 +12,7 @@ from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_state(aresponses, mocker, monkeypatch):
+async def test_state(aresponses, monkeypatch):
     """Test getting BSBLAN state."""
     aresponses.add(
         "example.com",

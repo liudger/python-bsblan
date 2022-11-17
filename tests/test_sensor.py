@@ -2,7 +2,6 @@
 # pylint: disable=duplicate-code
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
-import asyncio
 
 import aiohttp
 import pytest

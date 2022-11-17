@@ -146,6 +146,12 @@ class BSBLAN:
                 "Unexpected response from the BSBLAN device",
                 {"Content-Type": content_type, "response": text},
             )
+        try:
+            await response.json()
+        except json.JSONDecodeError as exception:
+            raise BSBLANError(
+                "Error decoding JSON response from BSBLAN device."
+            ) from exception
 
         return await response.json()
 
@@ -165,9 +171,7 @@ class BSBLAN:
         # retrieve heating circuit 1 and heating params so we can build the
         # data structure (its circuit 1 because it can support 2 circuits)
         data = await self._request(params={"Parameter": f"{self._string_circuit1}"})
-        logger.debug("heating_params: %s", self._heating_params)
         data = dict(zip(self._heating_params, list(data.values())))
-        logger.debug("data: %s", data)
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
@@ -187,7 +191,6 @@ class BSBLAN:
             self._sensor_params = list(data["list"])
 
         # retrieve sensor params so we can build the data structure
-        logger.debug("get sensor data")
         data = await self._request(params={"Parameter": f"{self._sensor_list}"})
         data = dict(zip(self._sensor_params, list(data.values())))
         return Sensor.parse_obj(data)
@@ -262,10 +265,9 @@ class BSBLAN:
 
         data = await self._request(params={"Parameter": f"{self._info}"})
         data = dict(zip(self._device_params, list(data.values())))
-        logger.debug("data_info: %s", data)
         return Info.parse_obj(data)
 
-    async def _get_parameters(self, params: dict) -> dict[str, list]:
+    async def _get_parameters(self, params: dict) -> dict:
         """Get the parameters info from BSBLAN device.
 
         Args:
@@ -274,9 +276,10 @@ class BSBLAN:
         Returns:
             A list of 2 objects [str, list].
         """
-        string_params = [*params]
+        _string_params = [*params]
         list_params = list(params.values())
-        string_params = ",".join(map(str, string_params))
+        # convert list of string to string
+        string_params = ",".join(map(str, _string_params))
 
         return {"string_par": string_params, "list": list_params}
 

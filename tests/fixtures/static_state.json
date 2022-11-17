@@ -1,11 +1,16 @@
 {
-  "714": {
-    "name": "Room temp frost protection setpoint",
-    "error": 0,
-    "value": "8.0",
+  "min_temp": {
+    "name": "Room temp protective setpoint cooling circuit 1",
+    "unit": "°C",
     "desc": "",
-    "dataType": 0,
-    "readonly": 0,
-    "unit": "&deg;C"
+    "value": "8.0",
+    "dataType": 0
+  },
+  "max_temp": {
+    "name": "Summer/winter changeover temp",
+    "unit": "°C",
+    "desc": "",
+    "value": "20.0",
+    "dataType": 0
   }
 }
