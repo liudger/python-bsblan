@@ -45,8 +45,6 @@ class BSBLAN:
     port: int = 80
     request_timeout: int = 8
     session: ClientSession | None = None
-    min_temp: float = 7.0
-    max_temp: float = 25.0
     _version: str = ""
     _heating_params: list[str] | None = None
     _string_circuit1: str | None = None
@@ -55,6 +53,8 @@ class BSBLAN:
     _static_params: list[str] | None = None
     _static_list: str | None = None
     _device_params: list = field(default_factory=list)
+    _min_temp: float = 7.0
+    _max_temp: float = 25.0
     _info: str | None = None
     _auth: BasicAuth | None = None
     _close_session: bool = False
@@ -203,8 +203,8 @@ class BSBLAN:
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._static_list}"})
         data = dict(zip(self._static_params, list(data.values())))
-        self.min_temp = data["min_temp"]["value"]
-        self.max_temp = data["max_temp"]["value"]
+        self._min_temp = data["min_temp"]["value"]
+        self._max_temp = data["max_temp"]["value"]
         return StaticState.parse_obj(data)
 
     async def _get_dict_version(self) -> dict:
@@ -307,9 +307,9 @@ class BSBLAN:
 
         if target_temperature is not None:
             if not (
-                float(self.min_temp)
+                float(self._min_temp)
                 <= float(target_temperature)
-                <= float(self.max_temp)
+                <= float(self._max_temp)
             ):
                 raise BSBLANError(
                     "Target temperature is not valid, must be between 7 and 40"

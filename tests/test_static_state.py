@@ -33,5 +33,5 @@ async def test_sensor(aresponses, monkeypatch):
         assert static
         assert static.min_temp.value == "8.0"
         assert static.max_temp.value == "20.0"
-        assert bsblan.min_temp == "8.0"
-        assert bsblan.max_temp == "20.0"
+        assert bsblan._min_temp == "8.0"
+        assert bsblan._max_temp == "20.0"
