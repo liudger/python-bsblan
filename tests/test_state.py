@@ -30,17 +30,8 @@ async def test_state(aresponses, mocker, monkeypatch):
 
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
-        future = asyncio.Future()
-        future.set_result("700,710,711,712,714,730,900,8000,8700,8740,8749")
-        mocker.patch(
-            # need to patch _scan
-            "bsblan.BSBLAN._scan",
-            return_value=future,
-        )
-
-        # await bsblan._scan(params)
         state: State = await bsblan.state()
         assert state
         assert state.hvac_mode.name == "Operating mode"
         assert state.hvac_mode.value == "heat"
-        assert state.current_temperature.value == "18.2"
+        assert state.current_temperature.value == "18.4"

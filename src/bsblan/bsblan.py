@@ -48,12 +48,14 @@ class BSBLAN:
     session: ClientSession | None = None
     _version: str = ""
     _heating_params: list[str] | None = None
-    _heating_circuit1: str | None = None
+    _string_circuit1: str | None = None
     _sensor_params: list[str] | None = None
     _sensor_list: str | None = None
     _static_params: list[str] | None = None
     _static_list: str | None = None
     _device_params: list = field(default_factory=list)
+    _min_temp: float = 7.0
+    _max_temp: float = 25.0
     _info: str | None = None
     _auth: BasicAuth | None = None
     _close_session: bool = False
@@ -145,42 +147,7 @@ class BSBLAN:
                 {"Content-Type": content_type, "response": text},
             )
 
-        try:
-            response_json = await response.json()
-        except json.JSONDecodeError as exception:
-            raise BSBLANError(
-                "Error decoding JSON response from BSBLAN device."
-            ) from exception
-
-        return response_json
-
-    async def _scan(self, parameters: list) -> list:
-        """Scan for parameters that return a value collect and return as list.
-
-        Args:
-            parameters: List of parameters to scan.
-
-        Returns:
-            String of valid parameters.
-
-        """
-
-        # convert list to string
-        _parameters = ",".join(map(str, parameters))
-        data = await self._request(params={"Parameter": f"{_parameters}"})
-        not_valid_data = []
-        not_valid_data2 = []
-        for key, value in data.items():
-            if not value.get("value"):
-                not_valid_data.append(key)
-            if value.get("value") == "":
-                not_valid_data2.append(key)
-
-        # remove parameters with no returning value
-        for i in not_valid_data or not_valid_data2:
-            logger.debug("Parameter had no data %s", i)
-
-        return parameters
+        return await response.json()
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
@@ -188,17 +155,19 @@ class BSBLAN:
         Returns:
             A BSBLAN state object.
         """
-        if not self._heating_circuit1 or not self._heating_params:
+        if not self._string_circuit1 or not self._heating_params:
+            # retrieve heating circuit 1
             data = await self._get_dict_version()
             data = await self._get_parameters(data["heating"])
-            self._heating_circuit1 = str(data["string_par"])
+            self._string_circuit1 = str(data["string_par"])
             self._heating_params = list(data["list"])
 
         # retrieve heating circuit 1 and heating params so we can build the
         # data structure (its circuit 1 because it can support 2 circuits)
-        logger.debug("get state")
-        data = await self._request(params={"Parameter": f"{self._heating_circuit1}"})
+        data = await self._request(params={"Parameter": f"{self._string_circuit1}"})
+        logger.debug("heating_params: %s", self._heating_params)
         data = dict(zip(self._heating_params, list(data.values())))
+        logger.debug("data: %s", data)
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
@@ -236,9 +205,10 @@ class BSBLAN:
             self._static_params = list(data["list"])
 
         # retrieve sensor params so we can build the data structure
-        logger.debug("get static data")
         data = await self._request(params={"Parameter": f"{self._static_list}"})
         data = dict(zip(self._static_params, list(data.values())))
+        self._min_temp = data["min_temp"]["value"]
+        self._max_temp = data["max_temp"]["value"]
         return StaticState.parse_obj(data)
 
     async def _get_dict_version(self) -> dict:
@@ -295,7 +265,7 @@ class BSBLAN:
         logger.debug("data_info: %s", data)
         return Info.parse_obj(data)
 
-    async def _get_parameters(self, params: dict) -> dict:
+    async def _get_parameters(self, params: dict) -> dict[str, list]:
         """Get the parameters info from BSBLAN device.
 
         Args:
@@ -304,18 +274,11 @@ class BSBLAN:
         Returns:
             A list of 2 objects [str, list].
         """
-        list_params = [*params]
-        parameters = await self._scan(list_params)
-        # remove from param dict the parameters that are missing
-        for i in list_params:
-            if i not in parameters:
-                params.pop(i)
-        object_parameters = list(params.values())
-        # convert parameters to string
-        string_params = ",".join(map(str, parameters))
-        logger.debug("string_params: %s", string_params)
+        string_params = [*params]
+        list_params = list(params.values())
+        string_params = ",".join(map(str, string_params))
 
-        return {"string_par": string_params, "list": object_parameters}
+        return {"string_par": string_params, "list": list_params}
 
     async def thermostat(
         self,
@@ -347,12 +310,10 @@ class BSBLAN:
         state: ThermostatState = {}
 
         if target_temperature is not None:
-            # get static state values
-            static_state = await self.static_values()
             if not (
-                float(static_state.min_temp.value)
+                float(self._min_temp)
                 <= float(target_temperature)
-                <= float(static_state.max_temp.value)
+                <= float(self._max_temp)
             ):
                 raise BSBLANError(
                     "Target temperature is not valid, must be between 7 and 40"

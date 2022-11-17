@@ -13,7 +13,7 @@ from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_sensor(aresponses, mocker, monkeypatch):
+async def test_sensor(aresponses, monkeypatch):
     """Test getting BSBLAN state."""
     aresponses.add(
         "example.com",
@@ -30,15 +30,6 @@ async def test_sensor(aresponses, mocker, monkeypatch):
 
         monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
-        future = asyncio.Future()
-        future.set_result([8700, 8740])
-        mocker.patch(
-            # need to patch _scan
-            "bsblan.BSBLAN._scan",
-            return_value=future,
-        )
-
-        # await bsblan._scan(params)
         sensor: Sensor = await bsblan.sensor()
         assert sensor
         assert sensor.current_temperature.value == "18.2"
