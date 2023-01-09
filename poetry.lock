@@ -913,7 +913,7 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 
 [[package]]
 name = "vulture"
-version = "2.6"
+version = "2.7"
 description = "Find dead code"
 category = "dev"
 optional = false
@@ -958,7 +958,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "6ba761a999758e8ee65ac3f736c2a3a482332f7add7a180e97dae4b8917edb51"
+content-hash = "cfb18c80f72b7328841d19ec574422103e57c404297b19596d95e5006908db16"
 
 [metadata.files]
 aiohttp = [
@@ -1692,8 +1692,8 @@ virtualenv = [
     {file = "virtualenv-20.17.0.tar.gz", hash = "sha256:7d6a8d55b2f73b617f684ee40fd85740f062e1f2e379412cb1879c7136f05902"},
 ]
 vulture = [
-    {file = "vulture-2.6-py2.py3-none-any.whl", hash = "sha256:e792e903ccc063ec4873a8979dcf11b51ea3d65a2d3b31c113d47be48f0cdcae"},
-    {file = "vulture-2.6.tar.gz", hash = "sha256:2515fa848181001dc8a73aba6a01a1a17406f5d372f24ec7f7191866f9f4997e"},
+    {file = "vulture-2.7-py2.py3-none-any.whl", hash = "sha256:bccc51064ed76db15a6b58277cea8885936af047f53d2655fb5de575e93d0bca"},
+    {file = "vulture-2.7.tar.gz", hash = "sha256:67fb80a014ed9fdb599dd44bb96cb54311032a104106fc2e706ef7a6dad88032"},
 ]
 wrapt = [
     {file = "wrapt-1.14.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1b376b3f4896e7930f1f772ac4b064ac12598d1c38d04907e696cc4d794b43d3"},
