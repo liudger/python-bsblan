@@ -29,7 +29,7 @@ python = "^3.9"
 aiohttp = "^3.8.1"
 yarl = "^1.7.2"
 pydantic = "^1.9.0"
-packaging = ">=21.3,<23.0"
+packaging = ">=21.3,<24.0"
 
 [tool.poetry.dev-dependencies]
 aresponses = "^2.1.6"
