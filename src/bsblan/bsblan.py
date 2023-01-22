@@ -14,7 +14,6 @@ from aiohttp.client import ClientError, ClientResponseError, ClientSession
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
-from pydantic import ValidationError
 from yarl import URL
 
 from .constants import (
@@ -169,10 +168,8 @@ class BSBLAN:
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
-        try:
-            return State.parse_obj(data)
-        except ValidationError as exception:
-            raise BSBLANError("Error parsing state data", data) from exception
+
+        return State.parse_obj(data)
 
     async def sensor(self) -> Sensor:
         """Get the sensor information from BSBLAN device.
@@ -189,10 +186,7 @@ class BSBLAN:
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._sensor_list}"})
         data = dict(zip(self._sensor_params, list(data.values())))
-        try:
-            return Sensor.parse_obj(data)
-        except ValidationError as exception:
-            raise BSBLANError("Error parsing sensor data.") from exception
+        return Sensor.parse_obj(data)
 
     async def static_values(self) -> StaticState:
         """Get the static information from BSBLAN device.
@@ -211,10 +205,7 @@ class BSBLAN:
         data = dict(zip(self._static_params, list(data.values())))
         self._min_temp = data["min_temp"]["value"]
         self._max_temp = data["max_temp"]["value"]
-        try:
-            return StaticState.parse_obj(data)
-        except ValidationError as exception:
-            raise BSBLANError("Error parsing static data.") from exception
+        return StaticState.parse_obj(data)
 
     async def _get_dict_version(self) -> dict:
         """Get the version from device.
@@ -251,10 +242,7 @@ class BSBLAN:
 
         """
         device_info = await self._request(base_path="/JI")
-        try:
-            return Device.parse_obj(device_info)
-        except ValidationError as exception:
-            raise BSBLANError("Error parsing device data.") from exception
+        return Device.parse_obj(device_info)
 
     async def info(self) -> Info:
         """Get information about the current heating system config.
@@ -270,10 +258,7 @@ class BSBLAN:
 
         data = await self._request(params={"Parameter": f"{self._info}"})
         data = dict(zip(self._device_params, list(data.values())))
-        try:
-            return Info.parse_obj(data)
-        except ValidationError as exception:
-            raise BSBLANError("Error parsing info data.") from exception
+        return Info.parse_obj(data)
 
     async def _get_parameters(self, params: dict) -> dict:
         """Get the parameters info from BSBLAN device.
