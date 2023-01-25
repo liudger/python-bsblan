@@ -7,7 +7,7 @@
 
 [![Build Status][build-shield]][build]
 [![Code Coverage][codecov-shield]][codecov]
-[![Code Quality][code-quality-shield]][code-quality]
+<!-- [![Code Quality][code-quality-shield]][code-quality] -->
 
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
@@ -176,7 +176,7 @@ SOFTWARE.
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [liudger]: https://github.com/liudger
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2022.svg
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2023.svg
 [poetry]: https://python-poetry.org
 [poetry-install]: https://python-poetry.org/docs/#installation
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
