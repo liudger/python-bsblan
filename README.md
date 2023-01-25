@@ -7,7 +7,6 @@
 
 [![Build Status][build-shield]][build]
 [![Code Coverage][codecov-shield]][codecov]
-[![Code Quality][code-quality-shield]][code-quality]
 
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
@@ -142,7 +141,7 @@ check [the contributor's page][contributors].
 
 MIT License
 
-Copyright (c) 2022 WJ van Rootselaar
+Copyright (c) 2023 WJ van Rootselaar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -167,8 +166,6 @@ SOFTWARE.
 [build]: https://github.com/liudger/python-bsblan/actions
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
 [buymeacoffee]: https://www.buymeacoffee.com/liudger
-[code-quality-shield]: https://img.shields.io/lgtm/grade/python/g/liudger/python-bsblan.svg?logo=lgtm&logoWidth=18
-[code-quality]: https://lgtm.com/projects/g/liudger/python-bsblan/context:python
 [codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/Dev/graph/badge.svg?token=ypos87GGxv
 [codecov]: https://codecov.io/gh/liudger/python-bsblan
 [contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
@@ -176,7 +173,7 @@ SOFTWARE.
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
 [liudger]: https://github.com/liudger
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2022.svg
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2023.svg
 [poetry]: https://python-poetry.org
 [poetry-install]: https://python-poetry.org/docs/#installation
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
