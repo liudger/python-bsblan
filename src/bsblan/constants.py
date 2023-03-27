@@ -37,7 +37,7 @@ STATIC_VALUES_API_V1 = {
 
 STATIC_VALUES_API_V3 = {
     "714.0": "min_temp",
-    "730.0": "max_temp",
+    "716.0": "max_temp",
 }
 
 SENSORS_API_V1 = {
