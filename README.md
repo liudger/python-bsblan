@@ -178,6 +178,7 @@ SOFTWARE.
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2023.svg
 [poetry]: https://python-poetry.org
 [poetry-install]: https://python-poetry.org/docs/#installation
+[pre-commit]: https://pre-commit.com/
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [pypi]: https://pypi.org/project/python-bsblan/
 [python-versions-shield]: https://img.shields.io/pypi/pyversions/python-bsblan
