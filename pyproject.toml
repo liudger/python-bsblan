@@ -32,6 +32,7 @@ yarl = ">=1.7.2"
 pydantic = ">=1.9.0"
 packaging = ">=21.3"
 ruff = "^0.0.259"
+covdefaults = "^2.3.0"
 
 [tool.poetry.dev-dependencies]
 aresponses = "^2.1.6"
