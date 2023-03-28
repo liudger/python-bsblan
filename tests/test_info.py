@@ -3,7 +3,6 @@
 
 import aiohttp
 import pytest
-
 from bsblan import BSBLAN, Info
 
 from . import load_fixture

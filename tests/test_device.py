@@ -2,7 +2,6 @@
 # file deepcode ignore W0212: this is a testfile
 import aiohttp
 import pytest
-
 from bsblan import BSBLAN
 from bsblan.models import Device
 

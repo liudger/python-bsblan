@@ -5,7 +5,6 @@ import asyncio
 
 import aiohttp
 import pytest
-
 from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANConnectionError, BSBLANError
 
@@ -132,7 +131,10 @@ async def test_timeout(aresponses):
 async def test_http_error400(aresponses):
     """Test HTTP 404 response handling."""
     aresponses.add(
-        "example.com", "/", "POST", aresponses.Response(text="OMG PUPPIES!", status=404)
+        "example.com",
+        "/",
+        "POST",
+        aresponses.Response(text="OMG PUPPIES!", status=404),
     )
 
     async with aiohttp.ClientSession() as session:

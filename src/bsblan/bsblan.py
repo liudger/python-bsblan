@@ -72,6 +72,7 @@ class BSBLAN:
         the BSBLAN API.
 
         Args:
+        ----
             method: HTTP method to use.
             base_path: Base path to use.
             data: Dictionary of data to send to the BSBLAN device.
@@ -79,16 +80,17 @@ class BSBLAN:
                 retrieve certain data.
 
         Returns:
+        -------
             A Python dictionary (Json decoded) with the response from
             the BSBLAN API.
 
         Raises:
+        ------
             BSBLANConnectionError: If the connection to the BSBLAN device
                 fails.
             BSBLANError: If receiving from the BSBLAN device an unexpected
                 response.
         """
-
         try:
             version = metadata.version(__package__ or __name__)
         except metadata.PackageNotFoundError:
@@ -99,7 +101,10 @@ class BSBLAN:
             base_path = f"/{self.passkey}{base_path}"
 
         url = URL.build(
-            scheme="http", host=self.host, port=self.port, path=base_path
+            scheme="http",
+            host=self.host,
+            port=self.port,
+            path=base_path,
         ).join(URL())
 
         if self._auth is None and self.username and self.password:
@@ -127,7 +132,7 @@ class BSBLAN:
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
             raise BSBLANConnectionError(
-                "Timeout occurred while connecting to BSBLAN device."
+                "Timeout occurred while connecting to BSBLAN device.",
             ) from exception
         except (
             ClientError,
@@ -135,7 +140,7 @@ class BSBLAN:
             socket.gaierror,
         ) as exception:
             raise BSBLANConnectionError(
-                "Error occurred while communicating with BSBLAN device."
+                "Error occurred while communicating with BSBLAN device.",
             ) from exception
 
         content_type = response.headers.get("Content-Type", "")
@@ -151,7 +156,8 @@ class BSBLAN:
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN state object.
         """
         if not self._string_circuit1 or not self._heating_params:
@@ -174,7 +180,8 @@ class BSBLAN:
     async def sensor(self) -> Sensor:
         """Get the sensor information from BSBLAN device.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN sensor object.
         """
         if not self._sensor_params:
@@ -191,7 +198,8 @@ class BSBLAN:
     async def static_values(self) -> StaticState:
         """Get the static information from BSBLAN device.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN staticState object.
         """
         if not self._static_params:
@@ -210,7 +218,8 @@ class BSBLAN:
     async def _get_dict_version(self) -> dict:
         """Get the version from device.
 
-        Returns:
+        Returns
+        -------
             A dictionary with dicts
 
         """
@@ -237,7 +246,8 @@ class BSBLAN:
     async def device(self) -> Device:
         """Get BSBLAN device info.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN device info object.
 
         """
@@ -247,7 +257,8 @@ class BSBLAN:
     async def info(self) -> Info:
         """Get information about the current heating system config.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN info object about the heating system.
         """
         if not self._info or not self._device_params:
@@ -264,9 +275,11 @@ class BSBLAN:
         """Get the parameters info from BSBLAN device.
 
         Args:
+        ----
             params: A dictionary with the parameters to get.
 
         Returns:
+        -------
             A list of 2 objects [str, list].
         """
         _string_params = [*params]
@@ -284,15 +297,18 @@ class BSBLAN:
         """Change the state of the thermostat through BSB-Lan.
 
         Args:
+        ----
             target_temperature: Target temperature to set.
             hvac_mode: Preset mode to set.
 
         Raises:
+        ------
             BSBLANError: The provided values are invalid.
         """
 
         class ThermostatState(  # lgtm [py/unused-local-variable]
-            TypedDict, total=False
+            TypedDict,
+            total=False,
         ):
             """Describe state dictionary that can be set on the thermostat."""
 
@@ -312,7 +328,7 @@ class BSBLAN:
                 <= float(self._max_temp)
             ):
                 raise BSBLANError(
-                    "Target temperature is not valid, must be between 7 and 40"
+                    "Target temperature is not valid, must be between 7 and 40",
                 )
             state["Parameter"] = "710"
             state["Value"] = target_temperature
@@ -341,16 +357,17 @@ class BSBLAN:
     async def __aenter__(self) -> BSBLAN:
         """Async enter.
 
-        Returns:
+        Returns
+        -------
             The BSBLAN object.
         """
-
         return self
 
     async def __aexit__(self, *_exc_info: Any) -> None:
         """Async exit.
 
         Args:
+        ----
             *_exc_info: Exec type.
         """
         await self.close()

@@ -5,7 +5,6 @@
 
 import aiohttp
 import pytest
-
 from bsblan import BSBLAN, Sensor
 
 from . import load_fixture

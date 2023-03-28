@@ -7,7 +7,8 @@ class EntityInfo(BaseModel):
 
     This object holds info about specific objects.
 
-    Attributes:
+    Attributes
+    ----------
         name: Name attribute.
         value: value of attribute.
     """
@@ -43,7 +44,7 @@ class State(BaseModel):
 
 
 class StaticState(BaseModel):
-    """Class for entities that are not changing"""
+    """Class for entities that are not changing."""
 
     min_temp: EntityInfo
     max_temp: EntityInfo
@@ -59,7 +60,8 @@ class Sensor(BaseModel):
 class Device(BaseModel):
     """This object holds bsblan device information.
 
-    Attributes:
+    Attributes
+    ----------
         name: Name of the device.
         version: Firmware version of the device.
         MAC: MAC address of the device.
@@ -74,7 +76,8 @@ class Device(BaseModel):
 class Info(BaseModel):
     """Object holding the heatingSystem info.
 
-    Attributes:
+    Attributes
+    ----------
         name: Name of the sub-device.
         value: type of device.
     """

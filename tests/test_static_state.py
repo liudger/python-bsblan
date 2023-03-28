@@ -5,7 +5,6 @@
 
 import aiohttp
 import pytest
-
 from bsblan import BSBLAN, StaticState
 
 from . import load_fixture
