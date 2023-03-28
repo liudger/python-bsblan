@@ -91,6 +91,9 @@ ENV/
 # mypy
 .mypy_cache/
 
+# ruff
+.ruff_cache
+
 # Visual Studio Code
 .vscode
 
@@ -117,6 +120,3 @@ node_modules/
 
 # Deepcode AI
 .dccache
-
-# Artwork
-logo/

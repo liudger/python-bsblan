@@ -18,8 +18,8 @@ async def main():
     async with BSBLAN(
         host="10.0.2.60",
         passkey=None,
-        username=None,
-        password=None,
+        username="liudger",
+        password="nv23vrnv23vR",
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()
@@ -29,8 +29,8 @@ async def main():
         print(f"current temperature: {state.current_temperature.value}")
 
         # set temp thermostat
-        print("Setting temperature to 18.5")
-        await bsblan.thermostat(target_temperature="18.5")
+        print("Setting temperature to 17.5")
+        await bsblan.thermostat(target_temperature="17.5")
         # set hvac_mode (0-3) (protection,auto,reduced,comfort)
         await bsblan.thermostat(hvac_mode="heat")
 

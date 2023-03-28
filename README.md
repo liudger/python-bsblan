@@ -1,12 +1,14 @@
 # Python: BSBLan API Client
 
 [![GitHub Release][releases-shield]][releases]
+[![Python Versions][python-versions-shield]][pypi]
 ![Project Stage][project-stage-shield]
 ![Project Maintenance][maintenance-shield]
 [![License][license-shield]](LICENSE.md)
 
 [![Build Status][build-shield]][build]
 [![Code Coverage][codecov-shield]][codecov]
+[![Quality Gate Status][sonarcloud-shield]][sonarcloud]
 
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
@@ -177,6 +179,10 @@ SOFTWARE.
 [poetry]: https://python-poetry.org
 [poetry-install]: https://python-poetry.org/docs/#installation
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
+[pypi]: https://pypi.org/project/python-bsblan/
+[python-versions-shield]: https://img.shields.io/pypi/pyversions/python-bsblan
 [releases-shield]: https://img.shields.io/github/v/release/liudger/python-bsblan.svg
 [releases]: https://github.com/liudger/python-bsblan/releases
 [semver]: http://semver.org/spec/v2.0.0.html
+[sonarcloud-shield]: https://sonarcloud.io/api/project_badges/measure?project=liudger_python-bsblan&metric=alert_status
+[sonarcloud]: https://sonarcloud.io/summary/new_code?id=liudger_python-bsblan
