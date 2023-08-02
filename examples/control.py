@@ -3,11 +3,10 @@
 
 import asyncio
 
-from bsblan import BSBLAN, Device, Info, Sensor, State
-from bsblan.models import StaticState
+from bsblan import BSBLAN, Device, Info, Sensor, State, models
 
 
-async def main():
+async def main() -> None:
     """Show example on controlling your BSBLan device.
 
     Options:
@@ -48,7 +47,7 @@ async def main():
         print(f"device: {info.device_identification.dict()}")
         print(f"name: {info.device_identification.value}")
 
-        static_state: StaticState = await bsblan.static_values()
+        static_state: models.StaticState = await bsblan.static_values()
         print(f"min temp: {static_state.min_temp.value}")
         print(f"max temp: {static_state.max_temp.value}")
 
