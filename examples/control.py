@@ -18,8 +18,8 @@ async def main():
     async with BSBLAN(
         host="10.0.2.60",
         passkey=None,
-        username="liudger",
-        password="nv23vrnv23vR",
+        username=None,
+        password=None,
     ) as bsblan:
         # get state from bsblan device
         state: State = await bsblan.state()
