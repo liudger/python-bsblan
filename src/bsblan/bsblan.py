@@ -163,7 +163,7 @@ class BSBLAN:
         # retrieve heating circuit 1 and heating params so we can build the
         # data structure (its circuit 1 because it can support 2 circuits)
         data = await self._request(params={"Parameter": f"{self._string_circuit1}"})
-        data = dict(zip(self._heating_params, list(data.values())))
+        data = dict(zip(self._heating_params, list(data.values()), strict=True))
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
@@ -185,7 +185,7 @@ class BSBLAN:
 
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._sensor_list}"})
-        data = dict(zip(self._sensor_params, list(data.values())))
+        data = dict(zip(self._sensor_params, list(data.values()), strict=True))
         return Sensor.parse_obj(data)
 
     async def static_values(self) -> StaticState:
@@ -203,7 +203,7 @@ class BSBLAN:
 
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._static_list}"})
-        data = dict(zip(self._static_params, list(data.values())))
+        data = dict(zip(self._static_params, list(data.values()), strict=True))
         self._min_temp = data["min_temp"]["value"]
         self._max_temp = data["max_temp"]["value"]
         return StaticState.parse_obj(data)
@@ -261,7 +261,7 @@ class BSBLAN:
             self._device_params = data["list"]
 
         data = await self._request(params={"Parameter": f"{self._info}"})
-        data = dict(zip(self._device_params, list(data.values())))
+        data = dict(zip(self._device_params, list(data.values()), strict=True))
         return Info.parse_obj(data)
 
     async def _get_parameters(self, params: dict) -> dict:
