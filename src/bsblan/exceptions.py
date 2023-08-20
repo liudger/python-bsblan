@@ -3,6 +3,7 @@
 
 from typing import Union
 
+
 class BSBLANError(Exception):
     """Generic BSBLAN exception."""
 
@@ -36,7 +37,7 @@ class BSBLANConnectionError(BSBLANError):
         Initialize a new instance of the BSBLANConnectionError class.
 
         Args:
-            message: Optional error message to include in the exception.
+            response: Optional error message to include in the exception.
 
         Returns:
             None.

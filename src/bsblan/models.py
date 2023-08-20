@@ -17,7 +17,7 @@ class EntityInfo(BaseModel):
     unit: str = Field(..., alias="unit")
     desc: str = Field(..., alias="desc")
     value: str = Field(..., alias="value")
-    dataType: int = Field(..., alias="dataType")
+    data_type: int = Field(..., alias="dataType")
 
     """
     "DataType" (
@@ -35,7 +35,23 @@ class EntityInfo(BaseModel):
 
 
 class State(BaseModel):
-    """This object holds info about object for state climate."""
+    """Object that holds information about the state of a climate system.
+
+    Attributes
+    ----------
+    hvac_mode : EntityInfo
+        The HVAC mode of the climate system.
+    hvac_mode2 : EntityInfo
+        The second HVAC mode of the climate system.
+    target_temperature : EntityInfo
+        The target temperature of the climate system.
+    hvac_action : EntityInfo
+        The HVAC action of the climate system.
+    current_temperature : EntityInfo
+        The current temperature of the climate system.
+    room1_thermostat_mode : EntityInfo
+        The thermostat mode of the climate system.
+    """
 
     hvac_mode: EntityInfo
     hvac_mode2: EntityInfo
@@ -53,14 +69,14 @@ class StaticState(BaseModel):
 
 
 class Sensor(BaseModel):
-    """This object holds info about object for sensor climate."""
+    """Object holds info about object for sensor climate."""
 
     current_temperature: EntityInfo
     outside_temperature: EntityInfo
 
 
 class Device(BaseModel):
-    """This object holds bsblan device information.
+    """Object holds bsblan device information.
 
     Attributes
     ----------
