@@ -299,6 +299,9 @@ class BSBLAN:
             BSBLANError: The provided values are invalid.
         """
 
+        INVALID_VALUES_ERROR_MSG = "Invalid values provided."
+        NO_STATE_ERROR_MSG = "No state provided."
+
         class ThermostatState(  # lgtm [py/unused-local-variable]
             TypedDict,
             total=False,
@@ -320,22 +323,20 @@ class BSBLAN:
                 <= float(target_temperature)
                 <= float(self._max_temp)
             ):
-                raise BSBLANError(
-                    "Target temperature is not valid, must be between 7 and 40",
-                )
+                raise BSBLANError(INVALID_VALUES_ERROR_MSG)
             state["Parameter"] = "710"
             state["Value"] = target_temperature
             state["Type"] = "1"
 
         if hvac_mode is not None:
             if hvac_mode not in HVAC_MODE_DICT_REVERSE:
-                raise BSBLANError("HVAC mode is not valid")
+                raise BSBLANError(INVALID_VALUES_ERROR_MSG)
             state["Parameter"] = "700"
             state["EnumValue"] = HVAC_MODE_DICT_REVERSE[hvac_mode]
             state["Type"] = "1"
 
         if not state:
-            raise BSBLANError("No state provided")
+            raise BSBLANError(NO_STATE_ERROR_MSG)
 
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
