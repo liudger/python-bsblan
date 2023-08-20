@@ -139,17 +139,12 @@ class BSBLAN:
             ClientResponseError,
             socket.gaierror,
         ) as exception:
-            raise BSBLANConnectionError(
-                "Error occurred while communicating with BSBLAN device.",
-            ) from exception
+            raise BSBLANConnectionError(BSBLANConnectionError.message) from exception
 
         content_type = response.headers.get("Content-Type", "")
         if "application/json" not in content_type:
             text = await response.text()
-            raise BSBLANError(
-                "Unexpected response from the BSBLAN device",
-                {"Content-Type": content_type, "response": text},
-            )
+            raise BSBLANError({"Content-Type": content_type, "response": text})
 
         return await response.json()
 
