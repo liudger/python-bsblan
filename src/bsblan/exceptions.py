@@ -1,15 +1,14 @@
 """Exceptions for for BSB-Lan."""
 
 
-from typing import Optional
-
+from typing import Union
 
 class BSBLANError(Exception):
     """Generic BSBLAN exception."""
 
     message: str = "Unexpected response from the BSBLAN device."
 
-    def __init__(self, message: Optional[str] = None) -> None:
+    def __init__(self, message: Union[str, None] = None) -> None:
         """
         Initialize a new instance of the BSBLANError class.
 
@@ -24,11 +23,15 @@ class BSBLANError(Exception):
         super().__init__(self.message)
 
 class BSBLANConnectionError(BSBLANError):
-    """BSBLAN connection exception."""
+    """BSBLAN connection exception.
+
+    Attributes:
+        response: The response received from the BSBLAN device.
+    """
 
     message = "Error occurred while connecting to BSBLAN device."
 
-    def __init__(self, response: Optional[str] = None) -> None:
+    def __init__(self, response: Union[str, None] = None) -> None:
         """
         Initialize a new instance of the BSBLANConnectionError class.
 
