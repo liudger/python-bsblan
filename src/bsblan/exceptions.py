@@ -9,7 +9,7 @@ class BSBLANError(Exception):
 
     message: str = "Unexpected response from the BSBLAN device."
 
-    def __init__(self, message: Union[str, None] = None) -> None:
+    def __init__(self, message: str | None = None) -> None:
         """
         Initialize a new instance of the BSBLANError class.
 
@@ -32,7 +32,7 @@ class BSBLANConnectionError(BSBLANError):
 
     message = "Error occurred while connecting to BSBLAN device."
 
-    def __init__(self, response: Union[str, None] = None) -> None:
+    def __init__(self, response: str | None = None) -> None:
         """
         Initialize a new instance of the BSBLANConnectionError class.
 

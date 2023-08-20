@@ -3,10 +3,10 @@
 # pylint: disable=protected-access
 import asyncio
 
-from aresponses import ResponsesMockServer
-
 import aiohttp
 import pytest
+from aresponses import ResponsesMockServer
+
 from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANConnectionError, BSBLANError
 
