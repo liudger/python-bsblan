@@ -2,6 +2,7 @@
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 import asyncio
+from typing import Any, Dict
 
 import aiohttp
 import pytest
@@ -117,7 +118,7 @@ async def test_request_port(aresponses: ResponsesMockServer) -> None:
 async def test_timeout(aresponses: ResponsesMockServer) -> None:
     """Test request timeout from BSBLAN."""
     # Faking a timeout by sleeping
-    async def response_handler(_):
+    async def response_handler(_: Any) -> aiohttp.ClientResponse:
         await asyncio.sleep(2)
         return aresponses.Response(body="Goodmorning!")
 
@@ -126,7 +127,7 @@ async def test_timeout(aresponses: ResponsesMockServer) -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session, request_timeout=2)
         with pytest.raises(BSBLANConnectionError):
-            assert await bsblan._request(_=None)
+            assert await bsblan._request()
 
 
 @pytest.mark.asyncio
