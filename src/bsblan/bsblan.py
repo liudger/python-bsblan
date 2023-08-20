@@ -23,12 +23,12 @@ from .constants import (
     HEATING_CIRCUIT1_API_V3,
     HVAC_MODE_DICT,
     HVAC_MODE_DICT_REVERSE,
+    INVALID_VALUES_ERROR_MSG,
+    NO_STATE_ERROR_MSG,
     SENSORS_API_V1,
     SENSORS_API_V3,
     STATIC_VALUES_API_V1,
     STATIC_VALUES_API_V3,
-    NO_STATE_ERROR_MSG,
-    INVALID_VALUES_ERROR_MSG,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
 from .models import Device, Info, Sensor, State, StaticState
