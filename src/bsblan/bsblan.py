@@ -27,6 +27,8 @@ from .constants import (
     SENSORS_API_V3,
     STATIC_VALUES_API_V1,
     STATIC_VALUES_API_V3,
+    NO_STATE_ERROR_MSG,
+    INVALID_VALUES_ERROR_MSG,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
 from .models import Device, Info, Sensor, State, StaticState
@@ -298,9 +300,6 @@ class BSBLAN:
         ------
             BSBLANError: The provided values are invalid.
         """
-
-        INVALID_VALUES_ERROR_MSG = "Invalid values provided."
-        NO_STATE_ERROR_MSG = "No state provided."
 
         class ThermostatState(  # lgtm [py/unused-local-variable]
             TypedDict,
