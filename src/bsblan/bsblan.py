@@ -131,9 +131,7 @@ class BSBLAN:
                 )
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
-            raise BSBLANConnectionError(
-                "Timeout occurred while connecting to BSBLAN device.",
-            ) from exception
+            raise BSBLANConnectionError(BSBLANConnectionError.message) from exception
         except (
             ClientError,
             ClientResponseError,
