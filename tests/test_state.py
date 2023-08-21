@@ -8,6 +8,7 @@ from typing import Any
 import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
+
 from bsblan import BSBLAN, State
 
 from . import load_fixture

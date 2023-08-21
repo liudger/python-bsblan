@@ -3,6 +3,7 @@
 import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
+
 from bsblan import BSBLAN
 from bsblan.models import Device
 
