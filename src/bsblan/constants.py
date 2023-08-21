@@ -75,3 +75,6 @@ HVAC_MODE_DICT_REVERSE = {
     "eco": 2,
     "heat": 3,
 }
+
+INVALID_VALUES_ERROR_MSG = "Invalid values provided."
+NO_STATE_ERROR_MSG = "No state provided."

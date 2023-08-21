@@ -2,9 +2,11 @@
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 import asyncio
+from typing import Any
 
 import aiohttp
 import pytest
+from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANConnectionError, BSBLANError
@@ -13,7 +15,7 @@ from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_json_request(aresponses):
+async def test_json_request(aresponses: ResponsesMockServer) -> None:
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -32,7 +34,7 @@ async def test_json_request(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_passkey_request(aresponses):
+async def test_passkey_request(aresponses: ResponsesMockServer) -> None:
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -51,7 +53,7 @@ async def test_passkey_request(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_authenticated_request(aresponses):
+async def test_authenticated_request(aresponses: ResponsesMockServer) -> None:
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -75,7 +77,7 @@ async def test_authenticated_request(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_internal_session(aresponses):
+async def test_internal_session(aresponses: ResponsesMockServer) -> None:
     """Test JSON response is handled correctly."""
     aresponses.add(
         "example.com",
@@ -93,7 +95,7 @@ async def test_internal_session(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_request_port(aresponses):
+async def test_request_port(aresponses: ResponsesMockServer) -> None:
     """Test BSBLAN running on non-standard port."""
     aresponses.add(
         "example.com:3333",
@@ -113,10 +115,11 @@ async def test_request_port(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_timeout(aresponses):
+async def test_timeout(aresponses: ResponsesMockServer) -> None:
     """Test request timeout from BSBLAN."""
+
     # Faking a timeout by sleeping
-    async def response_handler(_):
+    async def response_handler(_: Any) -> Any:
         await asyncio.sleep(2)
         return aresponses.Response(body="Goodmorning!")
 
@@ -129,10 +132,13 @@ async def test_timeout(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_http_error400(aresponses):
+async def test_http_error400(aresponses: ResponsesMockServer) -> None:
     """Test HTTP 404 response handling."""
     aresponses.add(
-        "example.com", "/", "POST", aresponses.Response(text="OMG PUPPIES!", status=404)
+        "example.com",
+        "/",
+        "POST",
+        aresponses.Response(text="OMG PUPPIES!", status=404),
     )
 
     async with aiohttp.ClientSession() as session:
@@ -142,7 +148,7 @@ async def test_http_error400(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_unexpected_response(aresponses):
+async def test_unexpected_response(aresponses: ResponsesMockServer) -> None:
     """Test unexpected response handling."""
     aresponses.add(
         "example.com",
@@ -158,7 +164,7 @@ async def test_unexpected_response(aresponses):
 
 
 @pytest.mark.asyncio
-async def test_not_authorized_401_response(aresponses):
+async def test_not_authorized_401_response(aresponses: ResponsesMockServer) -> None:
     """Test wrong username and password response handling."""
     aresponses.add(
         "example.com",

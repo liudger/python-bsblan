@@ -23,6 +23,8 @@ from .constants import (
     HEATING_CIRCUIT1_API_V3,
     HVAC_MODE_DICT,
     HVAC_MODE_DICT_REVERSE,
+    INVALID_VALUES_ERROR_MSG,
+    NO_STATE_ERROR_MSG,
     SENSORS_API_V1,
     SENSORS_API_V3,
     STATIC_VALUES_API_V1,
@@ -52,7 +54,7 @@ class BSBLAN:
     _sensor_list: str | None = None
     _static_params: list[str] | None = None
     _static_list: str | None = None
-    _device_params: list = field(default_factory=list)
+    _device_params: list[str] = field(default_factory=list)
     _min_temp: float = 7.0
     _max_temp: float = 25.0
     _info: str | None = None
@@ -63,15 +65,16 @@ class BSBLAN:
         self,
         method: str = METH_POST,
         base_path: str = "/JQ",
-        data: dict | None = None,
-        params: dict | None = None,
-    ) -> dict[str, Any]:
+        data: dict[str, object] | None = None,
+        params: dict[str, object] | None = None,
+    ) -> Any:
         """Handle a request to a BSBLAN device.
 
         A generic method for sending/handling HTTP requests done against
         the BSBLAN API.
 
         Args:
+        ----
             method: HTTP method to use.
             base_path: Base path to use.
             data: Dictionary of data to send to the BSBLAN device.
@@ -79,16 +82,17 @@ class BSBLAN:
                 retrieve certain data.
 
         Returns:
+        -------
             A Python dictionary (Json decoded) with the response from
             the BSBLAN API.
 
         Raises:
+        ------
             BSBLANConnectionError: If the connection to the BSBLAN device
                 fails.
             BSBLANError: If receiving from the BSBLAN device an unexpected
                 response.
         """
-
         try:
             version = metadata.version(__package__ or __name__)
         except metadata.PackageNotFoundError:
@@ -99,7 +103,10 @@ class BSBLAN:
             base_path = f"/{self.passkey}{base_path}"
 
         url = URL.build(
-            scheme="http", host=self.host, port=self.port, path=base_path
+            scheme="http",
+            host=self.host,
+            port=self.port,
+            path=base_path,
         ).join(URL())
 
         if self._auth is None and self.username and self.password:
@@ -126,32 +133,26 @@ class BSBLAN:
                 )
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
-            raise BSBLANConnectionError(
-                "Timeout occurred while connecting to BSBLAN device."
-            ) from exception
+            raise BSBLANConnectionError(BSBLANConnectionError.message) from exception
         except (
             ClientError,
             ClientResponseError,
             socket.gaierror,
         ) as exception:
-            raise BSBLANConnectionError(
-                "Error occurred while communicating with BSBLAN device."
-            ) from exception
+            raise BSBLANConnectionError(BSBLANConnectionError.message) from exception
 
         content_type = response.headers.get("Content-Type", "")
         if "application/json" not in content_type:
             text = await response.text()
-            raise BSBLANError(
-                "Unexpected response from the BSBLAN device",
-                {"Content-Type": content_type, "response": text},
-            )
+            raise BSBLANError(BSBLANError.message + f" ({text})")
 
         return await response.json()
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN state object.
         """
         if not self._string_circuit1 or not self._heating_params:
@@ -164,7 +165,7 @@ class BSBLAN:
         # retrieve heating circuit 1 and heating params so we can build the
         # data structure (its circuit 1 because it can support 2 circuits)
         data = await self._request(params={"Parameter": f"{self._string_circuit1}"})
-        data = dict(zip(self._heating_params, list(data.values())))
+        data = dict(zip(self._heating_params, list(data.values()), strict=True))
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
@@ -174,7 +175,8 @@ class BSBLAN:
     async def sensor(self) -> Sensor:
         """Get the sensor information from BSBLAN device.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN sensor object.
         """
         if not self._sensor_params:
@@ -185,13 +187,14 @@ class BSBLAN:
 
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._sensor_list}"})
-        data = dict(zip(self._sensor_params, list(data.values())))
+        data = dict(zip(self._sensor_params, list(data.values()), strict=True))
         return Sensor.parse_obj(data)
 
     async def static_values(self) -> StaticState:
         """Get the static information from BSBLAN device.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN staticState object.
         """
         if not self._static_params:
@@ -202,15 +205,16 @@ class BSBLAN:
 
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._static_list}"})
-        data = dict(zip(self._static_params, list(data.values())))
+        data = dict(zip(self._static_params, list(data.values()), strict=True))
         self._min_temp = data["min_temp"]["value"]
         self._max_temp = data["max_temp"]["value"]
         return StaticState.parse_obj(data)
 
-    async def _get_dict_version(self) -> dict:
+    async def _get_dict_version(self) -> dict[Any, Any]:
         """Get the version from device.
 
-        Returns:
+        Returns
+        -------
             A dictionary with dicts
 
         """
@@ -237,7 +241,8 @@ class BSBLAN:
     async def device(self) -> Device:
         """Get BSBLAN device info.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN device info object.
 
         """
@@ -247,7 +252,8 @@ class BSBLAN:
     async def info(self) -> Info:
         """Get information about the current heating system config.
 
-        Returns:
+        Returns
+        -------
             A BSBLAN info object about the heating system.
         """
         if not self._info or not self._device_params:
@@ -257,16 +263,18 @@ class BSBLAN:
             self._device_params = data["list"]
 
         data = await self._request(params={"Parameter": f"{self._info}"})
-        data = dict(zip(self._device_params, list(data.values())))
+        data = dict(zip(self._device_params, list(data.values()), strict=True))
         return Info.parse_obj(data)
 
-    async def _get_parameters(self, params: dict) -> dict:
+    async def _get_parameters(self, params: dict[Any, Any]) -> dict[Any, Any]:
         """Get the parameters info from BSBLAN device.
 
         Args:
+        ----
             params: A dictionary with the parameters to get.
 
         Returns:
+        -------
             A list of 2 objects [str, list].
         """
         _string_params = [*params]
@@ -284,15 +292,18 @@ class BSBLAN:
         """Change the state of the thermostat through BSB-Lan.
 
         Args:
+        ----
             target_temperature: Target temperature to set.
             hvac_mode: Preset mode to set.
 
         Raises:
+        ------
             BSBLANError: The provided values are invalid.
         """
 
         class ThermostatState(  # lgtm [py/unused-local-variable]
-            TypedDict, total=False
+            TypedDict,
+            total=False,
         ):
             """Describe state dictionary that can be set on the thermostat."""
 
@@ -311,22 +322,20 @@ class BSBLAN:
                 <= float(target_temperature)
                 <= float(self._max_temp)
             ):
-                raise BSBLANError(
-                    "Target temperature is not valid, must be between 7 and 40"
-                )
+                raise BSBLANError(INVALID_VALUES_ERROR_MSG)
             state["Parameter"] = "710"
             state["Value"] = target_temperature
             state["Type"] = "1"
 
         if hvac_mode is not None:
             if hvac_mode not in HVAC_MODE_DICT_REVERSE:
-                raise BSBLANError("HVAC mode is not valid")
+                raise BSBLANError(INVALID_VALUES_ERROR_MSG)
             state["Parameter"] = "700"
             state["EnumValue"] = HVAC_MODE_DICT_REVERSE[hvac_mode]
             state["Type"] = "1"
 
         if not state:
-            raise BSBLANError("No state provided")
+            raise BSBLANError(NO_STATE_ERROR_MSG)
 
         # Type needs to be 1 to really set value.
         # Now it only checks if it could set value.
@@ -341,16 +350,17 @@ class BSBLAN:
     async def __aenter__(self) -> BSBLAN:
         """Async enter.
 
-        Returns:
+        Returns
+        -------
             The BSBLAN object.
         """
-
         return self
 
     async def __aexit__(self, *_exc_info: Any) -> None:
         """Async exit.
 
         Args:
+        ----
             *_exc_info: Exec type.
         """
         await self.close()

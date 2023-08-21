@@ -3,8 +3,11 @@
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
 
+from typing import Any
+
 import aiohttp
 import pytest
+from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN, State
 
@@ -12,7 +15,7 @@ from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_state(aresponses, monkeypatch):
+async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
     """Test getting BSBLAN state."""
     aresponses.add(
         "example.com",
