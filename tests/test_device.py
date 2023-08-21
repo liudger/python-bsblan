@@ -2,6 +2,7 @@
 # file deepcode ignore W0212: this is a testfile
 import aiohttp
 import pytest
+from aresponses import ResponsesMockServer
 from bsblan import BSBLAN
 from bsblan.models import Device
 
@@ -9,7 +10,7 @@ from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_device(aresponses):
+async def test_device(aresponses: ResponsesMockServer) -> None:
     """Test scan params BSBLAN."""
     aresponses.add(
         "example.com",

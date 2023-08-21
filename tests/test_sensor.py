@@ -3,15 +3,18 @@
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
 
+from typing import Any
+
 import aiohttp
 import pytest
+from aresponses import ResponsesMockServer
 from bsblan import BSBLAN, Sensor
 
 from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_sensor(aresponses, monkeypatch):
+async def test_sensor(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
     """Test getting BSBLAN state."""
     aresponses.add(
         "example.com",

@@ -54,7 +54,7 @@ class BSBLAN:
     _sensor_list: str | None = None
     _static_params: list[str] | None = None
     _static_list: str | None = None
-    _device_params: list = field(default_factory=list)
+    _device_params: list[str] = field(default_factory=list)
     _min_temp: float = 7.0
     _max_temp: float = 25.0
     _info: str | None = None
@@ -65,9 +65,9 @@ class BSBLAN:
         self,
         method: str = METH_POST,
         base_path: str = "/JQ",
-        data: dict | None = None,
-        params: dict | None = None,
-    ) -> dict[str, Any]:
+        data: dict[str, object] | None = None,
+        params: dict[str, object] | None = None,
+    ) -> Any:
         """Handle a request to a BSBLAN device.
 
         A generic method for sending/handling HTTP requests done against
@@ -144,7 +144,7 @@ class BSBLAN:
         content_type = response.headers.get("Content-Type", "")
         if "application/json" not in content_type:
             text = await response.text()
-            raise BSBLANError({"Content-Type": content_type, "response": text})
+            raise BSBLANError(BSBLANError.message + f" ({text})")
 
         return await response.json()
 
@@ -210,7 +210,7 @@ class BSBLAN:
         self._max_temp = data["max_temp"]["value"]
         return StaticState.parse_obj(data)
 
-    async def _get_dict_version(self) -> dict:
+    async def _get_dict_version(self) -> dict[Any, Any]:
         """Get the version from device.
 
         Returns
@@ -266,7 +266,7 @@ class BSBLAN:
         data = dict(zip(self._device_params, list(data.values()), strict=True))
         return Info.parse_obj(data)
 
-    async def _get_parameters(self, params: dict) -> dict:
+    async def _get_parameters(self, params: dict[Any, Any]) -> dict[Any, Any]:
         """Get the parameters info from BSBLAN device.
 
         Args:
