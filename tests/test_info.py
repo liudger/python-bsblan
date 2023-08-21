@@ -6,7 +6,6 @@ from typing import Any
 import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
-
 from bsblan import BSBLAN, Info
 
 from . import load_fixture

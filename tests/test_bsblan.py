@@ -7,7 +7,6 @@ from typing import Any
 import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
-
 from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANConnectionError, BSBLANError
 
