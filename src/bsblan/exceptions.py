@@ -1,4 +1,5 @@
 """Exceptions for for BSB-Lan."""
+from __future__ import annotations
 
 
 class BSBLANError(Exception):
@@ -6,7 +7,7 @@ class BSBLANError(Exception):
 
     message: str = "Unexpected response from the BSBLAN device."
 
-    def __init__(self, message: str | None | None = None) -> None:
+    def __init__(self, message: str | None = None) -> None:
         """Initialize a new instance of the BSBLANError class.
 
         Args:
