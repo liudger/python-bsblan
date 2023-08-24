@@ -275,7 +275,7 @@ class BSBLAN:
 
         Returns:
         -------
-            A list of 2 objects [str, list].
+            A dict of 2 objects [str, list].
         """
         _string_params = [*params]
         list_params = list(params.values())
@@ -356,7 +356,7 @@ class BSBLAN:
         """
         return self
 
-    async def __aexit__(self, *_exc_info: Any) -> None:
+    async def __aexit__(self, *_exc_info: object) -> None:
         """Async exit.
 
         Args:
