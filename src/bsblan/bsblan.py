@@ -148,7 +148,7 @@ class BSBLAN:
 
         return await response.json()
 
-    async def state(self) -> State:
+    async def state(self) -> State | None:
         """Get the current state from BSBLAN device.
 
         Returns

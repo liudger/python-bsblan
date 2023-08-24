@@ -21,11 +21,14 @@ async def main() -> None:
         password=None,
     ) as bsblan:
         # get state from bsblan device
-        state: State = await bsblan.state()
-        # state give all the parameters needed for climate device
-        print(f"hvac_action: {state.hvac_action.desc}")
-        print(f"hvac_mode: {state.hvac_mode.desc}")
-        print(f"current temperature: {state.current_temperature.value}")
+        state: State | None = await bsblan.state()
+        if state is not None:
+            # state give all the parameters needed for climate device
+            print(f"hvac_action: {state.hvac_action.desc}")
+            print(f"hvac_mode: {state.hvac_mode.desc}")
+            print(f"current temperature: {state.current_temperature.value}")
+        else:
+            print("Failed to retrieve state")
 
         # set temp thermostat
         print("Setting temperature to 17.5")
