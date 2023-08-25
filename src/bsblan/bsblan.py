@@ -29,6 +29,7 @@ from .constants import (
     SENSORS_API_V3,
     STATIC_VALUES_API_V1,
     STATIC_VALUES_API_V3,
+    VERSION_ERROR_MSG,
 )
 from .exceptions import BSBLANConnectionError, BSBLANError
 from .models import Device, Info, Sensor, State, StaticState
@@ -235,7 +236,7 @@ class BSBLAN:
                 "device": DEVICE_INFO_API_V3,
                 "sensor": SENSORS_API_V3,
             }
-        return {}
+        raise BSBLANError(VERSION_ERROR_MSG)
 
     async def device(self) -> Device:
         """Get BSBLAN device info.

@@ -78,3 +78,4 @@ HVAC_MODE_DICT_REVERSE = {
 
 INVALID_VALUES_ERROR_MSG = "Invalid values provided."
 NO_STATE_ERROR_MSG = "No state provided."
+VERSION_ERROR_MSG = "Version not supported"
