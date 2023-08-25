@@ -15,7 +15,6 @@ classifiers = [
   "Framework :: AsyncIO",
   "Intended Audience :: Developers",
   "Natural Language :: English",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3",
@@ -26,7 +25,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = "^3.10"
 aiohttp = ">=3.8.1"
 yarl = ">=1.7.2"
 pydantic = ">=1.9.0"
@@ -52,12 +51,6 @@ yamllint = "^1.29.0"
 pyupgrade = "^3.3.1"
 flake8-simplify = "^0.20.0"
 vulture = "^2.7"
-flake8-bandit = "^3.0.0"
-flake8-bugbear = "^23.1.17"
-flake8-builtins = "^2.1.0"
-flake8-comprehensions = "^3.10.1"
-flake8-eradicate = "^1.4.0"
-flake8-markdown = "^0.3.0"
 darglint = "^1.8.1"
 safety = "^2.3.4"
 codespell = "^2.2.2"
@@ -133,6 +126,9 @@ good-names = [
     "T",
 ]
 
+[tool.pylint.DESIGN]
+max-attributes = 20
+
 [tool.pylint."MESSAGES CONTROL"]
 disable= [
     "too-few-public-methods",
@@ -143,14 +139,10 @@ disable= [
 
 [tool.pylint.SIMILARITIES]
 ignore-imports = true
-# Minimum lines number of a similarity.
-min-similarity-lines = 4
+min-similarity-lines = 4  # Minimum lines number of a similarity.
 
 [tool.pylint.FORMAT]
 max-line-length=88
-
-[tool.pylint.DESIGN]
-max-attributes = 20
 
 [tool.pytest.ini_options]
 addopts = "--cov"
@@ -178,5 +170,5 @@ known-first-party = ["wled"]
 max-complexity = 25
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
