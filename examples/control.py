@@ -39,12 +39,12 @@ async def main() -> None:
 
         # get some generic info from the heater
         device: Device = await bsblan.device()
-        print(f"device dict: {device.dict()}")
+        print(f"device dict: {device.model_dump()}")
         print(f"device: {device.name}")
         print(f"version: {device.version}")
 
         info: Info = await bsblan.info()
-        print(f"device: {info.device_identification.dict()}")
+        print(f"device: {info.device_identification.model_dump()}")
         print(f"name: {info.device_identification.value}")
 
         static_state: models.StaticState = await bsblan.static_values()
