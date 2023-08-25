@@ -3,6 +3,8 @@
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
 
+from __future__ import annotations
+
 from typing import Any
 
 import aiohttp
