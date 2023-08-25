@@ -45,7 +45,7 @@ class BSBLAN:
     password: str | None = None
     passkey: str | None = None
     port: int = 80
-    request_timeout: int = 8
+    request_timeout: int = 10
     session: ClientSession | None = None
     _version: str = ""
     _heating_params: list[str] | None = None
@@ -148,7 +148,7 @@ class BSBLAN:
 
         return await response.json()
 
-    async def state(self) -> State | None:
+    async def state(self) -> State:
         """Get the current state from BSBLAN device.
 
         Returns
@@ -169,7 +169,6 @@ class BSBLAN:
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
-
         return State.parse_obj(data)
 
     async def sensor(self) -> Sensor:
