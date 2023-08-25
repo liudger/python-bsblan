@@ -10,6 +10,7 @@ from importlib import metadata
 from typing import Any, TypedDict
 
 import async_timeout
+import backoff
 from aiohttp.client import ClientError, ClientResponseError, ClientSession
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
@@ -62,6 +63,7 @@ class BSBLAN:
     _auth: BasicAuth | None = None
     _close_session: bool = False
 
+    @backoff.on_exception(backoff.expo, BSBLANConnectionError, max_tries=3, logger=None)
     async def _request(
         self,
         method: str = METH_POST,
