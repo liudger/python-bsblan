@@ -30,7 +30,7 @@ aiohttp = ">=3.8.1"
 yarl = ">=1.7.2"
 pydantic = ">=1.9.0"
 packaging = ">=21.3"
-ruff = "^0.0.285"
+ruff = "^0.0.286"
 covdefaults = "^2.3.0"
 backoff = "^2.2.1"
 
