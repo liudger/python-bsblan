@@ -7,7 +7,7 @@ import socket
 from asyncio.log import logger
 from dataclasses import dataclass, field
 from importlib import metadata
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 import async_timeout
 import backoff
@@ -70,7 +70,7 @@ class BSBLAN:
         base_path: str = "/JQ",
         data: dict[str, object] | None = None,
         params: dict[str, object] | None = None,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Handle a request to a BSBLAN device.
 
         A generic method for sending/handling HTTP requests done against
@@ -86,7 +86,7 @@ class BSBLAN:
 
         Returns:
         -------
-            A Python dictionary (Json decoded) with the response from
+            A Python dictionary (JSON decoded) with the response from
             the BSBLAN API.
 
         Raises:
@@ -149,7 +149,7 @@ class BSBLAN:
             text = await response.text()
             raise BSBLANError(BSBLANError.message + f" ({text})")
 
-        return await response.json()
+        return cast(dict[str, Any], await response.json())
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
