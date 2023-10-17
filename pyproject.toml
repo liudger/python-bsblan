@@ -34,7 +34,7 @@ backoff = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 covdefaults = "^2.3.0"
-ruff = "^0.0.292"
+ruff = "^0.1.0"
 aresponses = "^2.1.6"
 black = "^23.0.0"
 blacken-docs = "^1.13.0"
