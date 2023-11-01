@@ -164,7 +164,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 [bsblanmodule]: https://github.com/fredlcore/bsb_lan
-[build-shield]: https://github.com/liudger/python-bsblan/workflows/Continuous%20Integration/badge.svg
+[build-shield]: https://github.com/liudger/python-bsblan/actions/workflows/tests.yaml/badge.svg
 [build]: https://github.com/liudger/python-bsblan/actions
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
 [buymeacoffee]: https://www.buymeacoffee.com/liudger
