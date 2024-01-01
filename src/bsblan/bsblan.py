@@ -63,6 +63,7 @@ class BSBLAN:
     _auth: BasicAuth | None = None
     _close_session: bool = False
 
+    # cSpell:ignore BSBLAN
     @backoff.on_exception(backoff.expo, BSBLANConnectionError, max_tries=3, logger=None)
     async def _request(
         self,
@@ -172,7 +173,7 @@ class BSBLAN:
 
         # set hvac_mode with correct value
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
-        return State.parse_obj(data)
+        return State.model_validate(data)
 
     async def sensor(self) -> Sensor:
         """Get the sensor information from BSBLAN device.
@@ -190,7 +191,7 @@ class BSBLAN:
         # retrieve sensor params so we can build the data structure
         data = await self._request(params={"Parameter": f"{self._sensor_list}"})
         data = dict(zip(self._sensor_params, list(data.values()), strict=True))
-        return Sensor.parse_obj(data)
+        return Sensor.model_validate(data)
 
     async def static_values(self) -> StaticState:
         """Get the static information from BSBLAN device.
@@ -210,7 +211,7 @@ class BSBLAN:
         data = dict(zip(self._static_params, list(data.values()), strict=True))
         self._min_temp = data["min_temp"]["value"]
         self._max_temp = data["max_temp"]["value"]
-        return StaticState.parse_obj(data)
+        return StaticState.model_validate(data)
 
     async def _get_dict_version(self) -> dict[Any, Any]:
         """Get the version from device.
@@ -249,7 +250,7 @@ class BSBLAN:
 
         """
         device_info = await self._request(base_path="/JI")
-        return Device.parse_obj(device_info)
+        return Device.model_validate(device_info)
 
     async def info(self) -> Info:
         """Get information about the current heating system config.
@@ -266,7 +267,7 @@ class BSBLAN:
 
         data = await self._request(params={"Parameter": f"{self._info}"})
         data = dict(zip(self._device_params, list(data.values()), strict=True))
-        return Info.parse_obj(data)
+        return Info.model_validate(data)
 
     async def _get_parameters(self, params: dict[Any, Any]) -> dict[Any, Any]:
         """Get the parameters info from BSBLAN device.
