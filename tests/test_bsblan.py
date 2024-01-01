@@ -131,7 +131,7 @@ async def test_timeout(aresponses: ResponsesMockServer) -> None:
 
 
 @pytest.mark.asyncio
-async def test_http_error400(aresponses: ResponsesMockServer) -> None:
+async def test_http_error404(aresponses: ResponsesMockServer) -> None:
     """Test HTTP 404 response handling."""
     aresponses.add(
         "example.com",
@@ -143,7 +143,7 @@ async def test_http_error400(aresponses: ResponsesMockServer) -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session)
         with pytest.raises(BSBLANError):
-            assert await bsblan._request("/")
+            assert await bsblan._request("GET", "/")
 
 
 @pytest.mark.asyncio
@@ -178,4 +178,4 @@ async def test_not_authorized_401_response(aresponses: ResponsesMockServer) -> N
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session)
         with pytest.raises(BSBLANError):
-            assert await bsblan._request("/JQ")
+            assert await bsblan._request("GET", "/JQ")
