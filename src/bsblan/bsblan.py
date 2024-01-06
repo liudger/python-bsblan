@@ -15,6 +15,7 @@ from aiohttp.client import ClientError, ClientResponseError, ClientSession
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
+from typing_extensions import Self
 from yarl import URL
 
 from .constants import (
@@ -350,13 +351,14 @@ class BSBLAN:
         if self.session and self._close_session:
             await self.session.close()
 
-    async def __aenter__(self) -> BSBLAN:
+    async def __aenter__(self) -> Self:
         """Async enter.
 
         Returns
         -------
             The BSBLAN object.
         """
+        logger.debug("BSBLAN: %s", self)
         return self
 
     async def __aexit__(self, *_exc_info: object) -> None:
