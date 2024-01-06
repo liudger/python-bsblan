@@ -127,7 +127,8 @@ async def test_timeout(aresponses: ResponsesMockServer) -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN("example.com", session=session, request_timeout=2)
         with pytest.raises(BSBLANConnectionError):
-            assert await bsblan._request()
+            await bsblan._request()
+        assert BSBLANConnectionError.message
 
 
 @pytest.mark.asyncio
