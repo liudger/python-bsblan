@@ -74,7 +74,7 @@ jobs:
         uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4
       - name: SonarCloud Scan
         if: github.repository_owner == 'frenck'
-        uses: SonarSource/sonarcloud-github-action@4006f663ecaf1f8093e8e4abb9227f6041f52216 # v2.2
+        uses: SonarSource/sonarcloud-github-action@e44258b109568baa0df60ed515909fc6c72cba92 # v2.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
