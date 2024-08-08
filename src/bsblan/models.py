@@ -17,10 +17,10 @@ class EntityInfo(DataClassJSONMixin):
 
     """
 
-    name: str
-    unit: str
-    desc: str
-    value: str
+    name: str = field(metadata={"alias": "name"})
+    unit: str = field(metadata={"alias": "unit"})
+    desc: str = field(metadata={"alias": "desc"})
+    value: str = field(metadata={"alias": "value"})
     data_type: int = field(metadata={"alias": "dataType"})
 
     """
