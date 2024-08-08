@@ -102,6 +102,7 @@ class BSBLAN:
                 fails.
             BSBLANError: If receiving from the BSBLAN device an unexpected
                 response.
+
         """
         try:
             version = metadata.version(__package__ or __name__)
@@ -164,6 +165,7 @@ class BSBLAN:
         Returns
         -------
             A BSBLAN state object.
+
         """
         if not self._string_circuit1 or not self._heating_params:
             # retrieve heating circuit 1
@@ -187,6 +189,7 @@ class BSBLAN:
         Returns
         -------
             A BSBLAN sensor object.
+
         """
         if not self._sensor_params:
             data = await self._get_dict_version()
@@ -205,6 +208,7 @@ class BSBLAN:
         Returns
         -------
             A BSBLAN staticState object.
+
         """
         if not self._static_params:
             data = await self._get_dict_version()
@@ -264,6 +268,7 @@ class BSBLAN:
         Returns
         -------
             A BSBLAN info object about the heating system.
+
         """
         if not self._info or not self._device_params:
             device_dict = await self._get_dict_version()
@@ -285,6 +290,7 @@ class BSBLAN:
         Returns:
         -------
             A dict of 2 objects [str, list].
+
         """
         _string_params = [*params]
         list_params = list(params.values())
@@ -308,6 +314,7 @@ class BSBLAN:
         Raises:
         ------
             BSBLANError: The provided values are invalid.
+
         """
 
         class ThermostatState(  # lgtm [py/unused-local-variable]
@@ -366,6 +373,7 @@ class BSBLAN:
         Returns
         -------
             The BSBLAN object.
+
         """
         logger.debug("BSBLAN: %s", self)
         return self
@@ -376,5 +384,6 @@ class BSBLAN:
         Args:
         ----
             *_exc_info: Exec type.
+
         """
         await self.close()

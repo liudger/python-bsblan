@@ -14,6 +14,7 @@ class EntityInfo(DataClassJSONMixin):
     ----------
         name: Name attribute.
         value: value of attribute.
+
     """
 
     name: str
@@ -55,6 +56,7 @@ class State(DataClassJSONMixin):
         The current temperature of the climate system.
     room1_thermostat_mode : EntityInfo
         The thermostat mode of the climate system.
+
     """
 
     hvac_mode: EntityInfo
@@ -90,6 +92,7 @@ class Device(DataClassJSONMixin):
         name: Name of the device.
         version: Firmware version of the device.
         MAC: MAC address of the device.
+
     """
 
     name: str
@@ -106,6 +109,7 @@ class Info(DataClassJSONMixin):
     ----------
         name: Name of the sub-device.
         value: type of device.
+
     """
 
     device_identification: EntityInfo

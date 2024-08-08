@@ -17,6 +17,7 @@ class BSBLANError(Exception):
         Returns:
         -------
             None.
+
         """
         if message is not None:
             self.message = message
@@ -29,6 +30,7 @@ class BSBLANConnectionError(BSBLANError):
     Attributes
     ----------
         response: The response received from the BSBLAN device.
+
     """
 
     message = "Error occurred while connecting to BSBLAN device."
@@ -43,6 +45,7 @@ class BSBLANConnectionError(BSBLANError):
         Returns:
         -------
             None.
+
         """
         self.response = response
         super().__init__(self.message)
@@ -67,6 +70,7 @@ class BSBLANInvalidParameterError(BSBLANError):
         Returns:
         -------
             None.
+
         """
         self.message = f"Invalid parameter: {parameter}"
         super().__init__(self.message)
