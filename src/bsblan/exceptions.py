@@ -17,6 +17,7 @@ class BSBLANError(Exception):
         Returns:
         -------
             None.
+
         """
         if message is not None:
             self.message = message
@@ -29,6 +30,7 @@ class BSBLANConnectionError(BSBLANError):
     Attributes
     ----------
         response: The response received from the BSBLAN device.
+
     """
 
     message = "Error occurred while connecting to BSBLAN device."
@@ -43,6 +45,32 @@ class BSBLANConnectionError(BSBLANError):
         Returns:
         -------
             None.
+
         """
         self.response = response
+        super().__init__(self.message)
+
+
+class BSBLANVersionError(BSBLANError):
+    """Raised when the BSBLAN device has an unsupported version."""
+
+    message = "The BSBLAN device has an unsupported version."
+
+
+class BSBLANInvalidParameterError(BSBLANError):
+    """Raised when an invalid parameter is provided."""
+
+    def __init__(self, parameter: str) -> None:
+        """Initialize a new instance of the BSBLANInvalidParameterError class.
+
+        Args:
+        ----
+            parameter: The invalid parameter.
+
+        Returns:
+        -------
+            None.
+
+        """
+        self.message = f"Invalid parameter: {parameter}"
         super().__init__(self.message)
