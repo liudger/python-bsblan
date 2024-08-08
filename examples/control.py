@@ -44,7 +44,7 @@ async def main() -> None:
         print(f"version: {device.version}")
 
         info: Info = await bsblan.info()
-        print(f"device: {info.device_identification.to_dict()}")
+        print(f"device ident: {info.device_identification.to_dict()}")
         print(f"name: {info.device_identification.value}")
 
         static_state: models.StaticState = await bsblan.static_values()
