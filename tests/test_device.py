@@ -1,12 +1,17 @@
 """Tests for scanning list of params from the BSBLAN device."""
 # file deepcode ignore W0212: this is a testfile
+from typing import TYPE_CHECKING
+
 import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
+
 from bsblan import BSBLAN
-from bsblan.models import Device
 
 from . import load_fixture
+
+if TYPE_CHECKING:
+    from bsblan.models import Device
 
 
 @pytest.mark.asyncio
