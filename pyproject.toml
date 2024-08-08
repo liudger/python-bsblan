@@ -28,10 +28,10 @@ packages = [
 python = "^3.10"
 aiohttp = ">=3.8.1"
 yarl = ">=1.7.2"
-pydantic = ">=1.9.0"
 packaging = ">=21.3"
 backoff = "^2.2.1"
 async-timeout = "^4.0.3"
+mashumaro = "^3.13.1"
 
 [tool.poetry.dev-dependencies]
 covdefaults = "^2.3.0"

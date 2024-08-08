@@ -1,8 +1,11 @@
 """Models for BSB-Lan."""
-from pydantic import BaseModel, Field
+from dataclasses import dataclass, field
+
+from mashumaro.mixins.json import DataClassJSONMixin
 
 
-class EntityInfo(BaseModel):
+@dataclass
+class EntityInfo(DataClassJSONMixin):
     """Convert Data to valid keys and convert to object attributes.
 
     This object holds info about specific objects.
@@ -13,11 +16,11 @@ class EntityInfo(BaseModel):
         value: value of attribute.
     """
 
-    name: str = Field(..., alias="name")
-    unit: str = Field(..., alias="unit")
-    desc: str = Field(..., alias="desc")
-    value: str = Field(..., alias="value")
-    data_type: int = Field(..., alias="dataType")
+    name: str
+    unit: str
+    desc: str
+    value: str
+    data_type: int = field(metadata={"alias": "dataType"})
 
     """
     "DataType" (
@@ -34,7 +37,8 @@ class EntityInfo(BaseModel):
     """
 
 
-class State(BaseModel):
+@dataclass
+class State(DataClassJSONMixin):
     """Object that holds information about the state of a climate system.
 
     Attributes
@@ -61,21 +65,24 @@ class State(BaseModel):
     room1_thermostat_mode: EntityInfo
 
 
-class StaticState(BaseModel):
+@dataclass
+class StaticState(DataClassJSONMixin):
     """Class for entities that are not changing."""
 
     min_temp: EntityInfo
     max_temp: EntityInfo
 
 
-class Sensor(BaseModel):
+@dataclass
+class Sensor(DataClassJSONMixin):
     """Object holds info about object for sensor climate."""
 
     current_temperature: EntityInfo
     outside_temperature: EntityInfo
 
 
-class Device(BaseModel):
+@dataclass
+class Device(DataClassJSONMixin):
     """Object holds bsblan device information.
 
     Attributes
@@ -85,13 +92,14 @@ class Device(BaseModel):
         MAC: MAC address of the device.
     """
 
-    name: str = Field(..., alias="name")
-    version: str = Field(..., alias="version")
-    MAC: str = Field(..., alias="MAC")
-    uptime: int = Field(..., alias="uptime")
+    name: str
+    version: str
+    MAC: str  # pylint: disable=invalid-name
+    uptime: int
 
 
-class Info(BaseModel):
+@dataclass
+class Info(DataClassJSONMixin):
     """Object holding the heatingSystem info.
 
     Attributes
