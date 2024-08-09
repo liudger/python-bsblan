@@ -3,6 +3,7 @@
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 import asyncio
+import os
 from typing import Any
 
 import pytest
@@ -214,8 +215,8 @@ async def test_not_authorized_401_response(aresponses: ResponsesMockServer) -> N
     )
     config = BSBLANConfig(
         host="example.com",
-        username="user",
-        password="pass",  # Sensitive  # noqa: S106
+        username=os.getenv("USERNAME"),  # Compliant
+        password=os.getenv("PASSWORD"),  # Compliant
     )
     bsblan = BSBLAN(config)
     with pytest.raises(BSBLANError):

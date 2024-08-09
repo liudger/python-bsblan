@@ -1,6 +1,7 @@
 # pylint: disable=W0621
 """Asynchronous Python client for BSBLan."""
 import asyncio
+import os
 
 from bsblan import BSBLAN, BSBLANConfig, Device, Info, Sensor, State, StaticState
 
@@ -36,8 +37,8 @@ async def main() -> None:
     config = BSBLANConfig(
         host="10.0.2.60",
         passkey=None,
-        username="",
-        password="",
+        username=os.getenv("USERNAME"),  # Compliant
+        password=os.getenv("PASSWORD"),  # Compliant
     )
 
     # Initialize BSBLAN with the configuration object
