@@ -2,11 +2,10 @@
 
 from typing import Any
 
-import aiohttp
 import pytest
 from aresponses import Response, ResponsesMockServer
 
-from bsblan import BSBLAN
+from bsblan import BSBLAN, BSBLANConfig
 
 from . import load_fixture
 
@@ -27,9 +26,8 @@ async def test_change_temperature(aresponses: ResponsesMockServer) -> None:
 
     aresponses.add("example.com", "/JS", "POST", response_handler)
 
-    async with aiohttp.ClientSession() as session:
-        bsblan = BSBLAN("example.com", session=session)
-        await bsblan.thermostat(target_temperature="19")
+    bsblan = BSBLAN(config=BSBLANConfig(host="example.com"))
+    await bsblan.thermostat(target_temperature="19")
 
 
 @pytest.mark.asyncio
@@ -48,6 +46,5 @@ async def test_change_hvac_mode(aresponses: ResponsesMockServer) -> None:
 
     aresponses.add("example.com", "/JS", "POST", response_handler)
 
-    async with aiohttp.ClientSession() as session:
-        bsblan = BSBLAN("example.com", session=session)
-        await bsblan.thermostat(hvac_mode="heat")
+    bsblan = BSBLAN(config=BSBLANConfig(host="example.com"))
+    await bsblan.thermostat(hvac_mode="heat")

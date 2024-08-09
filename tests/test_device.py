@@ -1,12 +1,12 @@
 """Tests for scanning list of params from the BSBLAN device."""
+
 # file deepcode ignore W0212: this is a testfile
 from typing import TYPE_CHECKING
 
-import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
 
-from bsblan import BSBLAN
+from bsblan import BSBLAN, BSBLANConfig
 
 from . import load_fixture
 
@@ -27,13 +27,13 @@ async def test_device(aresponses: ResponsesMockServer) -> None:
             text=load_fixture("device.json"),
         ),
     )
-    async with aiohttp.ClientSession() as session:
-        bsblan = BSBLAN(host="example.com", session=session)
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
 
-        # test _info and _device_params
-        device: Device = await bsblan.device()
-        assert device
-        assert device.name == "BSB-LAN"
-        assert device.version == "1.0.38-20200730234859"
-        assert device.MAC == "00:80:41:19:69:90"
-        assert device.uptime == 969402857
+    # test _info and _device_params
+    device: Device = await bsblan.device()
+    assert device
+    assert device.name == "BSB-LAN"
+    assert device.version == "1.0.38-20200730234859"
+    assert device.MAC == "00:80:41:19:69:90"
+    assert device.uptime == 969402857

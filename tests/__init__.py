@@ -1,4 +1,5 @@
 """Asynchronous Python client for BSBLan."""
+
 from pathlib import Path
 
 
