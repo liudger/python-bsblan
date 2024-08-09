@@ -37,7 +37,7 @@ async def main() -> None:
         host="10.0.2.60",
         passkey=None,
         username="liudger",
-        password="nv23vrnv23vR",  # noqa: S106
+        password="",  # noqa: S106
     )
 
     # Initialize BSBLAN with the configuration object
