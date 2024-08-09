@@ -1,4 +1,5 @@
 """Models for BSB-Lan."""
+
 from dataclasses import dataclass, field
 
 from mashumaro.mixins.json import DataClassJSONMixin
