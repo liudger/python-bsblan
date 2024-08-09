@@ -33,11 +33,36 @@ pip install python-bsblan
 """Asynchronous Python client for BSBLan."""
 
 import asyncio
+import os
 
-from bsblan import BSBLan, Info, State
+from bsblan import BSBLAN, BSBLANConfig, Device, Info, Sensor, State, StaticState
 
 
-async def main(loop):
+async def print_state(state: State) -> None:
+    """Print the current state of the BSBLan device."""
+    print(f"HVAC Action: {state.hvac_action.desc}")
+    print(f"HVAC Mode: {state.hvac_mode.desc}")
+    print(f"Current Temperature: {state.current_temperature.value}")
+
+
+async def print_sensor(sensor: Sensor) -> None:
+    """Print sensor information from the BSBLan device."""
+    print(f"Outside Temperature: {sensor.outside_temperature.value}")
+
+
+async def print_device_info(device: Device, info: Info) -> None:
+    """Print device and general information."""
+    print(f"Device Name: {device.name}")
+    print(f"Version: {device.version}")
+    print(f"Device Identification: {info.device_identification.value}")
+
+
+async def print_static_state(static_state: StaticState) -> None:
+    """Print static state information."""
+    print(f"Min Temperature: {static_state.min_temp.value}")
+    print(f"Max Temperature: {static_state.max_temp.value}")
+    
+async def main() -> None:
     """Show example on controlling your BSBLan device.
 
     Options:
@@ -45,35 +70,44 @@ async def main(loop):
     - username and password if your device is setup for username/password authentication
 
     """
-    async with BSBLan(
-        host="10.0.1.60", passkey=None, username=None, password=None, loop=loop
-    ) as bsblan:
-        # get state from bsblan device
+    # Create a configuration object
+    config = BSBLANConfig(
+        host="10.0.2.60",
+        passkey=None,
+        username=os.getenv("USERNAME"),  # Compliant
+        password=os.getenv("PASSWORD"),  # Compliant
+    )
+
+    # Initialize BSBLAN with the configuration object
+    async with BSBLAN(config) as bsblan:
+        # Get and print state
         state: State = await bsblan.state()
-        print(state)
+        await print_state(state)
 
-        # set temp thermostat
-        await bsblan.thermostat(target_temperature=19.0)
+        # Set thermostat temperature
+        print("\nSetting temperature to 18°C")
+        await bsblan.thermostat(target_temperature="18")
 
-        # set hvac_mode (0-3) (protection,auto,reduced,comfort)
-        await bsblan.thermostat(hvac_mode=3)
+        # Set HVAC mode
+        print("Setting HVAC mode to heat")
+        await bsblan.thermostat(hvac_mode="heat")
 
-        # get some generic info from the heater
-        info: Info = await bsblan.info()
-        print(info)
-
-        # get device info
-        device: Device = await bsblan.device()
-        print(device)
-
-        # get sensor from bsblan device
+        # Get and print sensor information
         sensor: Sensor = await bsblan.sensor()
-        print(f"outside temperature: {sensor.outside_temperature.value}")
+        await print_sensor(sensor)
+
+        # Get and print device and general info
+        device: Device = await bsblan.device()
+        info: Info = await bsblan.info()
+        await print_device_info(device, info)
+
+        # Get and print static state
+        static_state: StaticState = await bsblan.static_values()
+        await print_static_state(static_state)
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop_policy().get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 ```
 
 ## Changelog & Releases
@@ -106,7 +140,7 @@ This Python project is fully managed using the [Poetry][poetry] dependency manag
 
 You need at least:
 
-- Python 3.10+
+- Python 3.12+
 - [Poetry][poetry-install]
 - NodeJS 16+ (including NPM)
 
