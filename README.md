@@ -61,7 +61,8 @@ async def print_static_state(static_state: StaticState) -> None:
     """Print static state information."""
     print(f"Min Temperature: {static_state.min_temp.value}")
     print(f"Max Temperature: {static_state.max_temp.value}")
-    
+
+
 async def main() -> None:
     """Show example on controlling your BSBLan device.
 
