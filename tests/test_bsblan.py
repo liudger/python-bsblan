@@ -215,7 +215,7 @@ async def test_not_authorized_401_response(aresponses: ResponsesMockServer) -> N
     config = BSBLANConfig(
         host="example.com",
         username="user",
-        password="pass",
+        password="pass",  # Sensitive  # noqa: S106
     )
     bsblan = BSBLAN(config)
     with pytest.raises(BSBLANError):

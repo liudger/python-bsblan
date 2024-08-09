@@ -36,7 +36,7 @@ async def main() -> None:
     config = BSBLANConfig(
         host="10.0.2.60",
         passkey=None,
-        username="liudger",
+        username="",
         password="",
     )
 
