@@ -1,15 +1,15 @@
 """Tests for retrieving information from the BSBLAN device."""
+
 # pylint: disable=duplicate-code
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
 
 from typing import Any
 
-import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
 
-from bsblan import BSBLAN, Sensor
+from bsblan import BSBLAN, BSBLANConfig, Sensor
 
 from . import load_fixture
 
@@ -27,12 +27,12 @@ async def test_sensor(aresponses: ResponsesMockServer, monkeypatch: Any) -> None
             text=load_fixture("sensor.json"),
         ),
     )
-    async with aiohttp.ClientSession() as session:
-        bsblan = BSBLAN(host="example.com", session=session)
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
 
-        monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
+    monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
 
-        sensor: Sensor = await bsblan.sensor()
-        assert sensor
-        assert sensor.current_temperature.value == "18.2"
-        assert sensor.outside_temperature.value == "7.6"
+    sensor: Sensor = await bsblan.sensor()
+    assert sensor
+    assert sensor.current_temperature.value == "18.2"
+    assert sensor.outside_temperature.value == "7.6"

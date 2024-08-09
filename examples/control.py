@@ -1,57 +1,73 @@
 # pylint: disable=W0621
 """Asynchronous Python client for BSBLan."""
-
 import asyncio
+import os
 
-from bsblan import BSBLAN, Device, Info, Sensor, State, models
+from bsblan import BSBLAN, BSBLANConfig, Device, Info, Sensor, State, StaticState
+
+
+async def print_state(state: State) -> None:
+    """Print the current state of the BSBLan device."""
+    print(f"HVAC Action: {state.hvac_action.desc}")
+    print(f"HVAC Mode: {state.hvac_mode.desc}")
+    print(f"Current Temperature: {state.current_temperature.value}")
+
+
+async def print_sensor(sensor: Sensor) -> None:
+    """Print sensor information from the BSBLan device."""
+    print(f"Outside Temperature: {sensor.outside_temperature.value}")
+
+
+async def print_device_info(device: Device, info: Info) -> None:
+    """Print device and general information."""
+    print(f"Device Name: {device.name}")
+    print(f"Version: {device.version}")
+    print(f"Device Identification: {info.device_identification.value}")
+
+
+async def print_static_state(static_state: StaticState) -> None:
+    """Print static state information."""
+    print(f"Min Temperature: {static_state.min_temp.value}")
+    print(f"Max Temperature: {static_state.max_temp.value}")
 
 
 async def main() -> None:
-    """Show example on controlling your BSBLan device.
-
-    Options:
-    - passkey (http://url/"passkey"/) if your device is setup for passkey authentication
-    - username and password if your device is setup for username/password authentication
-
-    """
-    async with BSBLAN(
+    """Show example on controlling your BSBLan device."""
+    # Create a configuration object
+    config = BSBLANConfig(
         host="10.0.2.60",
         passkey=None,
-        username=None,
-        password=None,
-    ) as bsblan:
-        # get state from bsblan device
-        state: State = await bsblan.state()
-        # state give all the parameters needed for climate device
-        print(f"hvac_action: {state.hvac_action.desc}")
-        print(f"hvac_mode: {state.hvac_mode.desc}")
-        print(f"current temperature: {state.current_temperature.value}")
+        username=os.getenv("USERNAME"),  # Compliant
+        password=os.getenv("PASSWORD"),  # Compliant
+    )
 
-        # set temp thermostat
-        print("Setting temperature to 17.5")
+    # Initialize BSBLAN with the configuration object
+    async with BSBLAN(config) as bsblan:
+        # Get and print state
+        state: State = await bsblan.state()
+        await print_state(state)
+
+        # Set thermostat temperature
+        print("\nSetting temperature to 18°C")
         await bsblan.thermostat(target_temperature="18")
-        # set hvac_mode (0-3) (protection,auto,reduced,comfort)
+
+        # Set HVAC mode
+        print("Setting HVAC mode to heat")
         await bsblan.thermostat(hvac_mode="heat")
 
-        # get sensor from bsblan device
+        # Get and print sensor information
         sensor: Sensor = await bsblan.sensor()
-        print(f"outside temperature: {sensor.outside_temperature.value}")
+        await print_sensor(sensor)
 
-        # get some generic info from the heater
+        # Get and print device and general info
         device: Device = await bsblan.device()
-        print(f"device dict: {device.to_dict()}")
-        print(f"device: {device.name}")
-        print(f"version: {device.version}")
-
         info: Info = await bsblan.info()
-        print(f"device ident: {info.device_identification.to_dict()}")
-        print(f"name: {info.device_identification.value}")
+        await print_device_info(device, info)
 
-        static_state: models.StaticState = await bsblan.static_values()
-        print(f"min temp: {static_state.min_temp.value}")
-        print(f"max temp: {static_state.max_temp.value}")
+        # Get and print static state
+        static_state: StaticState = await bsblan.static_values()
+        await print_static_state(static_state)
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop_policy().get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())

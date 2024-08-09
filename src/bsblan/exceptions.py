@@ -1,4 +1,5 @@
 """Exceptions for for BSB-Lan."""
+
 from __future__ import annotations
 
 
@@ -33,7 +34,8 @@ class BSBLANConnectionError(BSBLANError):
 
     """
 
-    message = "Error occurred while connecting to BSBLAN device."
+    message_timeout = "Timeout occurred while connecting to BSBLAN device."
+    message_error = "Error occurred while connecting to BSBLAN device."
 
     def __init__(self, response: str | None = None) -> None:
         """Initialize a new instance of the BSBLANConnectionError class.

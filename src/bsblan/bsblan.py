@@ -1,19 +1,17 @@
 """Asynchronous Python client for BSB-Lan."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
-import socket
 from asyncio.log import logger
 from dataclasses import dataclass, field
 from importlib import metadata
-from typing import Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Mapping, TypedDict, cast
 
-import async_timeout
-import backoff
-from aiohttp.client import ClientError, ClientResponseError, ClientSession
+import aiohttp
+from aiohttp.client import ClientSession
 from aiohttp.hdrs import METH_POST
-from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
 from typing_extensions import Self
 from yarl import URL
@@ -41,12 +39,15 @@ from .exceptions import (
 )
 from .models import Device, Info, Sensor, State, StaticState
 
+if TYPE_CHECKING:
+    from aiohttp.helpers import BasicAuth
+
 logging.basicConfig(level=logging.DEBUG)
 
 
 @dataclass
-class BSBLAN:
-    """Main class for handling connections with BSBLAN."""
+class BSBLANConfig:
+    """Configuration for BSBLAN."""
 
     host: str
     username: str | None = None
@@ -54,7 +55,12 @@ class BSBLAN:
     passkey: str | None = None
     port: int = 80
     request_timeout: int = 10
-    session: ClientSession | None = None
+
+
+@dataclass
+class BSBLAN:
+    """Main class for handling connections with BSBLAN."""
+
     _version: str = ""
     _heating_params: list[str] | None = None
     _string_circuit1: str | None = None
@@ -69,14 +75,49 @@ class BSBLAN:
     _auth: BasicAuth | None = None
     _close_session: bool = False
 
+    def __init__(self, config: BSBLANConfig) -> None:
+        """Initialize the BSBLAN object.
+
+        Args:
+        ----
+            config: Configuration for the BSBLAN object.
+
+        """
+        self.config = config
+        self.session: ClientSession | None = None
+        self._close_session = False
+
+    async def __aenter__(self) -> Self:
+        """Enter method for the context manager.
+
+        Returns
+        -------
+            Self: The current instance of the context manager.
+
+        """
+        if self.session is None:
+            self.session = aiohttp.ClientSession()
+            self._close_session = True
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        """Exit method for the context manager.
+
+        Args:
+        ----
+            *args: Arguments passed to the exit method.
+
+        """
+        if self._close_session and self.session:
+            await self.session.close()
+
     # cSpell:ignore BSBLAN
-    @backoff.on_exception(backoff.expo, BSBLANConnectionError, max_tries=3, logger=None)
     async def _request(
         self,
         method: str = METH_POST,
         base_path: str = "/JQ",
         data: dict[str, object] | None = None,
-        params: dict[str, object] | None = None,
+        params: Mapping[str, str | int] | str | None = None,
     ) -> dict[str, Any]:
         """Handle a request to a BSBLAN device.
 
@@ -110,18 +151,19 @@ class BSBLAN:
             version = "0.0.0"
 
         # retrieve passkey for custom url
-        if self.passkey is not None:
-            base_path = f"/{self.passkey}{base_path}"
+        if self.config.passkey:
+            base_path = f"/{self.config.passkey}{base_path}"
 
         url = URL.build(
             scheme="http",
-            host=self.host,
-            port=self.port,
+            host=self.config.host,
+            port=self.config.port,
             path=base_path,
-        ).join(URL())
+        )
 
-        if self._auth is None and self.username and self.password:
-            self._auth = BasicAuth(self.username, self.password)
+        auth = None
+        if self.config.username and self.config.password:
+            auth = aiohttp.BasicAuth(self.config.username, self.config.password)
 
         headers = {
             "User-Agent": f"PythonBSBLAN/{version}",
@@ -133,31 +175,23 @@ class BSBLAN:
             self._close_session = True
 
         try:
-            async with async_timeout.timeout(self.request_timeout):
-                response = await self.session.request(
+            async with asyncio.timeout(self.config.request_timeout):
+                async with self.session.request(
                     method,
                     url,
-                    auth=self._auth,
+                    auth=auth,
                     params=params,
                     json=data,
                     headers=headers,
-                )
-                response.raise_for_status()
-        except asyncio.TimeoutError as exception:
-            raise BSBLANConnectionError(BSBLANConnectionError.message) from exception
-        except (
-            ClientError,
-            ClientResponseError,
-            socket.gaierror,
-        ) as exception:
-            raise BSBLANConnectionError(BSBLANConnectionError.message) from exception
-
-        content_type = response.headers.get("Content-Type", "")
-        if "application/json" not in content_type:
-            text = await response.text()
-            raise BSBLANError(BSBLANError.message + f" ({text})")
-
-        return cast(dict[str, Any], await response.json())
+                ) as response:
+                    response.raise_for_status()
+                    return cast(dict[str, Any], await response.json())
+        except asyncio.TimeoutError as e:
+            raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
+        except aiohttp.ClientError as e:
+            raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
+        except ValueError as e:
+            raise BSBLANError(str(e)) from e
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
@@ -361,29 +395,3 @@ class BSBLAN:
         # Now it only checks if it could set value.
         response = await self._request(base_path="/JS", data=dict(state))
         logger.debug("response for setting: %s", response)
-
-    async def close(self) -> None:
-        """Close open client session."""
-        if self.session and self._close_session:
-            await self.session.close()
-
-    async def __aenter__(self) -> Self:
-        """Async enter.
-
-        Returns
-        -------
-            The BSBLAN object.
-
-        """
-        logger.debug("BSBLAN: %s", self)
-        return self
-
-    async def __aexit__(self, *_exc_info: object) -> None:
-        """Async exit.
-
-        Args:
-        ----
-            *_exc_info: Exec type.
-
-        """
-        await self.close()
