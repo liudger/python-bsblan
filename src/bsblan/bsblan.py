@@ -7,11 +7,12 @@ import logging
 from asyncio.log import logger
 from dataclasses import dataclass, field
 from importlib import metadata
-from typing import TYPE_CHECKING, Any, Mapping, TypedDict, cast
+from typing import Any, Mapping, TypedDict, cast
 
 import aiohttp
 from aiohttp.client import ClientSession
 from aiohttp.hdrs import METH_POST
+from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
 from typing_extensions import Self
 from yarl import URL
@@ -38,9 +39,6 @@ from .exceptions import (
     BSBLANVersionError,
 )
 from .models import Device, Info, Sensor, State, StaticState
-
-if TYPE_CHECKING:
-    from aiohttp.helpers import BasicAuth
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -86,6 +84,33 @@ class BSBLAN:
         self.config = config
         self.session: ClientSession | None = None
         self._close_session = False
+        self._package_version: str | None = None
+        self._package_version_future: asyncio.Future[str] | None = None
+
+    @staticmethod
+    def _get_package_version() -> str:
+        """Get the version of the package.
+
+        Returns
+        -------
+            The version of the package.
+
+        """
+        try:
+            return metadata.version("bsblan")
+        except metadata.PackageNotFoundError:
+            return "0.0.0"
+
+    async def _ensure_package_version(self) -> None:
+        """Ensure the package version is available."""
+        if self._package_version is None:
+            if self._package_version_future is None:
+                loop = asyncio.get_event_loop()
+                self._package_version_future = loop.run_in_executor(
+                    None,
+                    self._get_package_version,
+                )
+            self._package_version = await self._package_version_future
 
     async def __aenter__(self) -> Self:
         """Enter method for the context manager.
@@ -145,10 +170,8 @@ class BSBLAN:
                 response.
 
         """
-        try:
-            version = metadata.version(__package__ or __name__)
-        except metadata.PackageNotFoundError:
-            version = "0.0.0"
+        await self._ensure_package_version()
+        _version = self._package_version
 
         # retrieve passkey for custom url
         if self.config.passkey:
@@ -163,10 +186,10 @@ class BSBLAN:
 
         auth = None
         if self.config.username and self.config.password:
-            auth = aiohttp.BasicAuth(self.config.username, self.config.password)
+            auth = BasicAuth(self.config.username, self.config.password)
 
         headers = {
-            "User-Agent": f"PythonBSBLAN/{version}",
+            "User-Agent": f"PythonBSBLAN/{_version}",
             "Accept": "application/json, */*",
         }
 
