@@ -3,7 +3,16 @@
 import asyncio
 import os
 
-from bsblan import BSBLAN, BSBLANConfig, Device, Info, Sensor, State, StaticState
+from bsblan import (
+    BSBLAN,
+    BSBLANConfig,
+    Device,
+    HotWaterState,
+    Info,
+    Sensor,
+    State,
+    StaticState,
+)
 
 
 async def print_state(state: State) -> None:
@@ -29,6 +38,18 @@ async def print_static_state(static_state: StaticState) -> None:
     """Print static state information."""
     print(f"Min Temperature: {static_state.min_temp.value}")
     print(f"Max Temperature: {static_state.max_temp.value}")
+
+
+async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
+    """Print hot water state information."""
+    print("\nHot Water State:")
+    print(f"Operating Mode: {hot_water_state.operating_mode.desc}")
+    print(f"Nominal Setpoint: {hot_water_state.nominal_setpoint.value}")
+    print(f"Reduced Setpoint: {hot_water_state.reduced_setpoint.value}")
+    print(f"Release: {hot_water_state.release.desc}")
+    print(f"Legionella Function: {hot_water_state.legionella_function.desc}")
+    print(f"Legionella Periodically: {hot_water_state.legionella_periodically.value}")
+    print(f"Legionella Setpoint: {hot_water_state.legionella_setpoint.value}")
 
 
 async def main() -> None:
@@ -67,6 +88,10 @@ async def main() -> None:
         # Get and print static state
         static_state: StaticState = await bsblan.static_values()
         await print_static_state(static_state)
+
+        # Get hot water state
+        hot_water_state: HotWaterState = await bsblan.hot_water_state()
+        await print_hot_water_state(hot_water_state)
 
 
 if __name__ == "__main__":
