@@ -30,7 +30,7 @@ async def test_sensor(aresponses: ResponsesMockServer, monkeypatch: Any) -> None
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
+    monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
 
     sensor: Sensor = await bsblan.sensor()
     assert sensor

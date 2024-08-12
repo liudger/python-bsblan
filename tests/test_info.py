@@ -28,7 +28,7 @@ async def test_info(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    monkeypatch.setattr(bsblan, "_version", "1.0.38-20200730234859")
+    monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
 
     info: Info = await bsblan.info()
     assert info

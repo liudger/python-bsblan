@@ -6,7 +6,6 @@ import asyncio
 import logging
 from asyncio.log import logger
 from dataclasses import dataclass, field
-from importlib import metadata
 from typing import Any, Mapping, TypedDict, cast
 
 import aiohttp
@@ -59,7 +58,6 @@ class BSBLANConfig:
 class BSBLAN:
     """Main class for handling connections with BSBLAN."""
 
-    _version: str = ""
     _heating_params: list[str] | None = None
     _string_circuit1: str | None = None
     _sensor_params: list[str] | None = None
@@ -73,44 +71,30 @@ class BSBLAN:
     _auth: BasicAuth | None = None
     _close_session: bool = False
 
-    def __init__(self, config: BSBLANConfig) -> None:
+    def __init__(
+        self,
+        config: BSBLANConfig,
+        session: ClientSession | None = None,
+    ) -> None:
         """Initialize the BSBLAN object.
 
         Args:
         ----
             config: Configuration for the BSBLAN object.
+            session: The aiohttp session to use for the connection.
 
         """
         self.config = config
-        self.session: ClientSession | None = None
-        self._close_session = False
-        self._package_version: str | None = None
-        self._package_version_future: asyncio.Future[str] | None = None
+        self.session = session
+        self._close_session = session is None
+        self._firmware_version: str | None = None
 
-    @staticmethod
-    def _get_package_version() -> str:
-        """Get the version of the package.
-
-        Returns
-        -------
-            The version of the package.
-
-        """
-        try:
-            return metadata.version("bsblan")
-        except metadata.PackageNotFoundError:
-            return "0.0.0"
-
-    async def _ensure_package_version(self) -> None:
-        """Ensure the package version is available."""
-        if self._package_version is None:
-            if self._package_version_future is None:
-                loop = asyncio.get_event_loop()
-                self._package_version_future = loop.run_in_executor(
-                    None,
-                    self._get_package_version,
-                )
-            self._package_version = await self._package_version_future
+    async def _fetch_firmware_version(self) -> None:
+        """Fetch the firmware version if not already available."""
+        if self._firmware_version is None:
+            device = await self.device()
+            self._firmware_version = device.version
+            logger.debug("BSBLAN version: %s", self._firmware_version)
 
     async def __aenter__(self) -> Self:
         """Enter method for the context manager.
@@ -170,9 +154,6 @@ class BSBLAN:
                 response.
 
         """
-        await self._ensure_package_version()
-        _version = self._package_version
-
         # retrieve passkey for custom url
         if self.config.passkey:
             base_path = f"/{self.config.passkey}{base_path}"
@@ -189,7 +170,7 @@ class BSBLAN:
             auth = BasicAuth(self.config.username, self.config.password)
 
         headers = {
-            "User-Agent": f"PythonBSBLAN/{_version}",
+            "User-Agent": f"PythonBSBLAN/{self._firmware_version}",
             "Accept": "application/json, */*",
         }
 
@@ -288,18 +269,20 @@ class BSBLAN:
             A dictionary with dicts
 
         """
-        if not self._version:
-            device = await self.device()
-            self._version = device.version
-            logger.debug("BSBLAN version: %s", self._version)
-        if pkg_version.parse(self._version) < pkg_version.parse("1.2.0"):
+        await self._fetch_firmware_version()
+
+        if self._firmware_version is None:
+            msg = "Unable to fetch firmware version"
+            raise BSBLANError(msg)
+
+        if pkg_version.parse(self._firmware_version) < pkg_version.parse("1.2.0"):
             return {
                 "heating": HEATING_CIRCUIT1_API_V1,
                 "staticValues": STATIC_VALUES_API_V1,
                 "device": DEVICE_INFO_API_V1,
                 "sensor": SENSORS_API_V1,
             }
-        if pkg_version.parse(self._version) > pkg_version.parse("3.0.0"):
+        if pkg_version.parse(self._firmware_version) > pkg_version.parse("3.0.0"):
             return {
                 "heating": HEATING_CIRCUIT1_API_V3,
                 "staticValues": STATIC_VALUES_API_V3,
