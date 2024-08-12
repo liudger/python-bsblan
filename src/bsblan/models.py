@@ -85,6 +85,19 @@ class Sensor(DataClassJSONMixin):
 
 
 @dataclass
+class HotWaterState(DataClassJSONMixin):
+    """Object holds info about object for hot water climate."""
+
+    operating_mode: EntityInfo
+    nominal_setpoint: EntityInfo
+    reduced_setpoint: EntityInfo
+    release: EntityInfo
+    legionella_function: EntityInfo
+    legionella_setpoint: EntityInfo
+    legionella_periodically: EntityInfo
+
+
+@dataclass
 class Device(DataClassJSONMixin):
     """Object holds bsblan device information.
 

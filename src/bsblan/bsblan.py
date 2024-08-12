@@ -21,6 +21,8 @@ from .constants import (
     DEVICE_INFO_API_V3,
     HEATING_CIRCUIT1_API_V1,
     HEATING_CIRCUIT1_API_V3,
+    HOT_WATER_API_V1,
+    HOT_WATER_API_V3,
     HVAC_MODE_DICT,
     HVAC_MODE_DICT_REVERSE,
     INVALID_VALUES_ERROR_MSG,
@@ -37,7 +39,7 @@ from .exceptions import (
     BSBLANInvalidParameterError,
     BSBLANVersionError,
 )
-from .models import Device, Info, Sensor, State, StaticState
+from .models import Device, HotWaterState, Info, Sensor, State, StaticState
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -62,12 +64,14 @@ class BSBLAN:
     _string_circuit1: str | None = None
     _sensor_params: list[str] | None = None
     _sensor_list: str | None = None
+    _hot_water_params: list[str] | None = None
+    _hot_water_string: str | None = None
     _static_params: list[str] | None = None
     _static_list: str | None = None
     _device_params: list[str] = field(default_factory=list)
     _min_temp: float = 7.0
     _max_temp: float = 25.0
-    _info: str | None = None
+    _info_string: str | None = None
     _auth: BasicAuth | None = None
     _close_session: bool = False
 
@@ -281,6 +285,7 @@ class BSBLAN:
                 "staticValues": STATIC_VALUES_API_V1,
                 "device": DEVICE_INFO_API_V1,
                 "sensor": SENSORS_API_V1,
+                "hot_water": HOT_WATER_API_V1,
             }
         if pkg_version.parse(self._firmware_version) > pkg_version.parse("3.0.0"):
             return {
@@ -288,6 +293,7 @@ class BSBLAN:
                 "staticValues": STATIC_VALUES_API_V3,
                 "device": DEVICE_INFO_API_V3,
                 "sensor": SENSORS_API_V3,
+                "hot_water": HOT_WATER_API_V3,
             }
         raise BSBLANVersionError(VERSION_ERROR_MSG)
 
@@ -310,13 +316,13 @@ class BSBLAN:
             A BSBLAN info object about the heating system.
 
         """
-        if not self._info or not self._device_params:
+        if not self._info_string or not self._device_params:
             device_dict = await self._get_dict_version()
             data = await self._get_parameters(device_dict["device"])
-            self._info = str(data["string_par"])
+            self._info_string = str(data["string_par"])
             self._device_params = data["list"]
 
-        data = await self._request(params={"Parameter": f"{self._info}"})
+        data = await self._request(params={"Parameter": f"{self._info_string}"})
         data = dict(zip(self._device_params, list(data.values()), strict=True))
         return Info.from_dict(data)
 
@@ -401,3 +407,45 @@ class BSBLAN:
         # Now it only checks if it could set value.
         response = await self._request(base_path="/JS", data=dict(state))
         logger.debug("response for setting: %s", response)
+
+    async def hot_water_state(self) -> HotWaterState:
+        """Get the current hot water state from BSBLAN device."""
+        if not self._hot_water_string or not self._hot_water_params:
+            data = await self._get_dict_version()
+            data = await self._get_parameters(data["hot_water"])
+            self._hot_water_string = str(data["string_par"])
+            self._hot_water_params = list(data["list"])
+
+        data = await self._request(params={"Parameter": f"{self._hot_water_string}"})
+        data = dict(zip(self._hot_water_params, list(data.values()), strict=True))
+        return HotWaterState.from_dict(data)
+
+    async def set_hot_water(
+        self,
+        operating_mode: str | None = None,
+        nominal_setpoint: float | None = None,
+        reduced_setpoint: float | None = None,
+    ) -> None:
+        """Change the state of the hot water system through BSB-Lan."""
+        state = {}
+
+        if operating_mode is not None:
+            state["Parameter"] = "1600"
+            state["EnumValue"] = operating_mode
+            state["Type"] = "1"
+
+        if nominal_setpoint is not None:
+            state["Parameter"] = "1610"
+            state["Value"] = str(nominal_setpoint)
+            state["Type"] = "1"
+
+        if reduced_setpoint is not None:
+            state["Parameter"] = "1612"
+            state["Value"] = str(reduced_setpoint)
+            state["Type"] = "1"
+
+        if not state:
+            raise BSBLANError(NO_STATE_ERROR_MSG)
+
+        response = await self._request(base_path="/JS", data=dict(state))
+        logger.debug("response for setting hot water: %s", response)
