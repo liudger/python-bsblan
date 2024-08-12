@@ -30,6 +30,27 @@ HEATING_CIRCUIT1_API_V3 = {
     "8749.0": "room1_thermostat_mode",
 }
 
+# get the correct values for the hot water
+HOT_WATER_API_V1 = {
+    "1600": "operating_mode",
+    "1610": "nominal_setpoint",
+    "1612": "reduced_setpoint",
+    "1620": "release",
+    "1640": "legionella_function",
+    "1645": "legionella_setpoint",
+    "1641": "legionella_periodically",
+}
+
+HOT_WATER_API_V3 = {
+    "1600": "operating_mode",
+    "1610": "nominal_setpoint",
+    "1612": "reduced_setpoint",
+    "1620": "release",
+    "1640": "legionella_function",
+    "1645": "legionella_setpoint",
+    "1641": "legionella_periodically",
+}
+
 STATIC_VALUES_API_V1 = {
     "714": "min_temp",
     "730": "max_temp",
