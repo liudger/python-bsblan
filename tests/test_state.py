@@ -48,24 +48,25 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         # Mock _initialize_api_data and _get_parameters
         # to return the specified dictionary
         initialize_api_data_mock = AsyncMock()
-        get_parameters_mock = AsyncMock(return_value={
-            "string_par": "700,710,900,8000,8740,8749,770",
-            "list": [
-                "hvac_mode",
-                "target_temperature",
-                "hvac_mode2",
-                "hvac_action",
-                "current_temperature",
-                "room1_thermostat_mode",
-                "room1_temp_setpoint_boost",
-            ],
-        })
+        get_parameters_mock = AsyncMock(
+            return_value={
+                "string_par": "700,710,900,8000,8740,8749,770",
+                "list": [
+                    "hvac_mode",
+                    "target_temperature",
+                    "hvac_mode2",
+                    "hvac_action",
+                    "current_temperature",
+                    "room1_thermostat_mode",
+                    "room1_temp_setpoint_boost",
+                ],
+            }
+        )
         request_mock = AsyncMock(return_value=json.loads(load_fixture("state.json")))
 
         monkeypatch.setattr(bsblan, "_initialize_api_data", initialize_api_data_mock)
         monkeypatch.setattr(bsblan, "_get_parameters", get_parameters_mock)
         monkeypatch.setattr(bsblan, "_request", request_mock)
-
 
         state: State = await bsblan.state()
 

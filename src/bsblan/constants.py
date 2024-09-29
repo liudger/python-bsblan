@@ -1,4 +1,5 @@
 """BSBLAN constants."""
+
 from __future__ import annotations
 
 from typing import Final, TypedDict
@@ -13,6 +14,7 @@ class APIConfig(TypedDict):
     device: dict[str, str]
     sensor: dict[str, str]
     hot_water: dict[str, str]
+
 
 API_V1: Final[APIConfig] = {
     "heating": {

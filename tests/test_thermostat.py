@@ -19,6 +19,7 @@ from bsblan.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.fixture
 async def mock_bsblan() -> AsyncGenerator[BSBLAN, None]:
     """Fixture to create a mocked BSBLAN instance."""
@@ -32,9 +33,9 @@ async def mock_bsblan() -> AsyncGenerator[BSBLAN, None]:
         bsblan._temperature_range_initialized = True
         yield bsblan
 
+
 @pytest.fixture
-async def mock_aresponses(
-) -> AsyncGenerator[ResponsesMockServer, None]:
+async def mock_aresponses() -> AsyncGenerator[ResponsesMockServer, None]:
     """Fixture to mock aiohttp responses."""
     async with ResponsesMockServer() as server:
         # Mock response for /JQ
@@ -44,14 +45,17 @@ async def mock_aresponses(
             "POST",
             Response(
                 text=json.dumps(
-                    {"714.0": {"value": "8.0"}, "716.0": {"value": "30.0"}}),
+                    {"714.0": {"value": "8.0"}, "716.0": {"value": "30.0"}}
+                ),
                 content_type="application/json",
             ),
         )
         yield server
 
+
 def create_response_handler(expected_data: dict[str, Any]) -> Response:
     """Create a response handler that checks the request data."""
+
     async def response_handler(request: aiohttp.web.Request) -> Response:
         """Check the request data."""
         assert request.method == "POST"
@@ -66,18 +70,21 @@ def create_response_handler(expected_data: dict[str, Any]) -> Response:
                 assert str(actual_data[key]) == str(value)
             else:
                 assert actual_data[key] == value, (
-                        f"Mismatch for key '{key}': expected {value}, "
-                        f"got {actual_data[key]}"
+                    f"Mismatch for key '{key}': expected {value}, "
+                    f"got {actual_data[key]}"
                 )
 
         return Response(
-            text=json.dumps({"status": "success"}),
-            content_type="application/json")
+            text=json.dumps({"status": "success"}), content_type="application/json"
+        )
+
     return response_handler
+
 
 @pytest.mark.asyncio
 async def test_change_temperature(
-    mock_bsblan: BSBLAN, mock_aresponses: ResponsesMockServer,
+    mock_bsblan: BSBLAN,
+    mock_aresponses: ResponsesMockServer,
 ) -> None:
     """Test changing BSBLAN temperature."""
     expected_data = {
@@ -92,6 +99,7 @@ async def test_change_temperature(
         create_response_handler(expected_data),
     )
     await mock_bsblan.thermostat(target_temperature="20")
+
 
 @pytest.mark.asyncio
 async def test_change_hvac_mode(
@@ -112,17 +120,20 @@ async def test_change_hvac_mode(
     )
     await mock_bsblan.thermostat(hvac_mode="auto")
 
+
 @pytest.mark.asyncio
 async def test_invalid_temperature(mock_bsblan: BSBLAN) -> None:
     """Test setting an invalid temperature."""
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan.thermostat(target_temperature="35")
 
+
 @pytest.mark.asyncio
 async def test_invalid_hvac_mode(mock_bsblan: BSBLAN) -> None:
     """Test setting an invalid HVAC mode."""
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan.thermostat(hvac_mode="invalid_mode")
+
 
 @pytest.mark.asyncio
 async def test_no_parameters(mock_bsblan: BSBLAN) -> None:

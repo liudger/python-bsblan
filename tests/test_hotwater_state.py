@@ -1,4 +1,5 @@
 """Tests for retrieving hotwater information from the BSBLAN device."""
+
 import json
 from typing import Any
 from unittest.mock import AsyncMock
@@ -15,8 +16,8 @@ from . import load_fixture
 
 @pytest.mark.asyncio
 async def test_hot_water_state(
-    aresponses: ResponsesMockServer,
-    monkeypatch: Any) -> None:
+    aresponses: ResponsesMockServer, monkeypatch: Any
+) -> None:
     """Test getting BSBLAN hot water state."""
     # Set environment variable
     monkeypatch.setenv("BSBLAN_PASS", "your_password")
@@ -45,19 +46,23 @@ async def test_hot_water_state(
 
         # Mock _initialize_api_data and _get_parameters to return the specified dictionary
         initialize_api_data_mock = AsyncMock()
-        get_parameters_mock = AsyncMock(return_value={
-            "string_par": "1600,1610,1612,1620,1640,1645,1641",
-            "list": [
-                "operating_mode",
-                "nominal_setpoint",
-                "reduced_setpoint",
-                "release",
-                "legionella_function",
-                "legionella_setpoint",
-                "legionella_periodically",
-            ],
-        })
-        request_mock = AsyncMock(return_value=json.loads(load_fixture("hot_water_state.json")))
+        get_parameters_mock = AsyncMock(
+            return_value={
+                "string_par": "1600,1610,1612,1620,1640,1645,1641",
+                "list": [
+                    "operating_mode",
+                    "nominal_setpoint",
+                    "reduced_setpoint",
+                    "release",
+                    "legionella_function",
+                    "legionella_setpoint",
+                    "legionella_periodically",
+                ],
+            }
+        )
+        request_mock = AsyncMock(
+            return_value=json.loads(load_fixture("hot_water_state.json"))
+        )
 
         monkeypatch.setattr(bsblan, "_initialize_api_data", initialize_api_data_mock)
         monkeypatch.setattr(bsblan, "_get_parameters", get_parameters_mock)
@@ -78,4 +83,6 @@ async def test_hot_water_state(
         # Verify method calls
         initialize_api_data_mock.assert_called_once()
         get_parameters_mock.assert_called_once()
-        request_mock.assert_called_once_with(params={"Parameter": "1600,1610,1612,1620,1640,1645,1641"})
+        request_mock.assert_called_once_with(
+            params={"Parameter": "1600,1610,1612,1620,1640,1645,1641"}
+        )
