@@ -86,7 +86,9 @@ async def test_prepare_hot_water_state() -> None:
 
     # Test preparing operating_mode
     state = bsblan._prepare_hot_water_state(
-        operating_mode="3", nominal_setpoint=None, reduced_setpoint=None
+        operating_mode="3",
+        nominal_setpoint=None,
+        reduced_setpoint=None,
     )
     assert state == {
         "Parameter": "1600",
@@ -96,7 +98,9 @@ async def test_prepare_hot_water_state() -> None:
 
     # Test preparing nominal_setpoint
     state = bsblan._prepare_hot_water_state(
-        operating_mode=None, nominal_setpoint=60.0, reduced_setpoint=None
+        operating_mode=None,
+        nominal_setpoint=60.0,
+        reduced_setpoint=None,
     )
     assert state == {
         "Parameter": "1610",
@@ -106,7 +110,9 @@ async def test_prepare_hot_water_state() -> None:
 
     # Test preparing reduced_setpoint
     state = bsblan._prepare_hot_water_state(
-        operating_mode=None, nominal_setpoint=None, reduced_setpoint=40.0
+        operating_mode=None,
+        nominal_setpoint=None,
+        reduced_setpoint=40.0,
     )
     assert state == {
         "Parameter": "1612",
@@ -117,13 +123,16 @@ async def test_prepare_hot_water_state() -> None:
     # Test preparing no parameters (should raise an error)
     with pytest.raises(BSBLANError, match=NO_STATE_ERROR_MSG):
         bsblan._prepare_hot_water_state(
-            operating_mode=None, nominal_setpoint=None, reduced_setpoint=None
+            operating_mode=None,
+            nominal_setpoint=None,
+            reduced_setpoint=None,
         )
 
 
 @pytest.mark.asyncio
 async def test_set_hot_water_state(
-    aresponses: ResponsesMockServer, monkeypatch: Any
+    aresponses: ResponsesMockServer,
+    monkeypatch: Any,
 ) -> None:
     """Test setting hot water state."""
     # Set environment variable

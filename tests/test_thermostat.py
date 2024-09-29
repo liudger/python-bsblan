@@ -45,7 +45,7 @@ async def mock_aresponses() -> AsyncGenerator[ResponsesMockServer, None]:
             "POST",
             Response(
                 text=json.dumps(
-                    {"714.0": {"value": "8.0"}, "716.0": {"value": "30.0"}}
+                    {"714.0": {"value": "8.0"}, "716.0": {"value": "30.0"}},
                 ),
                 content_type="application/json",
             ),
@@ -75,7 +75,8 @@ def create_response_handler(expected_data: dict[str, Any]) -> Response:
                 )
 
         return Response(
-            text=json.dumps({"status": "success"}), content_type="application/json"
+            text=json.dumps({"status": "success"}),
+            content_type="application/json",
         )
 
     return response_handler

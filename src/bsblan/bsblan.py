@@ -332,15 +332,15 @@ class BSBLAN:
         state: dict[str, Any] = {}
         if operating_mode is not None:
             state.update(
-                {"Parameter": "1600", "EnumValue": operating_mode, "Type": "1"}
+                {"Parameter": "1600", "EnumValue": operating_mode, "Type": "1"},
             )
         if nominal_setpoint is not None:
             state.update(
-                {"Parameter": "1610", "Value": str(nominal_setpoint), "Type": "1"}
+                {"Parameter": "1610", "Value": str(nominal_setpoint), "Type": "1"},
             )
         if reduced_setpoint is not None:
             state.update(
-                {"Parameter": "1612", "Value": str(reduced_setpoint), "Type": "1"}
+                {"Parameter": "1612", "Value": str(reduced_setpoint), "Type": "1"},
             )
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)

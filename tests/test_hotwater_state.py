@@ -16,7 +16,8 @@ from . import load_fixture
 
 @pytest.mark.asyncio
 async def test_hot_water_state(
-    aresponses: ResponsesMockServer, monkeypatch: Any
+    aresponses: ResponsesMockServer,
+    monkeypatch: Any,
 ) -> None:
     """Test getting BSBLAN hot water state."""
     # Set environment variable
@@ -58,10 +59,10 @@ async def test_hot_water_state(
                     "legionella_setpoint",
                     "legionella_periodically",
                 ],
-            }
+            },
         )
         request_mock = AsyncMock(
-            return_value=json.loads(load_fixture("hot_water_state.json"))
+            return_value=json.loads(load_fixture("hot_water_state.json")),
         )
 
         monkeypatch.setattr(bsblan, "_initialize_api_data", initialize_api_data_mock)
@@ -84,5 +85,5 @@ async def test_hot_water_state(
         initialize_api_data_mock.assert_called_once()
         get_parameters_mock.assert_called_once()
         request_mock.assert_called_once_with(
-            params={"Parameter": "1600,1610,1612,1620,1640,1645,1641"}
+            params={"Parameter": "1600,1610,1612,1620,1640,1645,1641"},
         )

@@ -60,7 +60,7 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
                     "room1_thermostat_mode",
                     "room1_temp_setpoint_boost",
                 ],
-            }
+            },
         )
         request_mock = AsyncMock(return_value=json.loads(load_fixture("state.json")))
 
