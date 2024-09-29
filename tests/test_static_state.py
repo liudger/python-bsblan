@@ -6,6 +6,7 @@
 
 from typing import Any
 
+import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
 
@@ -27,13 +28,15 @@ async def test_sensor(aresponses: ResponsesMockServer, monkeypatch: Any) -> None
             text=load_fixture("static_state.json"),
         ),
     )
-    bsblan = BSBLAN(config=BSBLANConfig(host="example.com"))
+    async with aiohttp.ClientSession() as session:
 
-    monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        bsblan = BSBLAN(config=BSBLANConfig(host="example.com"), session=session)
 
-    static: StaticState = await bsblan.static_values()
-    assert static
-    assert static.min_temp.value == "8.0"
-    assert static.max_temp.value == "20.0"
-    assert bsblan._min_temp == "8.0"
-    assert bsblan._max_temp == "20.0"
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        # set _api_version
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+
+        static: StaticState = await bsblan.static_values()
+        assert static
+        assert static.min_temp.value == "8.0"
+        assert static.max_temp.value == "20.0"

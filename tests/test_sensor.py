@@ -6,6 +6,7 @@
 
 from typing import Any
 
+import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
 
@@ -27,12 +28,16 @@ async def test_sensor(aresponses: ResponsesMockServer, monkeypatch: Any) -> None
             text=load_fixture("sensor.json"),
         ),
     )
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
+    async with aiohttp.ClientSession() as session:
 
-    monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
 
-    sensor: Sensor = await bsblan.sensor()
-    assert sensor
-    assert sensor.current_temperature.value == "18.2"
-    assert sensor.outside_temperature.value == "7.6"
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        # set _api_version
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+
+        sensor: Sensor = await bsblan.sensor()
+        assert sensor
+        assert sensor.current_temperature.value == "18.2"
+        assert sensor.outside_temperature.value == "7.6"

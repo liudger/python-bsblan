@@ -3,6 +3,7 @@
 # file deepcode ignore W0212: this is a testfile
 from typing import TYPE_CHECKING
 
+import aiohttp
 import pytest
 from aresponses import ResponsesMockServer
 
@@ -27,13 +28,15 @@ async def test_device(aresponses: ResponsesMockServer) -> None:
             text=load_fixture("device.json"),
         ),
     )
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
+    async with aiohttp.ClientSession() as session:
 
-    # test _info and _device_params
-    device: Device = await bsblan.device()
-    assert device
-    assert device.name == "BSB-LAN"
-    assert device.version == "1.0.38-20200730234859"
-    assert device.MAC == "00:80:41:19:69:90"
-    assert device.uptime == 969402857
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        # test _info and _device_params
+        device: Device = await bsblan.device()
+        assert device
+        assert device.name == "BSB-LAN"
+        assert device.version == "1.0.38-20200730234859"
+        assert device.MAC == "00:80:41:19:69:90"
+        assert device.uptime == 969402857
