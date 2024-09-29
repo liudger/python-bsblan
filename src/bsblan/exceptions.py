@@ -1,4 +1,4 @@
-"""Exceptions for for BSB-Lan."""
+"""Exceptions for BSB-Lan."""
 
 from __future__ import annotations
 
@@ -9,46 +9,20 @@ class BSBLANError(Exception):
     message: str = "Unexpected response from the BSBLAN device."
 
     def __init__(self, message: str | None = None) -> None:
-        """Initialize a new instance of the BSBLANError class.
-
-        Args:
-        ----
-            message: Optional error message to include in the exception.
-
-        Returns:
-        -------
-            None.
-
-        """
+        """Initialize a new instance of the BSBLANError class."""
         if message is not None:
             self.message = message
         super().__init__(self.message)
 
 
 class BSBLANConnectionError(BSBLANError):
-    """BSBLAN connection exception.
+    """BSBLAN connection exception."""
 
-    Attributes
-    ----------
-        response: The response received from the BSBLAN device.
-
-    """
-
-    message_timeout = "Timeout occurred while connecting to BSBLAN device."
-    message_error = "Error occurred while connecting to BSBLAN device."
+    message_timeout: str = "Timeout occurred while connecting to BSBLAN device."
+    message_error: str = "Error occurred while connecting to BSBLAN device."
 
     def __init__(self, response: str | None = None) -> None:
-        """Initialize a new instance of the BSBLANConnectionError class.
-
-        Args:
-        ----
-            response: Optional error message to include in the exception.
-
-        Returns:
-        -------
-            None.
-
-        """
+        """Initialize a new instance of the BSBLANConnectionError class."""
         self.response = response
         super().__init__(self.message)
 
@@ -56,23 +30,13 @@ class BSBLANConnectionError(BSBLANError):
 class BSBLANVersionError(BSBLANError):
     """Raised when the BSBLAN device has an unsupported version."""
 
-    message = "The BSBLAN device has an unsupported version."
+    message: str = "The BSBLAN device has an unsupported version."
 
 
 class BSBLANInvalidParameterError(BSBLANError):
     """Raised when an invalid parameter is provided."""
 
     def __init__(self, parameter: str) -> None:
-        """Initialize a new instance of the BSBLANInvalidParameterError class.
-
-        Args:
-        ----
-            parameter: The invalid parameter.
-
-        Returns:
-        -------
-            None.
-
-        """
-        self.message = f"Invalid parameter: {parameter}"
+        """Initialize a new instance of the BSBLANInvalidParameterError class."""
+        self.message = f"Invalid values provided: {parameter}"
         super().__init__(self.message)
