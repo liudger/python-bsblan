@@ -12,8 +12,6 @@ import pytest
 from bsblan import BSBLAN, BSBLANError
 from bsblan.constants import MULTI_PARAMETER_ERROR_MSG, NO_STATE_ERROR_MSG
 
-request_mock: AsyncMock = AsyncMock(return_value={"status": "ok"})
-
 
 @pytest.mark.asyncio
 async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
