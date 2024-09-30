@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, NoReturn, cast
+from typing import TYPE_CHECKING, Any, Mapping, cast
 
 import aiohttp
 from aiohttp.hdrs import METH_POST
@@ -15,6 +15,7 @@ from typing_extensions import Self
 from yarl import URL
 
 from .constants import (
+    API_DATA_NOT_INITIALIZED_ERROR_MSG,
     API_VERSION_ERROR_MSG,
     API_VERSIONS,
     FIRMWARE_VERSION_ERROR_MSG,
@@ -22,8 +23,10 @@ from .constants import (
     HVAC_MODE_DICT_REVERSE,
     MULTI_PARAMETER_ERROR_MSG,
     NO_STATE_ERROR_MSG,
+    SESSION_NOT_INITIALIZED_ERROR_MSG,
     TEMPERATURE_RANGE_ERROR_MSG,
     VERSION_ERROR_MSG,
+    APIConfig,
 )
 from .exceptions import (
     BSBLANConnectionError,
@@ -64,7 +67,13 @@ class BSBLAN:
     _min_temp: float | None = None
     _max_temp: float | None = None
     _temperature_range_initialized: bool = False
-    _api_data: dict[str, Any] | None = None
+    _api_data: APIConfig | None = None
+
+    def __post_init__(self) -> None:
+        """Initialize the session if not provided."""
+        if self.session is None:
+            self.session = aiohttp.ClientSession()
+            self._close_session = True
 
     async def __aenter__(self) -> Self:
         """Enter the context manager."""
@@ -95,16 +104,16 @@ class BSBLAN:
 
     def _set_api_version(self) -> None:
         """Set the API version based on the firmware version."""
-        if self._firmware_version:
-            version = pkg_version.parse(self._firmware_version)
-            if version < pkg_version.parse("1.2.0"):
-                self._api_version = "v1"
-            elif version >= pkg_version.parse("3.0.0"):
-                self._api_version = "v3"
-            else:
-                raise BSBLANVersionError(VERSION_ERROR_MSG)
-        else:
+        if not self._firmware_version:
             raise BSBLANError(FIRMWARE_VERSION_ERROR_MSG)
+
+        version = pkg_version.parse(self._firmware_version)
+        if version < pkg_version.parse("1.2.0"):
+            self._api_version = "v1"
+        elif version >= pkg_version.parse("3.0.0"):
+            self._api_version = "v3"
+        else:
+            raise BSBLANVersionError(VERSION_ERROR_MSG)
 
     async def _initialize_temperature_range(self) -> None:
         """Initialize the temperature range from static values."""
@@ -119,13 +128,16 @@ class BSBLAN:
                 self._max_temp,
             )
 
-    async def _initialize_api_data(self) -> None:
+    async def _initialize_api_data(self) -> APIConfig:
         """Initialize and cache the API data."""
         if self._api_data is None:
             if self._api_version is None:
                 raise BSBLANError(API_VERSION_ERROR_MSG)
             self._api_data = API_VERSIONS[self._api_version]
             logger.debug("API data initialized for version: %s", self._api_version)
+        if self._api_data is None:
+            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+        return self._api_data
 
     async def _request(
         self,
@@ -135,6 +147,8 @@ class BSBLAN:
         params: Mapping[str, str | int] | str | None = None,
     ) -> dict[str, Any]:
         """Handle a request to a BSBLAN device."""
+        if self.session is None:
+            raise BSBLANError(SESSION_NOT_INITIALIZED_ERROR_MSG)
         url = self._build_url(base_path)
         auth = self._get_auth()
         headers = self._get_headers()
@@ -194,8 +208,8 @@ class BSBLAN:
 
     async def state(self) -> State:
         """Get the current state from BSBLAN device."""
-        await self._initialize_api_data()
-        params = await self._get_parameters(self._api_data["heating"])
+        api_data = await self._initialize_api_data()
+        params = await self._get_parameters(api_data["heating"])
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
@@ -203,16 +217,16 @@ class BSBLAN:
 
     async def sensor(self) -> Sensor:
         """Get the sensor information from BSBLAN device."""
-        await self._initialize_api_data()
-        params = await self._get_parameters(self._api_data["sensor"])
+        api_data = await self._initialize_api_data()
+        params = await self._get_parameters(api_data["sensor"])
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Sensor.from_dict(data)
 
     async def static_values(self) -> StaticState:
         """Get the static information from BSBLAN device."""
-        await self._initialize_api_data()
-        params = await self._get_parameters(self._api_data["staticValues"])
+        api_data = await self._initialize_api_data()
+        params = await self._get_parameters(api_data["staticValues"])
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return StaticState.from_dict(data)
@@ -224,8 +238,8 @@ class BSBLAN:
 
     async def info(self) -> Info:
         """Get information about the current heating system config."""
-        await self._initialize_api_data()
-        params = await self._get_parameters(self._api_data["device"])
+        api_data = await self._initialize_api_data()
+        params = await self._get_parameters(api_data["device"])
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Info.from_dict(data)
@@ -273,15 +287,12 @@ class BSBLAN:
         if self._min_temp is None or self._max_temp is None:
             raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
 
-        def raise_invalid_parameter() -> NoReturn:
-            raise BSBLANInvalidParameterError(target_temperature)
-
         try:
             temp = float(target_temperature)
             if not (self._min_temp <= temp <= self._max_temp):
-                raise_invalid_parameter()
-        except ValueError:
-            raise_invalid_parameter()
+                raise BSBLANInvalidParameterError(target_temperature)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(target_temperature) from err
 
     def _validate_hvac_mode(self, hvac_mode: str) -> None:
         """Validate the HVAC mode."""
@@ -295,8 +306,8 @@ class BSBLAN:
 
     async def hot_water_state(self) -> HotWaterState:
         """Get the current hot water state from BSBLAN device."""
-        await self._initialize_api_data()
-        params = await self._get_parameters(self._api_data["hot_water"])
+        api_data = await self._initialize_api_data()
+        params = await self._get_parameters(api_data["hot_water"])
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return HotWaterState.from_dict(data)
