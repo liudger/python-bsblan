@@ -107,13 +107,12 @@ HVAC_MODE_DICT_REVERSE: Final[dict[str, int]] = {
 INVALID_VALUES_ERROR_MSG: Final[str] = "Invalid values provided."
 NO_STATE_ERROR_MSG: Final[str] = "No state provided."
 VERSION_ERROR_MSG: Final[str] = "Version not supported"
-INVALID_VALUES_ERROR_MSG: Final[str] = "Invalid values provided."
-NO_STATE_ERROR_MSG: Final[str] = "No state provided."
-VERSION_ERROR_MSG: Final[str] = "Version not supported"
 FIRMWARE_VERSION_ERROR_MSG: Final[str] = "Firmware version not available"
 TEMPERATURE_RANGE_ERROR_MSG: Final[str] = "Temperature range not initialized"
 API_VERSION_ERROR_MSG: Final[str] = "API version not set"
 MULTI_PARAMETER_ERROR_MSG: Final[str] = "Only one parameter can be set at a time"
+SESSION_NOT_INITIALIZED_ERROR_MSG: Final[str] = "Session not initialized"
+API_DATA_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API data not initialized"
 
 
 # Other Constants
