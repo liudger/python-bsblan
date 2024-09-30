@@ -1,5 +1,7 @@
 """Tests for setting BSBLAN hot water state."""
 
+# pylint: disable=protected-access
+
 import json
 from typing import Any
 from unittest.mock import AsyncMock

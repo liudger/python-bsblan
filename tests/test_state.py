@@ -34,21 +34,15 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         ),
     )
     async with aiohttp.ClientSession() as session:
-
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        # set _api_version
         monkeypatch.setattr(bsblan, "_api_version", "v3")
-
-        # Use _api_data from constants.py
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        # Mock _initialize_api_data and _get_parameters
-        # to return the specified dictionary
-        initialize_api_data_mock = AsyncMock()
-        get_parameters_mock = AsyncMock(
+        initialize_api_data_mock: AsyncMock = AsyncMock()
+        get_parameters_mock: AsyncMock = AsyncMock(
             return_value={
                 "string_par": "700,710,900,8000,8740,8749,770",
                 "list": [
@@ -62,7 +56,9 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
                 ],
             },
         )
-        request_mock = AsyncMock(return_value=json.loads(load_fixture("state.json")))
+        request_mock: AsyncMock = AsyncMock(
+            return_value=json.loads(load_fixture("state.json")),
+        )
 
         monkeypatch.setattr(bsblan, "_initialize_api_data", initialize_api_data_mock)
         monkeypatch.setattr(bsblan, "_get_parameters", get_parameters_mock)
@@ -72,7 +68,7 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
 
         # Assertions
         assert isinstance(state, State)
-        assert state.hvac_mode.value == "heat"  # 3 in HVAC_MODE_DICT
+        assert state.hvac_mode.value == "heat"
         assert state.target_temperature.value == "18.0"
         assert state.current_temperature.value == "19.3"
         assert state.hvac_mode2.value == "2"
@@ -81,8 +77,9 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         assert state.room1_temp_setpoint_boost.value == "---"
 
         # Verify method calls
-        bsblan._initialize_api_data.assert_called_once()
-        bsblan._get_parameters.assert_called_once()
-        bsblan._request.assert_called_once_with(
-            params={"Parameter": "700,710,900,8000,8740,8749,770"},
-        )
+        assert initialize_api_data_mock.call_count == 1
+        assert get_parameters_mock.call_count == 1
+        assert request_mock.call_count == 1
+        assert request_mock.call_args[1] == {
+            "params": {"Parameter": "700,710,900,8000,8740,8749,770"},
+        }

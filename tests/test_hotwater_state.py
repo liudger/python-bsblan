@@ -45,7 +45,8 @@ async def test_hot_water_state(
         # Use _api_data from constants.py
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        # Mock _initialize_api_data and _get_parameters to return the specified dictionary
+        # Mock _initialize_api_data and _get_parameters
+        # to return the specified dictionary
         initialize_api_data_mock = AsyncMock()
         get_parameters_mock = AsyncMock(
             return_value={

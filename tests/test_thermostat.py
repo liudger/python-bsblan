@@ -1,5 +1,8 @@
 """Tests for sending values to the BSBLAN device."""
 
+# pylint: disable=protected-access
+# pylint: disable=redefined-outer-name
+
 from __future__ import annotations
 
 import json
