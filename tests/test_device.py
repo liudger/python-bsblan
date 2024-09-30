@@ -1,6 +1,7 @@
 """Tests for scanning list of params from the BSBLAN device."""
 
 # file deepcode ignore W0212: this is a testfile
+
 from typing import TYPE_CHECKING
 
 import aiohttp

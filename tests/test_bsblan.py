@@ -2,6 +2,7 @@
 
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
+
 import asyncio
 import os
 from typing import Any

@@ -1,5 +1,9 @@
 """Tests for retrieving hotwater information from the BSBLAN device."""
 
+# pylint: disable=duplicate-code
+# pylint: disable=protected-access
+# file deepcode ignore W0212: this is a testfile
+
 import json
 from typing import Any
 from unittest.mock import AsyncMock
