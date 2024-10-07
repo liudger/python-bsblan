@@ -44,9 +44,7 @@ jobs:
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: coverage-${{ matrix.python }}
-          path: |
-            .coverage
-            coverage.xml
+          path: coverage_data
 
   coverage:
     runs-on: ubuntu-latest
