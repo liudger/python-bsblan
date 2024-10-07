@@ -39,6 +39,10 @@ jobs:
           poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
           mkdir coverage_data
           mv .coverage coverage_data/.coverage.${{ matrix.python }}
+      - name: Debug - List files after tests
+        run: |
+          ls -la
+          cat .coverage
 
       - name: ⬆️ Upload coverage artifact
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
