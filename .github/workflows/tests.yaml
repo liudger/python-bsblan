@@ -58,7 +58,7 @@ jobs:
       - name: ⬇️ Download coverage data
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
-          name: coverage-${{ matrix.python }}
+          name: coverage-${{ env.DEFAULT_PYTHON }}
           path: coverage-data
       - name: Debug - List downloaded files
         run: |
