@@ -118,7 +118,6 @@ attrs = ">=17.3.0"
 frozenlist = ">=1.1.1"
 multidict = ">=4.5,<7.0"
 yarl = ">=1.12.0,<2.0"
-yarl = ">=1.12.0,<2.0"
 
 [package.extras]
 speedups = ["Brotli", "aiodns (>=3.2.0)", "brotlicffi"]
@@ -179,7 +178,6 @@ name = "astroid"
 version = "3.3.5"
 description = "An abstract syntax tree for Python with inference support."
 optional = false
-python-versions = ">=3.9.0"
 python-versions = ">=3.9.0"
 files = [
     {file = "astroid-3.3.5-py3-none-any.whl", hash = "sha256:a9d1c946ada25098d790e079ba2a1b112157278f3fb7e718ae6a9252f5835dc8"},
@@ -244,13 +242,10 @@ files = [
 [[package]]
 name = "bandit"
 version = "1.7.10"
-version = "1.7.10"
 description = "Security oriented static analyser for python code."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "bandit-1.7.10-py3-none-any.whl", hash = "sha256:665721d7bebbb4485a339c55161ac0eedde27d51e638000d91c8c2d68343ad02"},
-    {file = "bandit-1.7.10.tar.gz", hash = "sha256:59ed5caf5d92b6ada4bf65bc6437feea4a9da1093384445fed4d472acc6cff7b"},
     {file = "bandit-1.7.10-py3-none-any.whl", hash = "sha256:665721d7bebbb4485a339c55161ac0eedde27d51e638000d91c8c2d68343ad02"},
     {file = "bandit-1.7.10.tar.gz", hash = "sha256:59ed5caf5d92b6ada4bf65bc6437feea4a9da1093384445fed4d472acc6cff7b"},
 ]
