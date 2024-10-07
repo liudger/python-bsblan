@@ -43,7 +43,9 @@ jobs:
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: coverage-${{ matrix.python }}
-          path: .coverage
+          path: |
+            .coverage
+            coverage.xml
 
   coverage:
     runs-on: ubuntu-latest
@@ -56,7 +58,13 @@ jobs:
       - name: ⬇️ Download coverage data
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
-          name: coverage
+          name: coverage-${{ matrix.python }}
+          path: coverage-data
+      - name: Debug - List downloaded files
+        run: |
+          ls -R coverage-data
+          echo "Current directory:"
+          pwd
       - name: 🏗 Set up Poetry
         run: pipx install poetry
       - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -73,6 +81,7 @@ jobs:
         run: poetry install --no-interaction
       - name: 🚀 Process coverage results
         run: |
+          cd coverage-data
           poetry run coverage combine coverage*/.coverage*
           poetry run coverage xml -i
           poetry run coverage report
