@@ -35,7 +35,9 @@ jobs:
       - name: 🏗 Install dependencies
         run: poetry install --no-interaction
       - name: 🚀 Run pytest
-        run: poetry run pytest --cov bsblan tests
+        run: poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
+    #   - name: 🚀 Run pytest
+    #     run: poetry run pytest --cov bsblan tests
       - name: ⬆️ Upload coverage artifact
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
@@ -52,6 +54,8 @@ jobs:
           fetch-depth: 0
       - name: ⬇️ Download coverage data
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
+        with:
+            path: coverage-data
       - name: 🏗 Set up Poetry
         run: pipx install poetry
       - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -70,8 +74,12 @@ jobs:
         run: |
           poetry run coverage combine coverage*/.coverage*
           poetry run coverage xml -i
+          poetry run coverage report
       - name: 🚀 Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        with:
+            name: coverage-${{ matrix.python }}
+            path: .coverage,coverage.xml
       - name: SonarCloud Scan
         if: github.repository_owner == 'frenck'
         uses: SonarSource/sonarcloud-github-action@eb211723266fe8e83102bac7361f0a05c3ac1d1b # v3.0
