@@ -78,6 +78,14 @@ jobs:
           poetry config virtualenvs.in-project true
       - name: 🏗 Install dependencies
         run: poetry install --no-interaction
+      - name: Debug - Show coverage file contents
+        run: |
+          cd coverage_data
+          for file in .coverage*; do
+          echo "Contents of $file:"
+          cat "$file"
+          echo "-------------------"
+          done
       - name: 🚀 Process coverage results
         run: |
           cd coverage-data
