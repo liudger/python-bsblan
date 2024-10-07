@@ -36,8 +36,6 @@ jobs:
         run: poetry install --no-interaction
       - name: 🚀 Run pytest
         run: poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
-    #   - name: 🚀 Run pytest
-    #     run: poetry run pytest --cov bsblan tests
       - name: ⬆️ Upload coverage artifact
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
