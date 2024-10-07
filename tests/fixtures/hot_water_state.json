@@ -1,0 +1,89 @@
+{
+    "1600": {
+        "name": "Operating mode",
+        "dataType_name": "ENUM",
+        "dataType_family": "ENUM",
+        "error": 0,
+        "value": "3",
+        "desc": "Comfort",
+        "dataType": 1,
+        "readonly": 0,
+        "readwrite": 0,
+        "unit": ""
+    },
+    "1610": {
+        "name": "Nominal setpoint",
+        "dataType_name": "TEMP",
+        "dataType_family": "VALS",
+        "error": 0,
+        "value": "60.0",
+        "desc": "",
+        "precision": 0.1,
+        "dataType": 0,
+        "readonly": 0,
+        "readwrite": 0,
+        "unit": "°C"
+    },
+    "1612": {
+        "name": "Reduced setpoint",
+        "dataType_name": "TEMP",
+        "dataType_family": "VALS",
+        "error": 0,
+        "value": "40.0",
+        "desc": "",
+        "precision": 0.1,
+        "dataType": 0,
+        "readonly": 0,
+        "readwrite": 0,
+        "unit": "°C"
+    },
+    "1620": {
+        "name": "Release",
+        "dataType_name": "STRING",
+        "dataType_family": "TEXT",
+        "error": 0,
+        "value": "1.0.0",
+        "desc": "Firmware release version",
+        "dataType": 2,
+        "readonly": 1,
+        "readwrite": 0,
+        "unit": ""
+    },
+    "1640": {
+        "name": "Legionella function",
+        "dataType_name": "BOOL",
+        "dataType_family": "BOOL",
+        "error": 0,
+        "value": "1",
+        "desc": "Enabled",
+        "dataType": 3,
+        "readonly": 0,
+        "readwrite": 0,
+        "unit": ""
+    },
+    "1645": {
+        "name": "Legionella setpoint",
+        "dataType_name": "TEMP",
+        "dataType_family": "VALS",
+        "error": 0,
+        "value": "70.0",
+        "desc": "",
+        "precision": 0.1,
+        "dataType": 0,
+        "readonly": 0,
+        "readwrite": 0,
+        "unit": "°C"
+    },
+    "1641": {
+        "name": "Legionella periodically",
+        "dataType_name": "BOOL",
+        "dataType_family": "BOOL",
+        "error": 0,
+        "value": "1",
+        "desc": "Enabled",
+        "dataType": 3,
+        "readonly": 0,
+        "readwrite": 0,
+        "unit": ""
+    }
+}

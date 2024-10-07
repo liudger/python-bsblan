@@ -20,6 +20,7 @@ async def print_state(state: State) -> None:
     print(f"HVAC Action: {state.hvac_action.desc}")
     print(f"HVAC Mode: {state.hvac_mode.desc}")
     print(f"Current Temperature: {state.current_temperature.value}")
+    print(f"boost setpoint: {state.room1_temp_setpoint_boost.value}")
 
 
 async def print_sensor(sensor: Sensor) -> None:
@@ -38,6 +39,7 @@ async def print_static_state(static_state: StaticState) -> None:
     """Print static state information."""
     print(f"Min Temperature: {static_state.min_temp.value}")
     print(f"Max Temperature: {static_state.max_temp.value}")
+    print(f"Min Temperature Unit: {static_state.min_temp.unit}")
 
 
 async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
@@ -58,8 +60,8 @@ async def main() -> None:
     config = BSBLANConfig(
         host="10.0.2.60",
         passkey=None,
-        username=os.getenv("USERNAME"),  # Compliant
-        password=os.getenv("PASSWORD"),  # Compliant
+        username=os.getenv("BSBLAN_USER"),  # Compliant
+        password=os.getenv("BSBLAN_PASS"),  # Compliant
     )
 
     # Initialize BSBLAN with the configuration object

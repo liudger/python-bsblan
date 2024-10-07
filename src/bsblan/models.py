@@ -57,6 +57,8 @@ class State(DataClassJSONMixin):
         The current temperature of the climate system.
     room1_thermostat_mode : EntityInfo
         The thermostat mode of the climate system.
+    room1_temp_setpoint_boost : EntityInfo
+        The temperature setpoint boost of the climate system.
 
     """
 
@@ -66,6 +68,7 @@ class State(DataClassJSONMixin):
     hvac_action: EntityInfo
     current_temperature: EntityInfo
     room1_thermostat_mode: EntityInfo
+    room1_temp_setpoint_boost: EntityInfo
 
 
 @dataclass
