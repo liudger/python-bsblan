@@ -64,6 +64,12 @@ jobs:
           pwd
           echo "Directory contents:"
           ls -la
+      - name: Debug - Check .coverage file
+        run: |
+          echo "First 100 bytes of .coverage file:"
+          head -c 100 .coverage | xxd
+          echo "File type of .coverage:"
+          file .coverage
       - name: 🏗 Set up Poetry
         run: pipx install poetry
       - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -78,9 +84,15 @@ jobs:
           poetry config virtualenvs.in-project true
       - name: 🏗 Install dependencies
         run: poetry install --no-interaction
+      - name: Debug - Check coverage version
+        run: poetry run coverage --version
       - name: 🚀 Process coverage results
         run: |
           if [ -f ".coverage" ]; then
+            echo "Coverage file exists"
+            ls -l .coverage
+            poetry run coverage debug sys
+            poetry run coverage debug data
             poetry run coverage combine .coverage
             poetry run coverage xml -i
             poetry run coverage report
