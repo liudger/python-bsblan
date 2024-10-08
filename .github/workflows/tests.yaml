@@ -37,8 +37,10 @@ jobs:
       - name: 🚀 Run pytest
         run: |
           poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
-          mkdir coverage_data
+          mkdir -p coverage_data
           mv .coverage coverage_data/.coverage.${{ matrix.python }}
+          echo "After moving coverage file:"
+          ls -la coverage_data/
       - name: Debug - Check coverage_data contents
         run: |
           echo "Contents of coverage_data directory:"
@@ -48,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
           name: coverage-${{ matrix.python }}
-          path: coverage_data
+          path: coverage_data/
 
   coverage:
     runs-on: ubuntu-latest
@@ -62,7 +64,7 @@ jobs:
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
           name: coverage-${{ env.DEFAULT_PYTHON }}
-          path: coverage-data
+          path: coverage-data/
       - name: Debug - List downloaded files
         run: |
           ls -R coverage-data
