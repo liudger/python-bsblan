@@ -38,11 +38,6 @@ jobs:
         run: |
           poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
           ls -la  # Debug: List files after pytest
-      - name: Debug - Check coverage_data contents
-        run: |
-          echo "Contents of coverage_data directory:"
-          ls -la coverage_data/
-
       - name: ⬆️ Upload coverage artifact
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
         with:
