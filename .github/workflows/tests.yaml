@@ -67,7 +67,7 @@ jobs:
           path: coverage-data/
       - name: Debug - List downloaded files
         run: |
-          ls -R coverage-data
+          ls -R coverage-data || echo "coverage-data directory not found"
           echo "Current directory:"
           pwd
       - name: 🏗 Set up Poetry
@@ -86,12 +86,17 @@ jobs:
         run: poetry install --no-interaction
       - name: Debug - Show coverage file contents
         run: |
-          cd coverage_data
-          for file in .coverage*; do
-          echo "Contents of $file:"
-          cat "$file"
-          echo "-------------------"
-          done
+          if [ -d "coverage_data" ]; then
+            cd coverage_data
+            for file in .coverage*; do
+              echo "Contents of $file:"
+              cat "$file"
+              echo "-------------------"
+            done
+          else
+            echo "coverage_data directory not found"
+            exit 1
+          fi
       - name: 🚀 Process coverage results
         run: |
           if [ -d "coverage_data" ]; then
