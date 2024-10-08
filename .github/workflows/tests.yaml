@@ -86,18 +86,25 @@ jobs:
         run: poetry install --no-interaction
       - name: Debug - Check coverage version
         run: poetry run coverage --version
-      - name: 🚀 Process coverage results
+      - name: Regenerate coverage data
         run: |
-          if [ -f ".coverage" ]; then
-            echo "Coverage file exists"
-            ls -l .coverage
-            poetry run coverage combine --append .coverage
-            poetry run coverage xml -i
-            poetry run coverage report
-          else
-            echo ".coverage file not found"
-            exit 1
-          fi
+          poetry run coverage erase
+          poetry run coverage run -m pytest tests/
+          poetry run coverage combine
+          poetry run coverage xml -i
+          poetry run coverage report
+    #   - name: 🚀 Process coverage results
+    #     run: |
+    #       if [ -f ".coverage" ]; then
+    #         echo "Coverage file exists"
+    #         ls -l .coverage
+    #         poetry run coverage combine --append .coverage
+    #         poetry run coverage xml -i
+    #         poetry run coverage report
+    #       else
+    #         echo ".coverage file not found"
+    #         exit 1
+    #       fi
       - name: 🚀 Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
