@@ -91,9 +91,7 @@ jobs:
           if [ -f ".coverage" ]; then
             echo "Coverage file exists"
             ls -l .coverage
-            poetry run coverage debug sys
-            poetry run coverage debug data
-            poetry run coverage combine .coverage
+            poetry run coverage combine --append .coverage
             poetry run coverage xml -i
             poetry run coverage report
           else
