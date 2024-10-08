@@ -39,6 +39,7 @@ jobs:
           poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
           mkdir -p coverage_data
           mv .coverage coverage_data/.coverage.${{ matrix.python }}
+          mv coverage.xml coverage_data/coverage.xml
           echo "After moving coverage file:"
           ls -la coverage_data/
       - name: Debug - Check coverage_data contents
@@ -67,9 +68,12 @@ jobs:
           path: coverage-data/
       - name: Debug - List downloaded files
         run: |
-          ls -R coverage-data || echo "coverage-data directory not found"
           echo "Current directory:"
           pwd
+          echo "Directory contents:"
+          ls -la
+          echo "coverage_data contents:"
+          ls -la coverage_data || echo "coverage_data directory not found"
       - name: 🏗 Set up Poetry
         run: pipx install poetry
       - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -84,40 +88,26 @@ jobs:
           poetry config virtualenvs.in-project true
       - name: 🏗 Install dependencies
         run: poetry install --no-interaction
-      - name: Debug - Show coverage file contents
+      - name: 🚀 Process coverage results
         run: |
           if [ -d "coverage_data" ]; then
-            cd coverage_data
-            for file in .coverage*; do
-              echo "Contents of $file:"
-              cat "$file"
-              echo "-------------------"
-            done
+            cd coverage_data/
+            coverage_files=$(find . -name ".coverage*")
+            if [ -z "$coverage_files" ]; then
+              echo "No coverage files found in coverage_data"
+              exit 1
+            fi
+            poetry run coverage combine $coverage_files
+            poetry run coverage xml -i
+            poetry run coverage report
           else
             echo "coverage_data directory not found"
             exit 1
           fi
-      - name: 🚀 Process coverage results
-        run: |
-          if [ -d "coverage_data" ]; then
-          cd coverage_data
-          coverage_files=$(find . -name ".coverage*")
-          if [ -z "$coverage_files" ]; then
-            echo "No coverage files found in coverage_data"
-            exit 1
-          fi
-          poetry run coverage combine $coverage_files
-          poetry run coverage xml -i
-          poetry run coverage report
-          else
-          echo "coverage_data directory not found"
-          exit 1
-          fi
       - name: 🚀 Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
-          name: coverage-${{ matrix.python }}
-          path: .coverage,coverage.xml
+          directory: ./coverage_data/
       - name: SonarCloud Scan
         if: github.repository_owner == 'frenck'
         uses: SonarSource/sonarcloud-github-action@eb211723266fe8e83102bac7361f0a05c3ac1d1b # v3.0
