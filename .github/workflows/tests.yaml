@@ -39,10 +39,10 @@ jobs:
           poetry run pytest --cov=bsblan --cov-report=xml --cov-report=term tests
           mkdir coverage_data
           mv .coverage coverage_data/.coverage.${{ matrix.python }}
-      - name: Debug - List files after tests
+      - name: Debug - Check coverage_data contents
         run: |
-          ls -la
-          cat .coverage
+          echo "Contents of coverage_data directory:"
+          ls -la coverage_data/
 
       - name: ⬆️ Upload coverage artifact
         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
@@ -92,10 +92,20 @@ jobs:
           done
       - name: 🚀 Process coverage results
         run: |
-          cd coverage-data
-          poetry run coverage combine coverage*/.coverage*
+          if [ -d "coverage_data" ]; then
+          cd coverage_data
+          coverage_files=$(find . -name ".coverage*")
+          if [ -z "$coverage_files" ]; then
+            echo "No coverage files found in coverage_data"
+            exit 1
+          fi
+          poetry run coverage combine $coverage_files
           poetry run coverage xml -i
           poetry run coverage report
+          else
+          echo "coverage_data directory not found"
+          exit 1
+          fi
       - name: 🚀 Upload coverage report
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
