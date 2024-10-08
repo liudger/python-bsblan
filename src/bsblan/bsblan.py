@@ -68,19 +68,14 @@ class BSBLAN:
     _max_temp: float | None = None
     _temperature_range_initialized: bool = False
     _api_data: APIConfig | None = None
-
-    def __post_init__(self) -> None:
-        """Initialize the session if not provided."""
-        if self.session is None:
-            self.session = aiohttp.ClientSession()
-            self._close_session = True
+    _initialized: bool = False
 
     async def __aenter__(self) -> Self:
         """Enter the context manager."""
         if self.session is None:
             self.session = aiohttp.ClientSession()
             self._close_session = True
-        await self._initialize()
+        await self.initialize()
         return self
 
     async def __aexit__(self, *args: object) -> None:
@@ -88,11 +83,13 @@ class BSBLAN:
         if self._close_session and self.session:
             await self.session.close()
 
-    async def _initialize(self) -> None:
+    async def initialize(self) -> None:
         """Initialize the BSBLAN client."""
-        await self._fetch_firmware_version()
-        await self._initialize_temperature_range()
-        await self._initialize_api_data()
+        if not self._initialized:
+            await self._fetch_firmware_version()
+            await self._initialize_temperature_range()
+            await self._initialize_api_data()
+            self._initialized = True
 
     async def _fetch_firmware_version(self) -> None:
         """Fetch the firmware version if not already available."""
