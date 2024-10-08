@@ -107,7 +107,7 @@ jobs:
         with:
           files: ./coverage.xml
       - name: SonarCloud Scan
-        if: github.repository_owner == 'frenck'
+        if: github.repository_owner == 'liudger'
         uses: SonarSource/sonarcloud-github-action@eb211723266fe8e83102bac7361f0a05c3ac1d1b # v3.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
