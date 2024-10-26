@@ -16,7 +16,12 @@ from bsblan import (
 
 
 async def print_state(state: State) -> None:
-    """Print the current state of the BSBLan device."""
+    """Print the current state of the BSBLan device.
+
+    Args:
+        state (State): The current state of the BSBLan device.
+
+    """
     print(f"HVAC Action: {state.hvac_action.desc}")
     print(f"HVAC Mode: {state.hvac_mode.desc}")
     print(f"Current Temperature: {state.current_temperature.value}")
@@ -24,26 +29,49 @@ async def print_state(state: State) -> None:
 
 
 async def print_sensor(sensor: Sensor) -> None:
-    """Print sensor information from the BSBLan device."""
+    """Print sensor information from the BSBLan device.
+
+    Args:
+        sensor (Sensor): The sensor information from the BSBLan device.
+
+    """
     print(f"Outside Temperature: {sensor.outside_temperature.value}")
 
 
 async def print_device_info(device: Device, info: Info) -> None:
-    """Print device and general information."""
+    """Print device and general information.
+
+    Args:
+        device (Device): The device information from the BSBLan device.
+        info (Info): The general information from the BSBLan device.
+
+    """
     print(f"Device Name: {device.name}")
     print(f"Version: {device.version}")
     print(f"Device Identification: {info.device_identification.value}")
 
 
 async def print_static_state(static_state: StaticState) -> None:
-    """Print static state information."""
+    """Print static state information.
+
+    Args:
+        static_state (StaticState): The static state information
+            from the BSBLan device.
+
+    """
     print(f"Min Temperature: {static_state.min_temp.value}")
     print(f"Max Temperature: {static_state.max_temp.value}")
     print(f"Min Temperature Unit: {static_state.min_temp.unit}")
 
 
 async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
-    """Print hot water state information."""
+    """Print hot water state information.
+
+    Args:
+        hot_water_state (HotWaterState): The hot water state information
+            from the BSBLan device.
+
+    """
     print("\nHot Water State:")
     print(f"Operating Mode: {hot_water_state.operating_mode.desc}")
     print(f"Nominal Setpoint: {hot_water_state.nominal_setpoint.value}")
