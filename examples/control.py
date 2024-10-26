@@ -79,10 +79,7 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
     print(f"Reduced Setpoint: {hot_water_state.reduced_setpoint.value}")
     print(f"Release: {hot_water_state.release.desc}")
     print(f"Legionella Function: {hot_water_state.legionella_function.desc}")
-    print(
-        f"Legionella Periodically: "
-        f"{hot_water_state.legionella_periodically.value}",
-    )
+    print(f"Legionella Periodically: {hot_water_state.legionella_periodically.value}")
     print(f"Legionella Setpoint: {hot_water_state.legionella_setpoint.value}")
 
 
