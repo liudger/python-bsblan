@@ -75,11 +75,14 @@ API_V3: Final[APIConfig] = {
     "hot_water": {
         "1600": "operating_mode",
         "1610": "nominal_setpoint",
+        "1614": "nominal_setpoint_max",
         "1612": "reduced_setpoint",
         "1620": "release",
         "1640": "legionella_function",
         "1645": "legionella_setpoint",
         "1641": "legionella_periodically",
+        "8830": "dhw_actual_value_top_temperature",
+        "8820": "state_dhw_pump",
     },
 }
 
