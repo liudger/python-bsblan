@@ -30,7 +30,6 @@ async def test_device(aresponses: ResponsesMockServer) -> None:
         ),
     )
     async with aiohttp.ClientSession() as session:
-
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 

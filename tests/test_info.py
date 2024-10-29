@@ -27,7 +27,6 @@ async def test_info(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         ),
     )  # disable=duplicate-code
     async with aiohttp.ClientSession() as session:
-
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 

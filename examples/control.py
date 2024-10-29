@@ -1,5 +1,6 @@
 # pylint: disable=W0621
 """Asynchronous Python client for BSBLan."""
+
 import asyncio
 import os
 
