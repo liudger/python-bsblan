@@ -208,7 +208,7 @@ SOFTWARE.
 [contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
 [frenck]: https://github.com/frenck
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
-[license-shield]: https://img.shields.io/github/license/liudger/python-bsblan.svg
+[license-shield]: https://img.shields.io/badge/license-MIT-blue.svg
 [liudger]: https://github.com/liudger
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2024.svg
 [poetry]: https://python-poetry.org
