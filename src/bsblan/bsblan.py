@@ -11,7 +11,6 @@ import aiohttp
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
-from typing_extensions import Self
 from yarl import URL
 
 from .constants import (
@@ -38,6 +37,7 @@ from .models import Device, HotWaterState, Info, Sensor, State, StaticState
 
 if TYPE_CHECKING:
     from aiohttp.client import ClientSession
+    from typing_extensions import Self
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
