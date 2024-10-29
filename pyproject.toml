@@ -11,6 +11,7 @@ repository = "https://github.com/liudger/python-bsblan"
 documentation = "https://github.com/liudger/python-bsblan"
 keywords = ["bsblan", "thermostat", "client" , "api", "async"]
 classifiers = [
+  "License :: OSI Approved :: MIT License",
   "Development Status :: 3 - Alpha",
   "Framework :: AsyncIO",
   "Intended Audience :: Developers",
