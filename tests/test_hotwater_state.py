@@ -53,15 +53,18 @@ async def test_hot_water_state(
         initialize_api_data_mock = AsyncMock()
         get_parameters_mock = AsyncMock(
             return_value={
-                "string_par": "1600,1610,1612,1620,1640,1645,1641",
+                "string_par": "1600,1610,1614,1612,1620,1640,1645,1641,8830,8820",
                 "list": [
                     "operating_mode",
                     "nominal_setpoint",
+                    "nominal_setpoint_max",
                     "reduced_setpoint",
                     "release",
                     "legionella_function",
                     "legionella_setpoint",
                     "legionella_periodically",
+                    "dhw_actual_value_top_temperature",
+                    "state_dhw_pump",
                 ],
             },
         )
@@ -77,17 +80,20 @@ async def test_hot_water_state(
 
         # Assertions
         assert isinstance(hot_water_state, HotWaterState)
-        assert hot_water_state.operating_mode.value == "3"  # Example value
-        assert hot_water_state.nominal_setpoint.value == "60.0"  # Example value
-        assert hot_water_state.reduced_setpoint.value == "40.0"  # Example value
-        assert hot_water_state.release.value == "1.0.0"  # Example value
-        assert hot_water_state.legionella_function.value == "1"  # Example value
-        assert hot_water_state.legionella_setpoint.value == "70.0"  # Example value
-        assert hot_water_state.legionella_periodically.value == "1"  # Example value
+        assert hot_water_state.operating_mode.value == "3"
+        assert hot_water_state.nominal_setpoint.value == "60.0"
+        assert hot_water_state.nominal_setpoint_max.value == "65.0"
+        assert hot_water_state.reduced_setpoint.value == "40.0"
+        assert hot_water_state.release.value == "1.0.0"
+        assert hot_water_state.legionella_function.value == "1"
+        assert hot_water_state.legionella_setpoint.value == "70.0"
+        assert hot_water_state.legionella_periodically.value == "1"
+        assert hot_water_state.dhw_actual_value_top_temperature.value == "50.0"
+        assert hot_water_state.state_dhw_pump.desc == "Off"
 
         # Verify method calls
         initialize_api_data_mock.assert_called_once()
         get_parameters_mock.assert_called_once()
         request_mock.assert_called_once_with(
-            params={"Parameter": "1600,1610,1612,1620,1640,1645,1641"},
+            params={"Parameter": "1600,1610,1614,1612,1620,1640,1645,1641,8830,8820"},
         )

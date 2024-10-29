@@ -93,11 +93,14 @@ class HotWaterState(DataClassJSONMixin):
 
     operating_mode: EntityInfo
     nominal_setpoint: EntityInfo
+    nominal_setpoint_max: EntityInfo  # 1614
     reduced_setpoint: EntityInfo
     release: EntityInfo
     legionella_function: EntityInfo
     legionella_setpoint: EntityInfo
     legionella_periodically: EntityInfo
+    dhw_actual_value_top_temperature: EntityInfo  # 8830
+    state_dhw_pump: EntityInfo  # 8820
 
 
 @dataclass
