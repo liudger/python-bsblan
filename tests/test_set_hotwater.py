@@ -4,7 +4,6 @@
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
 
-
 from unittest.mock import AsyncMock
 
 import pytest

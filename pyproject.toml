@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "python-bsblan"
 version = "0.0.0"
-description = "Asynchronous Python client for BSBLAN"
+description = "Asynchronous Python client for BSBLAN API"
 authors = ["Willem-Jan van Rootselaar <liudgervr@gmail.com>"]
 maintainers = ["Willem-Jan van Rootselaar <liudgervr@gmail.com>"]
 license = "MIT"
@@ -9,7 +9,7 @@ readme = "README.md"
 homepage = "https://github.com/liudger/python-bsblan"
 repository = "https://github.com/liudger/python-bsblan"
 documentation = "https://github.com/liudger/python-bsblan"
-keywords = ["bsblan", "thermostat", "client" , "api"]
+keywords = ["bsblan", "thermostat", "client" , "api", "async"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Framework :: AsyncIO",
@@ -25,7 +25,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 aiohttp = ">=3.8.1"
 yarl = ">=1.7.2"
 packaging = ">=21.3"
@@ -33,6 +33,10 @@ backoff = "^2.2.1"
 async-timeout = "^4.0.3"
 mashumaro = "^3.13.1"
 orjson = "^3.9.10"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/liudger/python-bsblan/issues"
+Changelog = "https://github.com/liudger/python-bsblan/releases"
 
 [tool.poetry.dev-dependencies]
 covdefaults = "^2.3.0"
@@ -59,27 +63,21 @@ safety = "^3.0.0"
 codespell = "^2.2.2"
 bandit = "^1.7.4"
 
-[tool.poetry.urls]
-"Bug Tracker" = "https://github.com/liudger/python-bsblan/issues"
-Changelog = "https://github.com/liudger/python-bsblan/releases"
-
-[tool.coverage.report]
-show_missing = true
-fail_under = 53
 
 [tool.coverage.run]
 plugins = ["covdefaults"]
 source = ["bsblan"]
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
+[tool.coverage.report]
+show_missing = true
+fail_under = 53
 
 [tool.mypy]
 # Specify the target platform details in config, so your developers are
 # free to run mypy on Windows, Linux, or macOS and get consistent
 # results.
 platform = "linux"
+python_version = "3.11"
 
 # show error messages from unrelated files
 follow_imports = "normal"
@@ -106,9 +104,6 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 [tool.pylint.MASTER]
-extension-pkg-whitelist = [
-  "pydantic"
-]
 ignore= [
   "tests"
 ]
@@ -128,11 +123,11 @@ good-names = [
 ]
 
 [tool.pylint.DESIGN]
-max-attributes = 20
+max-attributes = 10
 
 [tool.pylint."MESSAGES CONTROL"]
 disable= [
-    "too-few-public-methods",
+    # "too-few-public-methods",
     "duplicate-code",
     "format",
     "unsubscriptable-object",
@@ -153,11 +148,16 @@ asyncio_mode = "auto"
 select = ["ALL"]
 ignore = [
   "ANN101", # Self... explanatory
+  "ANN102", # cls... Not classy enough
   "ANN401", # Opinioated warning on disallowing dynamically typed expressions
   "D203", # Conflicts with other rules
   "D213", # Conflicts with other rules
   "D417", # False positives in some occasions
   "PLR2004", # Just annoying, not really useful
+
+  # Conflicts with the Ruff formatter
+  "COM812",
+  "ISC001",
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
@@ -167,9 +167,12 @@ fixture-parentheses = false
 [tool.ruff.lint.isort]
 known-first-party = ["bsblan"]
 
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["mashumaro.mixins.orjson.DataClassORJSONMixin"]
+
 [tool.ruff.lint.mccabe]
 max-complexity = 25
 
 [build-system]
-build-backend = "poetry.core.masonry.api"
 requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

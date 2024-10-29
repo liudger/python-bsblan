@@ -38,7 +38,6 @@ async def test_hot_water_state(
         ),
     )
     async with aiohttp.ClientSession() as session:
-
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 

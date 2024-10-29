@@ -29,7 +29,6 @@ async def test_sensor(aresponses: ResponsesMockServer, monkeypatch: Any) -> None
         ),
     )
     async with aiohttp.ClientSession() as session:
-
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 
