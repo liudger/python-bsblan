@@ -12,27 +12,17 @@ from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
-from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, State
-from bsblan.constants import API_V3  # pylint: disable=unused-import
+from bsblan.constants import API_V3
+from bsblan.utility import APIValidator
 
 from . import load_fixture
 
 
 @pytest.mark.asyncio
-async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
+async def test_state(monkeypatch: Any) -> None:
     """Test getting BSBLAN state."""
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            text=load_fixture("state.json"),
-        ),
-    )
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
@@ -41,45 +31,60 @@ async def test_state(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        initialize_api_data_mock: AsyncMock = AsyncMock()
-        get_parameters_mock: AsyncMock = AsyncMock(
-            return_value={
-                "string_par": "700,710,900,8000,8740,8749,770",
-                "list": [
-                    "hvac_mode",
-                    "target_temperature",
-                    "hvac_mode2",
-                    "hvac_action",
-                    "current_temperature",
-                    "room1_thermostat_mode",
-                    "room1_temp_setpoint_boost",
-                ],
-            },
-        )
+        api_validator = APIValidator(API_V3)
+        api_validator.validated_sections.add("state")
+        bsblan._api_validator = api_validator
+
         request_mock: AsyncMock = AsyncMock(
             return_value=json.loads(load_fixture("state.json")),
         )
-
-        monkeypatch.setattr(bsblan, "_initialize_api_data", initialize_api_data_mock)
-        monkeypatch.setattr(bsblan, "_get_parameters", get_parameters_mock)
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
+        # Execute test
         state: State = await bsblan.state()
 
-        # Assertions
+        # Basic type assertions
         assert isinstance(state, State)
-        assert state.hvac_mode.value == "heat"
-        assert state.target_temperature.value == "18.0"
-        assert state.current_temperature.value == "19.3"
-        assert state.hvac_mode2.value == "2"
-        assert state.hvac_action.value == "122"
-        assert state.room1_thermostat_mode.value == "0"
-        assert state.room1_temp_setpoint_boost.value == "---"
+        assert state is not None
 
-        # Verify method calls
-        assert initialize_api_data_mock.call_count == 1
-        assert get_parameters_mock.call_count == 1
-        assert request_mock.call_count == 1
-        assert request_mock.call_args[1] == {
-            "params": {"Parameter": "700,710,900,8000,8740,8749,770"},
-        }
+        # HVAC mode assertions
+        assert state.hvac_mode is not None
+        assert state.hvac_mode.value == "heat"  # Converted from "3" to "heat"
+        assert state.hvac_mode.desc == "Comfort"
+        assert state.hvac_mode.unit == ""
+
+        # Target temperature assertions
+        assert state.target_temperature is not None
+        assert state.target_temperature.value == "18.0"
+        assert state.target_temperature.desc == ""
+        assert state.target_temperature.unit == "°C"
+
+        # HVAC mode 2 assertions
+        assert state.hvac_mode2 is not None
+        assert state.hvac_mode2.value == "2"
+        assert state.hvac_mode2.desc == "Reduced"
+
+        # HVAC action assertions
+        assert state.hvac_action is not None
+        assert state.hvac_action.value == "122"
+        assert state.hvac_action.desc == "Room temperature limitation"
+
+        # Current temperature assertions
+        assert state.current_temperature is not None
+        assert state.current_temperature.value == "19.3"
+        assert state.current_temperature.unit == "°C"
+
+        # Room thermostat mode assertions
+        assert state.room1_thermostat_mode is not None
+        assert state.room1_thermostat_mode.value == "0"
+        assert state.room1_thermostat_mode.desc == "No demand"
+
+        # Room temperature setpoint boost assertions
+        assert state.room1_temp_setpoint_boost is not None
+        assert state.room1_temp_setpoint_boost.value == "---"
+        assert state.room1_temp_setpoint_boost.unit == "°C"
+
+        # Verify API call
+        request_mock.assert_called_once_with(
+            params={"Parameter": "700,710,900,8000,8740,8749,770"}
+        )

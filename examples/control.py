@@ -1,8 +1,11 @@
 # pylint: disable=W0621
 """Asynchronous Python client for BSBLan."""
 
+from __future__ import annotations
+
 import asyncio
 import os
+from typing import Any
 
 from bsblan import (
     BSBLAN,
@@ -16,6 +19,39 @@ from bsblan import (
 )
 
 
+async def get_attribute(
+    attribute: Any, attr_type: str = "value", default: str = "N/A"
+) -> str:
+    """Safely retrieve the desired property ('value' or 'desc') of an attribute.
+
+    Args:
+        attribute: The attribute object which may have 'value' or 'desc'.
+        attr_type (str): The type of attribute to retrieve ('value' or 'desc').
+        default (str): The default value to return if the attribute is None.
+
+    Returns:
+        str: The retrieved attribute value or the default.
+
+    """
+    if attribute is None:
+        return default
+    return getattr(attribute, attr_type, default)
+
+
+def print_attributes(title: str, attributes: dict[str, str]) -> None:
+    """Print a set of attributes with their labels under a given title.
+
+    Args:
+        title (str): The title for the group of attributes.
+        attributes (dict): A dictionary where keys are labels and values are
+            attribute values.
+
+    """
+    print(f"\n{title}:")
+    for label, value in attributes.items():
+        print(f"{label}: {value}")
+
+
 async def print_state(state: State) -> None:
     """Print the current state of the BSBLan device.
 
@@ -23,10 +59,14 @@ async def print_state(state: State) -> None:
         state (State): The current state of the BSBLan device.
 
     """
-    print(f"HVAC Action: {state.hvac_action.desc}")
-    print(f"HVAC Mode: {state.hvac_mode.desc}")
-    print(f"Current Temperature: {state.current_temperature.value}")
-    print(f"boost setpoint: {state.room1_temp_setpoint_boost.value}")
+    attributes = {
+        "HVAC Action": await get_attribute(state.hvac_action, "desc", "Unknown Action"),
+        "HVAC Mode": await get_attribute(state.hvac_mode, "desc", "Unknown Mode"),
+        "Current Temperature": await get_attribute(
+            state.current_temperature, "value", "N/A"
+        ),
+    }
+    print_attributes("Device State", attributes)
 
 
 async def print_sensor(sensor: Sensor) -> None:
@@ -36,7 +76,15 @@ async def print_sensor(sensor: Sensor) -> None:
         sensor (Sensor): The sensor information from the BSBLan device.
 
     """
-    print(f"Outside Temperature: {sensor.outside_temperature.value}")
+    attributes = {
+        "Outside Temperature": await get_attribute(
+            sensor.outside_temperature, "value", "N/A"
+        ),
+        "Current Temperature": await get_attribute(
+            sensor.current_temperature, "value", "N/A"
+        ),
+    }
+    print_attributes("Sensor Information", attributes)
 
 
 async def print_device_info(device: Device, info: Info) -> None:
@@ -47,40 +95,70 @@ async def print_device_info(device: Device, info: Info) -> None:
         info (Info): The general information from the BSBLan device.
 
     """
-    print(f"Device Name: {device.name}")
-    print(f"Version: {device.version}")
-    print(f"Device Identification: {info.device_identification.value}")
+    device_identification = await get_attribute(
+        info.device_identification, "value", "N/A"
+    )
+
+    attributes = {
+        "Device Name": device.name if device.name else "N/A",
+        "Version": device.version if device.version else "N/A",
+        "Device Identification": device_identification,
+    }
+    print_attributes("Device Information", attributes)
 
 
 async def print_static_state(static_state: StaticState) -> None:
     """Print static state information.
 
     Args:
-        static_state (StaticState): The static state information
-            from the BSBLan device.
+        static_state (StaticState): The static state information from the BSBLan device.
 
     """
-    print(f"Min Temperature: {static_state.min_temp.value}")
-    print(f"Max Temperature: {static_state.max_temp.value}")
-    print(f"Min Temperature Unit: {static_state.min_temp.unit}")
+    min_temp = await get_attribute(static_state.min_temp, "value", "N/A")
+    max_temp = await get_attribute(static_state.max_temp, "value", "N/A")
+    min_temp_unit = await get_attribute(static_state.min_temp, "unit", "N/A")
+
+    attributes = {
+        "Min Temperature": min_temp,
+        "Max Temperature": max_temp,
+        "Min Temperature Unit": min_temp_unit,
+    }
+    print_attributes("Static State", attributes)
 
 
 async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
     """Print hot water state information.
 
     Args:
-        hot_water_state (HotWaterState): The hot water state information
-            from the BSBLan device.
+        hot_water_state (HotWaterState): The hot water state information from the
+            BSBLan device.
 
     """
-    print("\nHot Water State:")
-    print(f"Operating Mode: {hot_water_state.operating_mode.desc}")
-    print(f"Nominal Setpoint: {hot_water_state.nominal_setpoint.value}")
-    print(f"Reduced Setpoint: {hot_water_state.reduced_setpoint.value}")
-    print(f"Release: {hot_water_state.release.desc}")
-    print(f"Legionella Function: {hot_water_state.legionella_function.desc}")
-    print(f"Legionella Periodically: {hot_water_state.legionella_periodically.value}")
-    print(f"Legionella Setpoint: {hot_water_state.legionella_setpoint.value}")
+    attributes = {
+        "Operating Mode": await get_attribute(
+            hot_water_state.operating_mode, "desc", "Unknown Mode"
+        ),
+        "Nominal Setpoint": await get_attribute(
+            hot_water_state.nominal_setpoint, "value", "N/A"
+        ),
+        "Reduced Setpoint": await get_attribute(
+            hot_water_state.reduced_setpoint, "value", "N/A"
+        ),
+        "Release": await get_attribute(hot_water_state.release, "desc", "N/A"),
+        "Legionella Function": await get_attribute(
+            hot_water_state.legionella_function, "desc", "N/A"
+        ),
+        "Legionella Periodicity": await get_attribute(
+            hot_water_state.legionella_periodicity, "value", "N/A"
+        ),
+        "Legionella Setpoint": await get_attribute(
+            hot_water_state.legionella_setpoint, "value", "N/A"
+        ),
+        "Current Temperature": await get_attribute(
+            hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
+        ),
+    }
+    print_attributes("Hot Water State", attributes)
 
 
 async def main() -> None:

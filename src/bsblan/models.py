@@ -1,5 +1,7 @@
 """Models for BSB-Lan."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 from mashumaro.mixins.json import DataClassJSONMixin
@@ -63,12 +65,12 @@ class State(DataClassJSONMixin):
     """
 
     hvac_mode: EntityInfo
-    hvac_mode2: EntityInfo
     target_temperature: EntityInfo
     hvac_action: EntityInfo
-    current_temperature: EntityInfo
-    room1_thermostat_mode: EntityInfo
-    room1_temp_setpoint_boost: EntityInfo
+    hvac_mode2: EntityInfo | None = None
+    current_temperature: EntityInfo | None = None
+    room1_thermostat_mode: EntityInfo | None = None
+    room1_temp_setpoint_boost: EntityInfo | None = None
 
 
 @dataclass
@@ -83,24 +85,26 @@ class StaticState(DataClassJSONMixin):
 class Sensor(DataClassJSONMixin):
     """Object holds info about object for sensor climate."""
 
-    current_temperature: EntityInfo
     outside_temperature: EntityInfo
+    current_temperature: EntityInfo | None = None
 
 
 @dataclass
 class HotWaterState(DataClassJSONMixin):
     """Object holds info about object for hot water climate."""
 
-    operating_mode: EntityInfo
-    nominal_setpoint: EntityInfo
-    nominal_setpoint_max: EntityInfo  # 1614
-    reduced_setpoint: EntityInfo
-    release: EntityInfo
-    legionella_function: EntityInfo
-    legionella_setpoint: EntityInfo
-    legionella_periodically: EntityInfo
-    dhw_actual_value_top_temperature: EntityInfo  # 8830
-    state_dhw_pump: EntityInfo  # 8820
+    operating_mode: EntityInfo | None = None
+    nominal_setpoint: EntityInfo | None = None  # 1610
+    nominal_setpoint_max: EntityInfo | None = None  # 1614
+    reduced_setpoint: EntityInfo | None = None  # 1612
+    release: EntityInfo | None = None  # 1620 - programme
+    legionella_function: EntityInfo | None = None  # 1640 - Fixed weekday
+    legionella_setpoint: EntityInfo | None = None  # 1645
+    legionella_periodicity: EntityInfo | None = None  # 1641 - 7 (days)
+    legionella_function_day: EntityInfo | None = None  # 1642 - Saturday
+    legionella_function_time: EntityInfo | None = None  # 1644 - 12:00
+    dhw_actual_value_top_temperature: EntityInfo | None = None  # 8830
+    state_dhw_pump: EntityInfo | None = None  # 8820
 
 
 @dataclass

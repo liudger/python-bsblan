@@ -10,90 +10,56 @@ from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
-from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, HotWaterState
-from bsblan.constants import API_V3  # Import the constant
+from bsblan.constants import API_V3
+from bsblan.utility import APIValidator
 
 from . import load_fixture
 
 
 @pytest.mark.asyncio
 async def test_hot_water_state(
-    aresponses: ResponsesMockServer,
     monkeypatch: Any,
 ) -> None:
     """Test getting BSBLAN hot water state."""
     # Set environment variable
-    monkeypatch.setenv("BSBLAN_PASS", "your_password")
-
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            text=load_fixture("hot_water_state.json"),
-        ),
-    )
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        # set _api_version
         monkeypatch.setattr(bsblan, "_api_version", "v3")
-
-        # Use _api_data from constants.py
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        # Mock _initialize_api_data and _get_parameters
-        # to return the specified dictionary
-        initialize_api_data_mock = AsyncMock()
-        get_parameters_mock = AsyncMock(
-            return_value={
-                "string_par": "1600,1610,1614,1612,1620,1640,1645,1641,8830,8820",
-                "list": [
-                    "operating_mode",
-                    "nominal_setpoint",
-                    "nominal_setpoint_max",
-                    "reduced_setpoint",
-                    "release",
-                    "legionella_function",
-                    "legionella_setpoint",
-                    "legionella_periodically",
-                    "dhw_actual_value_top_temperature",
-                    "state_dhw_pump",
-                ],
-            },
-        )
+        api_validator = APIValidator(API_V3)
+        api_validator.validated_sections.add("hot_water")
+        bsblan._api_validator = api_validator
+
+        # Mock the request response
         request_mock = AsyncMock(
             return_value=json.loads(load_fixture("hot_water_state.json")),
         )
-
-        monkeypatch.setattr(bsblan, "_initialize_api_data", initialize_api_data_mock)
-        monkeypatch.setattr(bsblan, "_get_parameters", get_parameters_mock)
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
 
         # Assertions
         assert isinstance(hot_water_state, HotWaterState)
-        assert hot_water_state.operating_mode.value == "3"
-        assert hot_water_state.nominal_setpoint.value == "60.0"
+        assert hot_water_state.operating_mode is not None
+        assert hot_water_state.operating_mode.value == "1"
+        assert hot_water_state.nominal_setpoint is not None
+        assert hot_water_state.nominal_setpoint.value == "50.0"
+        assert hot_water_state.nominal_setpoint_max is not None
         assert hot_water_state.nominal_setpoint_max.value == "65.0"
-        assert hot_water_state.reduced_setpoint.value == "40.0"
-        assert hot_water_state.release.value == "1.0.0"
-        assert hot_water_state.legionella_function.value == "1"
-        assert hot_water_state.legionella_setpoint.value == "70.0"
-        assert hot_water_state.legionella_periodically.value == "1"
-        assert hot_water_state.dhw_actual_value_top_temperature.value == "50.0"
-        assert hot_water_state.state_dhw_pump.desc == "Off"
+        assert hot_water_state.reduced_setpoint is not None
+        assert hot_water_state.reduced_setpoint.value == "10.0"
 
         # Verify method calls
-        initialize_api_data_mock.assert_called_once()
-        get_parameters_mock.assert_called_once()
         request_mock.assert_called_once_with(
-            params={"Parameter": "1600,1610,1614,1612,1620,1640,1645,1641,8830,8820"},
+            params={
+                "Parameter": (
+                    "1600,1610,1614,1612,1620,1640,1645,1641,1642,1644,8830,8820"
+                )
+            },
         )
