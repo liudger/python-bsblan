@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Final, TypedDict
+from typing import Final, NotRequired, TypedDict
+
+
+# API Config Types
+class APIConfigSection(TypedDict):
+    """Type for API configuration section."""
+
+    heating: NotRequired[dict[str, str]]
+    staticValues: NotRequired[dict[str, str]]
+    device: NotRequired[dict[str, str]]
+    sensor: NotRequired[dict[str, str]]
+    hot_water: NotRequired[dict[str, str]]
 
 
 # API Versions
@@ -41,11 +52,16 @@ API_V1: Final[APIConfig] = {
     "hot_water": {
         "1600": "operating_mode",
         "1610": "nominal_setpoint",
+        "1614": "nominal_setpoint_max",
         "1612": "reduced_setpoint",
         "1620": "release",
         "1640": "legionella_function",
         "1645": "legionella_setpoint",
-        "1641": "legionella_periodically",
+        "1641": "legionella_periodicity",
+        "1642": "legionella_function_day",
+        "1643": "legionella_function_time",
+        "8830": "dhw_actual_value_top_temperature",
+        "8820": "state_dhw_pump",
     },
 }
 
@@ -82,7 +98,7 @@ API_V3: Final[APIConfig] = {
         "1645": "legionella_setpoint",
         "1641": "legionella_periodicity",
         "1642": "legionella_function_day",
-        "1643": "legionella_function_time",
+        "1644": "legionella_function_time",
         "8830": "dhw_actual_value_top_temperature",
         "8820": "state_dhw_pump",
     },
@@ -118,6 +134,7 @@ API_VERSION_ERROR_MSG: Final[str] = "API version not set"
 MULTI_PARAMETER_ERROR_MSG: Final[str] = "Only one parameter can be set at a time"
 SESSION_NOT_INITIALIZED_ERROR_MSG: Final[str] = "Session not initialized"
 API_DATA_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API data not initialized"
+API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API validator not initialized"
 
 
 # Other Constants
