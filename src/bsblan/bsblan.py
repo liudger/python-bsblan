@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, cast
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Literal, Mapping, cast
 
 import aiohttp
 from aiohttp.hdrs import METH_POST
@@ -15,6 +15,7 @@ from yarl import URL
 
 from .constants import (
     API_DATA_NOT_INITIALIZED_ERROR_MSG,
+    API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
     API_VERSION_ERROR_MSG,
     API_VERSIONS,
     FIRMWARE_VERSION_ERROR_MSG,
@@ -34,10 +35,13 @@ from .exceptions import (
     BSBLANVersionError,
 )
 from .models import Device, HotWaterState, Info, Sensor, State, StaticState
+from .utility import APIValidator
 
 if TYPE_CHECKING:
     from aiohttp.client import ClientSession
     from typing_extensions import Self
+
+SectionLiteral = Literal["heating", "staticValues", "device", "sensor", "hot_water"]
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -69,6 +73,7 @@ class BSBLAN:
     _temperature_range_initialized: bool = False
     _api_data: APIConfig | None = None
     _initialized: bool = False
+    _api_validator: APIValidator = field(init=False)
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -97,9 +102,80 @@ class BSBLAN:
         """Initialize the BSBLAN client."""
         if not self._initialized:
             await self._fetch_firmware_version()
+            await self._initialize_api_validator()
             await self._initialize_temperature_range()
             await self._initialize_api_data()
             self._initialized = True
+
+    async def _initialize_api_validator(self) -> None:
+        """Initialize and validate API data against device capabilities."""
+        if self._api_version is None:
+            raise BSBLANError(API_VERSION_ERROR_MSG)
+
+        # Initialize API data if not already done
+        if self._api_data is None:
+            self._api_data = API_VERSIONS[self._api_version]
+
+        # Initialize the API validator
+        self._api_validator = APIValidator(self._api_data)
+
+        # Perform initial validation of each section
+        sections: list[SectionLiteral] = [
+            "heating",
+            "sensor",
+            "staticValues",
+            "device",
+            "hot_water",
+        ]
+        for section in sections:
+            await self._validate_api_section(section)
+
+    async def _validate_api_section(self, section: SectionLiteral) -> None:
+        """Validate a specific section of the API configuration.
+
+        Args:
+            section: The section name to validate
+
+        Raises:
+            BSBLANError: If the API validator is not initialized
+
+        """
+        if not self._api_validator:
+            raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
+
+        if not self._api_data:
+            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+
+        # Assign to local variable after asserting it's not None
+        api_validator = self._api_validator
+
+        if api_validator.is_section_validated(section):
+            return
+
+        # Get parameters for the section
+        try:
+            section_data = self._api_data[section]
+        except KeyError as err:
+            error_msg = f"Section '{section}' not found in API data"
+            raise BSBLANError(error_msg) from err
+
+        try:
+            # Request data from device for validation
+            params = await self._extract_params_summary(section_data)
+            response_data = await self._request(
+                params={"Parameter": params["string_par"]}
+            )
+
+            # Validate the section against actual device response
+            api_validator.validate_section(section, response_data)
+            # Update API data with validated configuration
+            if self._api_data:
+                self._api_data[section] = api_validator.get_section_params(section)
+        except BSBLANError as err:
+            logger.warning("Failed to validate section %s: %s", section, str(err))
+            # Reset validation state for this section
+            api_validator.reset_validation(section)
+            raise
 
     async def _fetch_firmware_version(self) -> None:
         """Fetch the firmware version if not already available."""
@@ -266,7 +342,7 @@ class BSBLAN:
         if sum(param is not None for param in params) != 1:
             raise BSBLANError(error_msg)
 
-    async def _get_parameters(self, params: dict[Any, Any]) -> dict[Any, Any]:
+    async def _extract_params_summary(self, params: dict[Any, Any]) -> dict[Any, Any]:
         """Get the parameters info from BSBLAN device.
 
         Args:
@@ -286,10 +362,12 @@ class BSBLAN:
             State: The current state of the BSBLAN device.
 
         """
-        api_data = await self._initialize_api_data()
-        params = await self._get_parameters(api_data["heating"])
+        # Get validated parameters for heating section
+        heating_params = self._api_validator.get_section_params("heating")
+        params = await self._extract_params_summary(heating_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
+        # we should convert this in homeassistant integration?
         data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
         return State.from_dict(data)
 
@@ -300,8 +378,8 @@ class BSBLAN:
             Sensor: The sensor information from the BSBLAN device.
 
         """
-        api_data = await self._initialize_api_data()
-        params = await self._get_parameters(api_data["sensor"])
+        sensor_params = self._api_validator.get_section_params("sensor")
+        params = await self._extract_params_summary(sensor_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Sensor.from_dict(data)
@@ -313,8 +391,8 @@ class BSBLAN:
             StaticState: The static information from the BSBLAN device.
 
         """
-        api_data = await self._initialize_api_data()
-        params = await self._get_parameters(api_data["staticValues"])
+        static_params = self._api_validator.get_section_params("staticValues")
+        params = await self._extract_params_summary(static_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return StaticState.from_dict(data)
@@ -337,7 +415,7 @@ class BSBLAN:
 
         """
         api_data = await self._initialize_api_data()
-        params = await self._get_parameters(api_data["device"])
+        params = await self._extract_params_summary(api_data["device"])
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Info.from_dict(data)
@@ -448,8 +526,8 @@ class BSBLAN:
             HotWaterState: The current hot water state.
 
         """
-        api_data = await self._initialize_api_data()
-        params = await self._get_parameters(api_data["hot_water"])
+        hotwater_params = self._api_validator.get_section_params("hot_water")
+        params = await self._extract_params_summary(hotwater_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return HotWaterState.from_dict(data)
