@@ -1,4 +1,5 @@
 """Utility functions for BSB-LAN integration."""
+
 from __future__ import annotations
 
 import logging
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
     from constants import APIConfig
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class APIValidator:
@@ -45,7 +47,8 @@ class APIValidator:
             if param_id not in request_data:
                 logger.info(
                     "Parameter %s (%s) not found in device response",
-                    param_id, param_name
+                    param_id,
+                    param_name,
                 )
                 params_to_remove.append(param_id)
                 continue
@@ -54,7 +57,9 @@ class APIValidator:
             if not self._is_valid_param(param_data):
                 logger.info(
                     "Parameter %s (%s) returned invalid value: %s",
-                    param_id, param_name, param_data.get("value")
+                    param_id,
+                    param_name,
+                    param_data.get("value"),
                 )
                 params_to_remove.append(param_id)
 
@@ -67,7 +72,8 @@ class APIValidator:
 
         logger.debug(
             "Validated section '%s': removed %d unsupported parameters",
-            section, len(params_to_remove)
+            section,
+            len(params_to_remove),
         )
 
     def _is_valid_param(self, param_data: dict[str, Any]) -> bool:
@@ -81,7 +87,7 @@ class APIValidator:
             and param_data["error"] == 0
         )
 
-    def get_section_params(self, section: str) -> dict[str, str]:
+    def get_section_params(self, section: str) -> Any:
         """Get the parameter mapping for a section."""
         return self.api_config.get(section, {}).copy()
 
