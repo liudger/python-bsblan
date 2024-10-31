@@ -76,14 +76,9 @@ class APIValidator:
             len(params_to_remove),
         )
 
-    def _is_valid_param(self, param_data: dict[str, Any]) -> bool:
+    def _is_valid_param(self, param: dict[str, Any]) -> bool:
         """Check if parameter data is valid."""
-        return (
-            isinstance(param_data, dict)
-            and "value" in param_data
-            and param_data["value"] is not None
-            and param_data["value"] != "---"
-        )
+        return not (not param or param.get("value") in (None, "---"))
 
     def get_section_params(self, section: str) -> Any:
         """Get the parameter mapping for a section."""
