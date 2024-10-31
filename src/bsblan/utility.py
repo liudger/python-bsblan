@@ -83,8 +83,6 @@ class APIValidator:
             and "value" in param_data
             and param_data["value"] is not None
             and param_data["value"] != "---"
-            and "error" in param_data
-            and param_data["error"] == 0
         )
 
     def get_section_params(self, section: str) -> Any:
