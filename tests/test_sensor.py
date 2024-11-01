@@ -45,8 +45,8 @@ async def test_sensor(monkeypatch: Any) -> None:
         assert isinstance(sensor, Sensor)
         assert sensor is not None
         assert sensor.outside_temperature is not None
-        assert sensor.outside_temperature.value == "7.6"
+        assert sensor.outside_temperature.value == 7.6
         assert sensor.outside_temperature.unit == "&deg;C"
         assert sensor.current_temperature is not None
-        assert sensor.current_temperature.value == "18.2"
+        assert sensor.current_temperature.value == 18.2
         assert sensor.current_temperature.unit == "&deg;C"

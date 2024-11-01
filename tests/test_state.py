@@ -55,28 +55,28 @@ async def test_state(monkeypatch: Any) -> None:
 
         # Target temperature assertions
         assert state.target_temperature is not None
-        assert state.target_temperature.value == "18.0"
+        assert state.target_temperature.value == 18.0
         assert state.target_temperature.desc == ""
         assert state.target_temperature.unit == "°C"
 
         # HVAC mode 2 assertions
         assert state.hvac_mode2 is not None
-        assert state.hvac_mode2.value == "2"
+        assert state.hvac_mode2.value == 2
         assert state.hvac_mode2.desc == "Reduced"
 
         # HVAC action assertions
         assert state.hvac_action is not None
-        assert state.hvac_action.value == "122"
+        assert state.hvac_action.value == 122
         assert state.hvac_action.desc == "Room temperature limitation"
 
         # Current temperature assertions
         assert state.current_temperature is not None
-        assert state.current_temperature.value == "19.3"
+        assert state.current_temperature.value == 19.3
         assert state.current_temperature.unit == "°C"
 
         # Room thermostat mode assertions
         assert state.room1_thermostat_mode is not None
-        assert state.room1_thermostat_mode.value == "0"
+        assert state.room1_thermostat_mode.value == 0
         assert state.room1_thermostat_mode.desc == "No demand"
 
         # Room temperature setpoint boost assertions

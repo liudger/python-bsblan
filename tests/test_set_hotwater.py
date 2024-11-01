@@ -60,6 +60,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=60.0,
         reduced_setpoint=None,
+        operating_mode=None,
     )
     assert state == {
         "Parameter": "1610",
@@ -71,6 +72,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=40.0,
+        operating_mode=None,
     )
     assert state == {
         "Parameter": "1612",
@@ -83,7 +85,21 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
         mock_bsblan._prepare_hot_water_state(
             nominal_setpoint=None,
             reduced_setpoint=None,
+            operating_mode=None,
         )
+
+    # test preparing operating_mode
+    state = mock_bsblan._prepare_hot_water_state(
+        nominal_setpoint=None,
+        reduced_setpoint=None,
+        operating_mode="3",
+    )
+
+    assert state == {
+        "Parameter": "1600",
+        "EnumValue": "3",
+        "Type": "1",
+    }
 
 
 @pytest.mark.asyncio
