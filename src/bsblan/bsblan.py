@@ -74,7 +74,7 @@ class BSBLAN:
     _api_data: APIConfig | None = None
     _initialized: bool = False
     _api_validator: APIValidator = field(init=False)
-    _temperature_unit: str | None = None
+    _temperature_unit: str = "°C"
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -222,6 +222,17 @@ class BSBLAN:
                 self._temperature_unit = "°C"
             else:
                 self._temperature_unit = "°F"
+
+    async def get_temperature_unit(self) -> str:
+        """Get the unit of temperature.
+
+        Returns:
+            str: The unit of temperature.
+
+        """
+        if self._temperature_unit is None:
+            await self._initialize_temperature_range()
+        return self._temperature_unit
 
     async def _initialize_api_data(self) -> APIConfig:
         """Initialize and cache the API data.
