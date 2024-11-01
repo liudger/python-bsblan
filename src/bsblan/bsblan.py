@@ -74,7 +74,7 @@ class BSBLAN:
     _api_data: APIConfig | None = None
     _initialized: bool = False
     _api_validator: APIValidator = field(init=False)
-    _temperature_unit: str | None = None
+    _temperature_unit: str = "°C"
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
