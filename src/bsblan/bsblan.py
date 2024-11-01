@@ -222,16 +222,20 @@ class BSBLAN:
                 self._temperature_unit = "°C"
             else:
                 self._temperature_unit = "°F"
+            logger.debug("Temperature unit: %s", self._temperature_unit)
 
-    async def get_temperature_unit(self) -> str:
+    @property
+    def get_temperature_unit(self) -> str:
         """Get the unit of temperature.
 
         Returns:
-            str: The unit of temperature.
+            str: The unit of temperature (°C or °F).
+
+        Note:
+            This property assumes the client has been initialized. If accessed before
+            initialization, it will return the default unit (°C).
 
         """
-        if self._temperature_unit is None:
-            await self._initialize_temperature_range()
         return self._temperature_unit
 
     async def _initialize_api_data(self) -> APIConfig:
