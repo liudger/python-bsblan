@@ -47,13 +47,13 @@ async def test_hot_water_state(
         # Assertions
         assert isinstance(hot_water_state, HotWaterState)
         assert hot_water_state.operating_mode is not None
-        assert hot_water_state.operating_mode.value == "1"
+        assert hot_water_state.operating_mode.value == 1
         assert hot_water_state.nominal_setpoint is not None
-        assert hot_water_state.nominal_setpoint.value == "50.0"
+        assert hot_water_state.nominal_setpoint.value == 50.0
         assert hot_water_state.nominal_setpoint_max is not None
-        assert hot_water_state.nominal_setpoint_max.value == "65.0"
+        assert hot_water_state.nominal_setpoint_max.value == 65.0
         assert hot_water_state.reduced_setpoint is not None
-        assert hot_water_state.reduced_setpoint.value == "10.0"
+        assert hot_water_state.reduced_setpoint.value == 10.0
 
         # Verify method calls
         request_mock.assert_called_once_with(
