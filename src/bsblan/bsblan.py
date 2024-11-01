@@ -536,6 +536,7 @@ class BSBLAN:
         self,
         nominal_setpoint: float | None = None,
         reduced_setpoint: float | None = None,
+        operating_mode: str | None = None,
     ) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
@@ -547,12 +548,14 @@ class BSBLAN:
         self._validate_single_parameter(
             nominal_setpoint,
             reduced_setpoint,
+            operating_mode,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
         state = self._prepare_hot_water_state(
             nominal_setpoint,
             reduced_setpoint,
+            operating_mode,
         )
         await self._set_hot_water_state(state)
 
@@ -560,6 +563,7 @@ class BSBLAN:
         self,
         nominal_setpoint: float | None,
         reduced_setpoint: float | None,
+        operating_mode: str | None,
     ) -> dict[str, Any]:
         """Prepare the hot water state for setting.
 
@@ -582,6 +586,14 @@ class BSBLAN:
         if reduced_setpoint is not None:
             state.update(
                 {"Parameter": "1612", "Value": str(reduced_setpoint), "Type": "1"},
+            )
+        if operating_mode is not None:
+            state.update(
+                {
+                    "Parameter": "1600",
+                    "EnumValue": operating_mode,
+                    "Type": "1",
+                },
             )
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
