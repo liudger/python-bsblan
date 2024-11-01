@@ -148,3 +148,6 @@ CONF_PASSKEY: Final[str] = "passkey"
 ATTR_TARGET_TEMPERATURE: Final[str] = "target_temperature"
 ATTR_INSIDE_TEMPERATURE: Final[str] = "inside_temperature"
 ATTR_OUTSIDE_TEMPERATURE: Final[str] = "outside_temperature"
+
+# Handle both ASCII and Unicode degree symbols
+TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
