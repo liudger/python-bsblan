@@ -4,8 +4,6 @@
 # pylint: disable=protected-access
 
 import json
-from typing import Any
-from unittest.mock import AsyncMock, patch
 
 import aiohttp
 import pytest
@@ -13,11 +11,10 @@ from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_VERSION_ERROR_MSG, API_VERSIONS, FIRMWARE_VERSION_ERROR_MSG
-from bsblan.exceptions import BSBLANConnectionError, BSBLANError, BSBLANVersionError
-from bsblan.utility import APIValidator
-
-from . import load_fixture
+from bsblan.constants import (
+    API_VERSION_ERROR_MSG,
+)
+from bsblan.exceptions import BSBLANError
 
 
 @pytest.mark.asyncio
@@ -40,13 +37,13 @@ async def test_initialize_api_data_v1(aresponses: ResponsesMockServer) -> None:
             ),
         ),
     )
-    
+
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v1"
-        
+
         await bsblan._initialize_api_data()
-        
+
         # Verify API data was initialized
         assert bsblan._api_data is not None
 
@@ -76,13 +73,13 @@ async def test_initialize_api_data_v3(aresponses: ResponsesMockServer) -> None:
             ),
         ),
     )
-    
+
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
-        
+
         await bsblan._initialize_api_data()
-        
+
         # Verify API data was initialized
         assert bsblan._api_data is not None
 
@@ -92,9 +89,9 @@ async def test_api_version_error() -> None:
     """Test error when API version is not set."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        
+
         # Force api_version to None to test error condition
         bsblan._api_version = None
-        
+
         with pytest.raises(BSBLANError, match=API_VERSION_ERROR_MSG):
             await bsblan._initialize_api_data()
