@@ -3,7 +3,6 @@
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 
-import pytest
 from aiohttp.helpers import BasicAuth
 
 from bsblan import BSBLAN
@@ -24,10 +23,10 @@ def test_get_auth_with_credentials() -> None:
     config = BSBLANConfig(host="example.com")
     config.username = "testuser"
     config.password = "testpassword"
-    
+
     bsblan = BSBLAN(config)
     auth = bsblan._get_auth()
-    
+
     assert isinstance(auth, BasicAuth)
     assert auth.login == "testuser"
     assert auth.password == "testpassword"
