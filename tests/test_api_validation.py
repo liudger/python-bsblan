@@ -1,22 +1,26 @@
 """Tests for BSBLAN API validation methods."""
 
+from __future__ import annotations
+
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
-
 import json
-from unittest.mock import MagicMock, patch
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import aiohttp
 import pytest
-from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN
-from bsblan.bsblan import BSBLANConfig, APIValidator
+from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
     API_DATA_NOT_INITIALIZED_ERROR_MSG,
+    API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
 )
 from bsblan.exceptions import BSBLANError
+from bsblan.utility import APIValidator
+
+if TYPE_CHECKING:
+    from aresponses import ResponsesMockServer
 
 
 @pytest.mark.asyncio
@@ -49,18 +53,15 @@ async def test_validate_api_section_success(aresponses: ResponsesMockServer) -> 
 
         # Initialize API validator and data
         bsblan._api_version = "v3"
-        bsblan._api_data = {
-            "device": {
-                "parameters": {
-                    "5870": {
-                        "name": "Device Parameter",
-                        "min": 0,
-                        "max": 100,
-                        "unit": "°C",
-                    }
-                }
+        api_data_device_section = {
+            "5870": {
+                "name": "Device Parameter",
+                "min": 0,
+                "max": 100,
+                "unit": "°C",
             }
         }
+        bsblan._api_data = {"device": api_data_device_section}
         bsblan._api_validator = APIValidator(bsblan._api_data)
 
         # Test validation
@@ -77,7 +78,7 @@ async def test_validate_api_section_no_validator() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
         # Ensure validator is None
-        bsblan._api_validator = None
+        bsblan._api_validator = None  # type: ignore[assignment]
 
         with pytest.raises(BSBLANError, match=API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG):
             await bsblan._validate_api_section("device")
@@ -110,7 +111,7 @@ async def test_validate_api_section_invalid_section() -> None:
         with pytest.raises(
             BSBLANError, match="Section 'invalid_section' not found in API data"
         ):
-            await bsblan._validate_api_section("invalid_section")
+            await bsblan._validate_api_section("invalid_section")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -141,47 +142,39 @@ async def test_validate_api_section_validation_error(
 
         # Set up for test
         bsblan._api_version = "v3"
-        bsblan._api_data = {
-            "device": {
-                "parameters": {
-                    "5870": {
-                        "name": "Device Parameter",
-                        "min": 0,
-                        "max": 100,
-                        "unit": "°C",
-                    }
-                }
+        api_data_device_section_error = {
+            "5870": {
+                "name": "Device Parameter",
+                "min": 0,
+                "max": 100,
+                "unit": "°C",
             }
         }
+        bsblan._api_data = {"device": api_data_device_section_error}
 
-        # We need to use this method to handle the exception in validate_section
         original_validate = APIValidator.validate_section
+        # Initialize bsblan._api_validator with the full _api_data
+        bsblan._api_validator = APIValidator(bsblan._api_data)
 
-        # Create an actual validator to use
-        validator = APIValidator(bsblan._api_data)
+        def mock_validate(
+            _self: APIValidator, _section: str, _response: dict[str, Any]
+        ) -> NoReturn:
+            error_message = "Validation error"
+            raise BSBLANError(error_message)
 
-        # Mock the validate_section method to raise an exception
-        def mock_validate(self, section, response):
-            raise BSBLANError("Validation error")
-
-        APIValidator.validate_section = mock_validate
+        APIValidator.validate_section = mock_validate  # type: ignore[method-assign]
 
         try:
-            # Apply the validator
-            bsblan._api_validator = validator
-
-            # Create an async mock for _extract_params_summary
-            async def mock_extract_params(_):
+            # _api_validator is already set on bsblan
+            async def mock_extract_params(
+                _self_arg: Any, _params_arg: dict[Any, Any]
+            ) -> dict[str, str]:
                 return {"string_par": "5870"}
 
-            bsblan._extract_params_summary = mock_extract_params
+            bsblan._extract_params_summary = mock_extract_params  # type: ignore[method-assign]
 
-            # Test validation - should catch exception and log warning
             await bsblan._validate_api_section("device")
 
-            # Test passes if we get here without exception
-            # Should be reset so section is not validated
-            assert not validator.is_section_validated("device")
+            assert not bsblan._api_validator.is_section_validated("device")
         finally:
-            # Restore original validate_section method
             APIValidator.validate_section = original_validate
