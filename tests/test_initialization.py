@@ -66,7 +66,7 @@ async def test_initialize_api_data_v3(aresponses: ResponsesMockServer) -> None:
                             "device": "Test Device",
                             "family": "123",
                             "type": "456",
-                            "var": "789"
+                            "var": "789",
                         }
                     }
                 }
