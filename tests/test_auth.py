@@ -22,11 +22,11 @@ def test_get_auth_with_credentials() -> None:
     # Create config with username and password
     config = BSBLANConfig(host="example.com")
     config.username = "testuser"
-    config.password = "testpassword"
+    config.password = "testpassword"  # noqa: S105
 
     bsblan = BSBLAN(config)
     auth = bsblan._get_auth()
 
     assert isinstance(auth, BasicAuth)
     assert auth.login == "testuser"
-    assert auth.password == "testpassword"
+    assert auth.password == "testpassword"  # noqa: S105
