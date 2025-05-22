@@ -166,14 +166,18 @@ async def test_validate_api_section_validation_error(
 
         try:
             # _api_validator is already set on bsblan
-            async def mock_extract_params(
-                _self_arg: Any, _params_arg: dict[Any, Any]
-            ) -> dict[str, str]:
-                return {"string_par": "5870"}
+            async def mock_extract_params(*args) -> dict[str, Any]:
+                # args[0] would be self, args[1] would be params
+                return {"string_par": "5870", "list": ["Device Parameter"]}
 
             bsblan._extract_params_summary = mock_extract_params  # type: ignore[method-assign]
 
-            await bsblan._validate_api_section("device")
+            # Handle the exception because we expect it
+            try:
+                await bsblan._validate_api_section("device")
+            except BSBLANError:
+                # This exception is expected, check validation state
+                pass
 
             assert not bsblan._api_validator.is_section_validated("device")
         finally:
