@@ -108,7 +108,7 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=json.dumps({"version": "1.0"})
+            text=json.dumps({"version": "1.0"}),
         ),
     )
 
@@ -120,14 +120,15 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=json.dumps({"success": True})
+            text=json.dumps({"success": True}),
         ),
-        repeat=True
+        repeat=True,
     )
 
     # Patch the initialize method
     original_initialize = BSBLAN.initialize
     try:
+
         async def mock_initialize(self) -> None:
             self._initialized = True
 
@@ -153,7 +154,7 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=json.dumps({"version": "1.0"})
+            text=json.dumps({"version": "1.0"}),
         ),
     )
 
@@ -164,9 +165,9 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
         aresponses.Response(
             status=200,
             headers={"Content-Type": "application/json"},
-            text=json.dumps({"success": True})
+            text=json.dumps({"success": True}),
         ),
-        repeat=True
+        repeat=True,
     )
 
     async with aiohttp.ClientSession() as session:
@@ -191,6 +192,7 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
 
             async def mock_initialize_api_data() -> None:
                 pass
+
             bsblan._fetch_firmware_version = mock_fetch_firmware
             bsblan._initialize_api_validator = mock_initialize_validator
             bsblan._initialize_temperature_range = mock_initialize_temp_range
@@ -219,13 +221,14 @@ async def test_initialize_api_validator() -> None:
             "sensor": {},
             "staticValues": {},
             "device": {},
-            "hot_water": {}
+            "hot_water": {},
         }
 
         # Create a coroutine mock for _validate_api_section
         # Create a coroutine mock for _validate_api_section
         async def mock_validate_section(_) -> None:
             pass
+
         bsblan._validate_api_section = mock_validate_section
 
         await bsblan._initialize_api_validator()
