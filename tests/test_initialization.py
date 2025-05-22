@@ -4,7 +4,6 @@
 # pylint: disable=protected-access
 
 import json
-from unittest.mock import MagicMock, patch
 
 import aiohttp
 import pytest
@@ -112,7 +111,7 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
             text=json.dumps({"version": "1.0"})
         ),
     )
-    
+
     # Mock a simple success response for any remaining API calls
     aresponses.add(
         "example.com",
@@ -125,16 +124,15 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
         ),
         repeat=True
     )
-    
+
     # Patch the initialize method
     original_initialize = BSBLAN.initialize
     try:
-        async def mock_initialize(self):
+        async def mock_initialize(self) -> None:
             self._initialized = True
-            return None
-            
+
         BSBLAN.initialize = mock_initialize
-        
+
         # Now test the context manager
         async with BSBLAN(BSBLANConfig(host="example.com")) as bsblan:
             assert bsblan.session is not None
@@ -158,7 +156,7 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
             text=json.dumps({"version": "1.0"})
         ),
     )
-    
+
     aresponses.add(
         "example.com",
         "/JQ",
@@ -170,37 +168,36 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
         ),
         repeat=True
     )
-    
+
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        
+
         # Save original methods
         original_fetch_firmware = bsblan._fetch_firmware_version
         original_initialize_validator = bsblan._initialize_api_validator
         original_initialize_temp_range = bsblan._initialize_temperature_range
         original_initialize_api_data = bsblan._initialize_api_data
-        
+
         try:
             # Replace with async mock functions
-            async def mock_fetch_firmware():
-                return None
-                
-            async def mock_initialize_validator():
-                return None
-                
-            async def mock_initialize_temp_range():
-                return None
-                
-            async def mock_initialize_api_data():
-                return None
-                
+            async def mock_fetch_firmware() -> None:
+                pass
+
+            async def mock_initialize_validator() -> None:
+                pass
+
+            async def mock_initialize_temp_range() -> None:
+                pass
+
+            async def mock_initialize_api_data() -> None:
+                pass
             bsblan._fetch_firmware_version = mock_fetch_firmware
             bsblan._initialize_api_validator = mock_initialize_validator
             bsblan._initialize_temperature_range = mock_initialize_temp_range
             bsblan._initialize_api_data = mock_initialize_api_data
-            
+
             await bsblan.initialize()
-            
+
             assert bsblan._initialized is True
             assert bsblan._close_session is False
         finally:
@@ -217,14 +214,20 @@ async def test_initialize_api_validator() -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
-        bsblan._api_data = {"heating": {}, "sensor": {}, "staticValues": {}, "device": {}, "hot_water": {}}
-        
+        bsblan._api_data = {
+            "heating": {},
+            "sensor": {},
+            "staticValues": {},
+            "device": {},
+            "hot_water": {}
+        }
+
         # Create a coroutine mock for _validate_api_section
-        async def mock_validate_section(_):
-            return None
-            
+        # Create a coroutine mock for _validate_api_section
+        async def mock_validate_section(_) -> None:
+            pass
         bsblan._validate_api_section = mock_validate_section
-        
+
         await bsblan._initialize_api_validator()
-        
+
         assert bsblan._api_validator is not None
