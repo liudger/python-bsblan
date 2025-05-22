@@ -62,28 +62,35 @@ def test_validate_section_with_invalid_values(
     with caplog.at_level(logging.INFO):
         # The validation will run but log errors for invalid data
         fresh_api_validator.validate_section("heating", mock_request_data_invalid)
-        
+
         # Check that appropriate error messages were logged
         assert "returned invalid value" in caplog.text
 
 
-def test_api_validator_with_non_existing_section(fresh_api_validator: APIValidator) -> None:
+def test_api_validator_with_non_existing_section(
+    fresh_api_validator: APIValidator,
+) -> None:
     """Test APIValidator with a non-existing section."""
     # Test with a section that doesn't exist in the api_config
-    non_existent_section_params = fresh_api_validator.get_section_params("non_existent_section")
+    non_existent_section_params = fresh_api_validator.get_section_params(
+        "non_existent_section"
+    )
     assert non_existent_section_params == {}
-    
+
     # Check that the non-existent section is not validated
     assert not fresh_api_validator.is_section_validated("non_existent_section")
 
 
-def test_api_validator_with_empty_request_logs(fresh_api_validator: APIValidator, caplog: pytest.LogCaptureFixture) -> None:
+def test_api_validator_with_empty_request_logs(
+    fresh_api_validator: APIValidator,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that APIValidator logs appropriate messages with empty request data."""
     # Test with empty request data
     caplog.clear()
     with caplog.at_level(logging.INFO):
         fresh_api_validator.validate_section("heating", {})
-        
+
         # Check that appropriate warning messages were logged
         assert "Parameter" in caplog.text
         assert "not found in device response" in caplog.text
