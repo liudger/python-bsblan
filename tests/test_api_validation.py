@@ -63,7 +63,7 @@ async def test_validate_api_section_success(aresponses: ResponsesMockServer) -> 
                 "unit": "°C",
             }
         }
-        bsblan._api_data = {"device": api_data_device_section}
+        bsblan._api_data = {"device": api_data_device_section}  # type: ignore[assignment]
         bsblan._api_validator = APIValidator(bsblan._api_data)
 
         # Test validation
@@ -108,7 +108,7 @@ async def test_validate_api_section_invalid_section() -> None:
 
         # Initialize validator and API data without the requested section
         bsblan._api_validator = APIValidator({})
-        bsblan._api_data = {"heating": {}}
+        bsblan._api_data = {"heating": {}}  # type: ignore[assignment]
 
         with pytest.raises(
             BSBLANError, match="Section 'invalid_section' not found in API data"
@@ -152,7 +152,7 @@ async def test_validate_api_section_validation_error(
                 "unit": "°C",
             }
         }
-        bsblan._api_data = {"device": api_data_device_section_error}
+        bsblan._api_data = {"device": api_data_device_section_error}  # type: ignore[assignment]
 
         original_validate = APIValidator.validate_section
         # Initialize bsblan._api_validator with the full _api_data
@@ -164,19 +164,19 @@ async def test_validate_api_section_validation_error(
             error_message = "Validation error"
             raise BSBLANError(error_message)
 
-        APIValidator.validate_section = mock_validate  # type: ignore[method-assign]
+        APIValidator.validate_section = mock_validate  # type: ignore[method-assign, assignment]
 
         try:
             # _api_validator is already set on bsblan
-            async def mock_extract_params(*_) -> dict[str, Any]:
+            async def mock_extract_params(*_args: Any) -> dict[str, Any]:
                 # Not using the parameters
                 return {"string_par": "5870", "list": ["Device Parameter"]}
 
-            bsblan._extract_params_summary = mock_extract_params  # type: ignore[method-assign]
+            bsblan._extract_params_summary = mock_extract_params  # type: ignore[assignment, method-assign]
             # Handle the exception because we expect it
             with contextlib.suppress(BSBLANError):
                 await bsblan._validate_api_section("device")
 
             assert not bsblan._api_validator.is_section_validated("device")
         finally:
-            APIValidator.validate_section = original_validate
+            APIValidator.validate_section = original_validate  # type: ignore[method-assign]

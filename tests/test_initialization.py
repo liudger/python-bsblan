@@ -129,10 +129,10 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
     original_initialize = BSBLAN.initialize
     try:
 
-        async def mock_initialize(self) -> None:
+        async def mock_initialize(self: BSBLAN) -> None:
             self._initialized = True
 
-        BSBLAN.initialize = mock_initialize
+        BSBLAN.initialize = mock_initialize  # type: ignore[method-assign]
 
         # Now test the context manager
         async with BSBLAN(BSBLANConfig(host="example.com")) as bsblan:
@@ -140,7 +140,7 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
             assert bsblan._close_session is True
     finally:
         # Restore the original method
-        BSBLAN.initialize = original_initialize
+        BSBLAN.initialize = original_initialize  # type: ignore[method-assign]
 
 
 @pytest.mark.asyncio
@@ -193,10 +193,10 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
             async def mock_initialize_api_data() -> None:
                 pass
 
-            bsblan._fetch_firmware_version = mock_fetch_firmware
-            bsblan._initialize_api_validator = mock_initialize_validator
-            bsblan._initialize_temperature_range = mock_initialize_temp_range
-            bsblan._initialize_api_data = mock_initialize_api_data
+            bsblan._fetch_firmware_version = mock_fetch_firmware  # type: ignore[method-assign]
+            bsblan._initialize_api_validator = mock_initialize_validator  # type: ignore[method-assign]
+            bsblan._initialize_temperature_range = mock_initialize_temp_range  # type: ignore[method-assign]
+            bsblan._initialize_api_data = mock_initialize_api_data  # type: ignore[method-assign, assignment]
 
             await bsblan.initialize()
 
@@ -204,10 +204,10 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
             assert bsblan._close_session is False
         finally:
             # Restore original methods
-            bsblan._fetch_firmware_version = original_fetch_firmware
-            bsblan._initialize_api_validator = original_initialize_validator
-            bsblan._initialize_temperature_range = original_initialize_temp_range
-            bsblan._initialize_api_data = original_initialize_api_data
+            bsblan._fetch_firmware_version = original_fetch_firmware  # type: ignore[method-assign]
+            bsblan._initialize_api_validator = original_initialize_validator  # type: ignore[method-assign]
+            bsblan._initialize_temperature_range = original_initialize_temp_range  # type: ignore[method-assign]
+            bsblan._initialize_api_data = original_initialize_api_data  # type: ignore[method-assign]
 
 
 @pytest.mark.asyncio
@@ -225,11 +225,10 @@ async def test_initialize_api_validator() -> None:
         }
 
         # Create a coroutine mock for _validate_api_section
-        # Create a coroutine mock for _validate_api_section
-        async def mock_validate_section(_) -> None:
+        async def mock_validate_section(_section: str) -> None:
             pass
 
-        bsblan._validate_api_section = mock_validate_section
+        bsblan._validate_api_section = mock_validate_section  # type: ignore[method-assign, assignment]
 
         await bsblan._initialize_api_validator()
 
