@@ -179,7 +179,7 @@ check [the contributor's page][contributors].
 
 MIT License
 
-Copyright (c) 2023-2024 WJ van Rootselaar
+Copyright (c) 2023-2025 WJ van Rootselaar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -211,7 +211,7 @@ SOFTWARE.
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg
 [liudger]: https://github.com/liudger
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2024.svg
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2025.svg
 [poetry]: https://python-poetry.org
 [poetry-install]: https://python-poetry.org/docs/#installation
 [pre-commit]: https://pre-commit.com/
