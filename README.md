@@ -143,7 +143,7 @@ You need at least:
 
 - Python 3.11+
 - [Poetry][poetry-install]
-- NodeJS 16+ (including NPM)
+- NodeJS 22.14.0+ (including NPM)
 
 To install all packages, including all development requirements:
 
