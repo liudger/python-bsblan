@@ -137,7 +137,8 @@ Thank you for being involved! :heart_eyes:
 
 ## Setting up development environment
 
-This Python project is fully managed using the [Poetry][poetry] dependency manager. But also relies on the use of NodeJS for certain checks during development.
+This Python project is fully managed using the [Poetry][poetry] dependency manager.
+But also relies on the use of NodeJS for certain checks during development.
 
 You need at least:
 
