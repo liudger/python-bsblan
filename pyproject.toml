@@ -39,7 +39,7 @@ orjson = "^3.9.10"
 "Bug Tracker" = "https://github.com/liudger/python-bsblan/issues"
 Changelog = "https://github.com/liudger/python-bsblan/releases"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 covdefaults = "^2.3.0"
 ruff = "^0.7.0"
 aresponses = "^3.0.0"
@@ -148,8 +148,8 @@ asyncio_mode = "auto"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  "ANN101", # Self... explanatory
-  "ANN102", # cls... Not classy enough
+  "ANN001", # Self... explanatory
+  "ANN002", # cls... Not classy enough
   "ANN401", # Opinioated warning on disallowing dynamically typed expressions
   "D203", # Conflicts with other rules
   "D213", # Conflicts with other rules

@@ -35,7 +35,7 @@ jobs:
       - name: 🏗 Install dependencies
         run: poetry install --no-interaction
       - name: 🚀 Run pytest
-        run: poetry run pytest --cov pvo tests
+        run: poetry run pytest --cov=bsblan tests
       - name: ⬆️ Upload coverage artifact
         uses: actions/upload-artifact@v4.6.2
         with:
