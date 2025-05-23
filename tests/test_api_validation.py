@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 import json
@@ -166,18 +168,14 @@ async def test_validate_api_section_validation_error(
 
         try:
             # _api_validator is already set on bsblan
-            async def mock_extract_params(*args) -> dict[str, Any]:
-                # args[0] would be self, args[1] would be params
+            async def mock_extract_params(*_) -> dict[str, Any]:
+                # Not using the parameters
                 return {"string_par": "5870", "list": ["Device Parameter"]}
 
             bsblan._extract_params_summary = mock_extract_params  # type: ignore[method-assign]
-
             # Handle the exception because we expect it
-            try:
+            with contextlib.suppress(BSBLANError):
                 await bsblan._validate_api_section("device")
-            except BSBLANError:
-                # This exception is expected, check validation state
-                pass
 
             assert not bsblan._api_validator.is_section_validated("device")
         finally:
