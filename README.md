@@ -142,7 +142,7 @@ But also relies on the use of NodeJS for certain checks during development.
 
 You need at least:
 
-- Python 3.11+
+- Python 3.12+
 - [Poetry][poetry-install]
 - NodeJS 22.14.0+ (including NPM)
 
