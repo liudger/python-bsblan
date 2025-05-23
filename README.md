@@ -141,7 +141,7 @@ This Python project is fully managed using the [Poetry][poetry] dependency manag
 
 You need at least:
 
-- Python 3.12+
+- Python 3.11+
 - [Poetry][poetry-install]
 - NodeJS 16+ (including NPM)
 
@@ -203,7 +203,7 @@ SOFTWARE.
 [build]: https://github.com/liudger/python-bsblan/actions
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
 [buymeacoffee]: https://www.buymeacoffee.com/liudger
-[codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/Dev/graph/badge.svg?token=ypos87GGxv
+[codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/main/graph/badge.svg?token=ypos87GGxv
 [codecov]: https://codecov.io/gh/liudger/python-bsblan
 [contributors]: https://github.com/liudger/python-bsblan/graphs/contributors
 [frenck]: https://github.com/frenck
