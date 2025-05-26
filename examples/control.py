@@ -138,13 +138,22 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
         "Operating Mode": await get_attribute(
             hot_water_state.operating_mode, "desc", "Unknown Mode"
         ),
+        "Temporary Mode": await get_attribute(
+            hot_water_state.temporary_mode, "desc", "N/A"
+        ),
         "Nominal Setpoint": await get_attribute(
             hot_water_state.nominal_setpoint, "value", "N/A"
         ),
         "Reduced Setpoint": await get_attribute(
             hot_water_state.reduced_setpoint, "value", "N/A"
         ),
+        "Max Setpoint": await get_attribute(
+            hot_water_state.nominal_setpoint_max, "value", "N/A"
+        ),
         "Release": await get_attribute(hot_water_state.release, "desc", "N/A"),
+        "Charging Priority": await get_attribute(
+            hot_water_state.charging_priority, "desc", "N/A"
+        ),
         "Legionella Function": await get_attribute(
             hot_water_state.legionella_function, "desc", "N/A"
         ),
@@ -154,8 +163,20 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
         "Legionella Setpoint": await get_attribute(
             hot_water_state.legionella_setpoint, "value", "N/A"
         ),
+        "Circulation Pump Release": await get_attribute(
+            hot_water_state.circulation_pump_release, "desc", "N/A"
+        ),
+        "Circulation Pump Cycling": await get_attribute(
+            hot_water_state.circulation_pump_cycling, "desc", "N/A"
+        ),
+        "Circulation Setpoint": await get_attribute(
+            hot_water_state.circulation_setpoint, "value", "N/A"
+        ),
         "Current Temperature": await get_attribute(
             hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
+        ),
+        "Pump State": await get_attribute(
+            hot_water_state.state_dhw_pump, "desc", "N/A"
         ),
     }
     print_attributes("Hot Water State", attributes)
@@ -200,6 +221,17 @@ async def main() -> None:
 
         # Get hot water state
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
+        await print_hot_water_state(hot_water_state)
+        
+        # Set hot water parameters
+        print("\nSetting hot water temperature to 55°C")
+        await bsblan.set_hot_water(nominal_setpoint=55.0)
+        
+        print("\nSetting hot water mode to eco")
+        await bsblan.set_hot_water(operating_mode="eco")
+        
+        # Get updated hot water state
+        hot_water_state = await bsblan.hot_water_state()
         await print_hot_water_state(hot_water_state)
 
 

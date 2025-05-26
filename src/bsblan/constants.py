@@ -90,15 +90,20 @@ API_V3: Final[APIConfig] = {
     },
     "hot_water": {
         "1600": "operating_mode",
+        "1601": "temporary_mode",
         "1610": "nominal_setpoint",
-        "1614": "nominal_setpoint_max",
         "1612": "reduced_setpoint",
+        "1614": "nominal_setpoint_max",
         "1620": "release",
+        "1630": "charging_priority",
         "1640": "legionella_function",
-        "1645": "legionella_setpoint",
         "1641": "legionella_periodicity",
         "1642": "legionella_function_day",
         "1644": "legionella_function_time",
+        "1645": "legionella_setpoint",
+        "1660": "circulation_pump_release",
+        "1661": "circulation_pump_cycling",
+        "1663": "circulation_setpoint",
         "8830": "dhw_actual_value_top_temperature",
         "8820": "state_dhw_pump",
     },
@@ -122,6 +127,21 @@ HVAC_MODE_DICT_REVERSE: Final[dict[str, int]] = {
     "auto": 1,
     "eco": 2,
     "heat": 3,
+}
+
+# Water Heater Modes
+WATER_HEATER_MODE_DICT: Final[dict[int, str]] = {
+    0: "off",
+    1: "on",
+    2: "eco",
+    3: "auto",
+}
+
+WATER_HEATER_MODE_DICT_REVERSE: Final[dict[str, int]] = {
+    "off": 0,
+    "on": 1,
+    "eco": 2,
+    "auto": 3,
 }
 
 # Error Messages

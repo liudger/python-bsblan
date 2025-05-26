@@ -167,15 +167,20 @@ class HotWaterState(DataClassJSONMixin):
     """Object holds info about object for hot water climate."""
 
     operating_mode: EntityInfo | None = None
+    temporary_mode: EntityInfo | None = None
     nominal_setpoint: EntityInfo | None = None
     nominal_setpoint_max: EntityInfo | None = None
     reduced_setpoint: EntityInfo | None = None
     release: EntityInfo | None = None
+    charging_priority: EntityInfo | None = None
     legionella_function: EntityInfo | None = None
     legionella_setpoint: EntityInfo | None = None
     legionella_periodicity: EntityInfo | None = None
     legionella_function_day: EntityInfo | None = None
     legionella_function_time: EntityInfo | None = None
+    circulation_pump_release: EntityInfo | None = None
+    circulation_pump_cycling: EntityInfo | None = None
+    circulation_setpoint: EntityInfo | None = None
     dhw_actual_value_top_temperature: EntityInfo | None = None
     state_dhw_pump: EntityInfo | None = None
 

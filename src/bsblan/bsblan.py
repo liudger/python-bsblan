@@ -26,6 +26,8 @@ from .constants import (
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     TEMPERATURE_RANGE_ERROR_MSG,
     VERSION_ERROR_MSG,
+    WATER_HEATER_MODE_DICT,
+    WATER_HEATER_MODE_DICT_REVERSE,
     APIConfig,
 )
 from .exceptions import (
@@ -550,26 +552,45 @@ class BSBLAN:
         hotwater_params = self._api_validator.get_section_params("hot_water")
         params = await self._extract_params_summary(hotwater_params)
         data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return HotWaterState.from_dict(data)
+        
+        # Create a dictionary with parameter IDs as keys and parameter data as values
+        result_data = {}
+        for param_id, param_name in hotwater_params.items():
+            if param_id in data:
+                result_data[param_name] = data[param_id]
+        
+        return HotWaterState.from_dict(result_data)
 
     async def set_hot_water(
         self,
         nominal_setpoint: float | None = None,
         reduced_setpoint: float | None = None,
         operating_mode: str | None = None,
+        temporary_mode: str | None = None,
+        circulation_pump_release: str | None = None,
+        circulation_pump_cycling: str | None = None,
+        circulation_setpoint: float | None = None,
     ) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
         Args:
             nominal_setpoint (float | None): The nominal setpoint temperature to set.
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
+            operating_mode (str | None): The operating mode to set.
+            temporary_mode (str | None): The temporary mode (boost mode) to set.
+            circulation_pump_release (str | None): The circulation pump release mode.
+            circulation_pump_cycling (str | None): The circulation pump cycling mode.
+            circulation_setpoint (float | None): The circulation temperature setpoint.
 
         """
         self._validate_single_parameter(
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            temporary_mode,
+            circulation_pump_release,
+            circulation_pump_cycling,
+            circulation_setpoint,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
@@ -577,6 +598,10 @@ class BSBLAN:
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            temporary_mode,
+            circulation_pump_release,
+            circulation_pump_cycling,
+            circulation_setpoint,
         )
         await self._set_hot_water_state(state)
 
@@ -585,12 +610,21 @@ class BSBLAN:
         nominal_setpoint: float | None,
         reduced_setpoint: float | None,
         operating_mode: str | None,
+        temporary_mode: str | None = None,
+        circulation_pump_release: str | None = None,
+        circulation_pump_cycling: str | None = None,
+        circulation_setpoint: float | None = None,
     ) -> dict[str, Any]:
         """Prepare the hot water state for setting.
 
         Args:
             nominal_setpoint (float | None): The nominal setpoint temperature to set.
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
+            operating_mode (str | None): The operating mode to set.
+            temporary_mode (str | None): The temporary mode (boost mode) to set.
+            circulation_pump_release (str | None): The circulation pump release mode.
+            circulation_pump_cycling (str | None): The circulation pump cycling mode.
+            circulation_setpoint (float | None): The circulation temperature setpoint.
 
         Returns:
             dict[str, Any]: The prepared state for the hot water.
@@ -609,12 +643,50 @@ class BSBLAN:
                 {"Parameter": "1612", "Value": str(reduced_setpoint), "Type": "1"},
             )
         if operating_mode is not None:
+            # Validate the operating mode against known modes
+            if operating_mode.isdigit():
+                # Direct parameter value
+                enum_value = operating_mode
+            else:
+                # Convert from string mode to enum value
+                if operating_mode not in WATER_HEATER_MODE_DICT_REVERSE:
+                    raise BSBLANInvalidParameterError(operating_mode)
+                enum_value = str(WATER_HEATER_MODE_DICT_REVERSE[operating_mode])
+                
             state.update(
                 {
                     "Parameter": "1600",
-                    "EnumValue": operating_mode,
+                    "EnumValue": enum_value,
                     "Type": "1",
                 },
+            )
+        if temporary_mode is not None:
+            state.update(
+                {
+                    "Parameter": "1601",
+                    "EnumValue": temporary_mode,
+                    "Type": "1",
+                },
+            )
+        if circulation_pump_release is not None:
+            state.update(
+                {
+                    "Parameter": "1660",
+                    "EnumValue": circulation_pump_release,
+                    "Type": "1",
+                },
+            )
+        if circulation_pump_cycling is not None:
+            state.update(
+                {
+                    "Parameter": "1661",
+                    "EnumValue": circulation_pump_cycling,
+                    "Type": "1",
+                },
+            )
+        if circulation_setpoint is not None:
+            state.update(
+                {"Parameter": "1663", "Value": str(circulation_setpoint), "Type": "1"},
             )
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
