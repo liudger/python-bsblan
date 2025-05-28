@@ -62,6 +62,14 @@ API_V1: Final[APIConfig] = {
         "1643": "legionella_function_time",
         "8830": "dhw_actual_value_top_temperature",
         "8820": "state_dhw_pump",
+        "561": "dhw_time_program_monday",
+        "562": "dhw_time_program_tuesday",
+        "563": "dhw_time_program_wednesday",
+        "564": "dhw_time_program_thursday",
+        "565": "dhw_time_program_friday",
+        "566": "dhw_time_program_saturday",
+        "567": "dhw_time_program_sunday",
+        "576": "dhw_time_program_standard_values",
     },
 }
 
@@ -101,6 +109,14 @@ API_V3: Final[APIConfig] = {
         "1644": "legionella_function_time",
         "8830": "dhw_actual_value_top_temperature",
         "8820": "state_dhw_pump",
+        "561": "dhw_time_program_monday",
+        "562": "dhw_time_program_tuesday",
+        "563": "dhw_time_program_wednesday",
+        "564": "dhw_time_program_thursday",
+        "565": "dhw_time_program_friday",
+        "566": "dhw_time_program_saturday",
+        "567": "dhw_time_program_sunday",
+        "576": "dhw_time_program_standard_values",
     },
 }
 

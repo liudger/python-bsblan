@@ -178,6 +178,14 @@ class HotWaterState(DataClassJSONMixin):
     legionella_function_time: EntityInfo | None = None
     dhw_actual_value_top_temperature: EntityInfo | None = None
     state_dhw_pump: EntityInfo | None = None
+    dhw_time_program_monday: EntityInfo | None = None
+    dhw_time_program_tuesday: EntityInfo | None = None
+    dhw_time_program_wednesday: EntityInfo | None = None
+    dhw_time_program_thursday: EntityInfo | None = None
+    dhw_time_program_friday: EntityInfo | None = None
+    dhw_time_program_saturday: EntityInfo | None = None
+    dhw_time_program_sunday: EntityInfo | None = None
+    dhw_time_program_standard_values: EntityInfo | None = None
 
 
 @dataclass
