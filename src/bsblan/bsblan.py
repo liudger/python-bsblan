@@ -558,18 +558,43 @@ class BSBLAN:
         nominal_setpoint: float | None = None,
         reduced_setpoint: float | None = None,
         operating_mode: str | None = None,
+        dhw_time_program_monday: str | None = None,
+        dhw_time_program_tuesday: str | None = None,
+        dhw_time_program_wednesday: str | None = None,
+        dhw_time_program_thursday: str | None = None,
+        dhw_time_program_friday: str | None = None,
+        dhw_time_program_saturday: str | None = None,
+        dhw_time_program_sunday: str | None = None,
+        dhw_time_program_standard_values: str | None = None,
     ) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
         Args:
             nominal_setpoint (float | None): The nominal setpoint temperature to set.
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
+            operating_mode (str | None): The operating mode to set.
+            dhw_time_program_monday (str | None): Time program for Monday (format: "HH:MM-HH:MM HH:MM-HH:MM HH:MM-HH:MM").
+            dhw_time_program_tuesday (str | None): Time program for Tuesday.
+            dhw_time_program_wednesday (str | None): Time program for Wednesday.
+            dhw_time_program_thursday (str | None): Time program for Thursday.
+            dhw_time_program_friday (str | None): Time program for Friday.
+            dhw_time_program_saturday (str | None): Time program for Saturday.
+            dhw_time_program_sunday (str | None): Time program for Sunday.
+            dhw_time_program_standard_values (str | None): Standard values for time program (0 - No, 1 - Yes).
 
         """
         self._validate_single_parameter(
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            dhw_time_program_monday,
+            dhw_time_program_tuesday,
+            dhw_time_program_wednesday,
+            dhw_time_program_thursday,
+            dhw_time_program_friday,
+            dhw_time_program_saturday,
+            dhw_time_program_sunday,
+            dhw_time_program_standard_values,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
@@ -577,6 +602,14 @@ class BSBLAN:
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            dhw_time_program_monday,
+            dhw_time_program_tuesday,
+            dhw_time_program_wednesday,
+            dhw_time_program_thursday,
+            dhw_time_program_friday,
+            dhw_time_program_saturday,
+            dhw_time_program_sunday,
+            dhw_time_program_standard_values,
         )
         await self._set_hot_water_state(state)
 
@@ -585,12 +618,29 @@ class BSBLAN:
         nominal_setpoint: float | None,
         reduced_setpoint: float | None,
         operating_mode: str | None,
+        dhw_time_program_monday: str | None = None,
+        dhw_time_program_tuesday: str | None = None,
+        dhw_time_program_wednesday: str | None = None,
+        dhw_time_program_thursday: str | None = None,
+        dhw_time_program_friday: str | None = None,
+        dhw_time_program_saturday: str | None = None,
+        dhw_time_program_sunday: str | None = None,
+        dhw_time_program_standard_values: str | None = None,
     ) -> dict[str, Any]:
         """Prepare the hot water state for setting.
 
         Args:
             nominal_setpoint (float | None): The nominal setpoint temperature to set.
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
+            operating_mode (str | None): The operating mode to set.
+            dhw_time_program_monday (str | None): Time program for Monday.
+            dhw_time_program_tuesday (str | None): Time program for Tuesday.
+            dhw_time_program_wednesday (str | None): Time program for Wednesday.
+            dhw_time_program_thursday (str | None): Time program for Thursday.
+            dhw_time_program_friday (str | None): Time program for Friday.
+            dhw_time_program_saturday (str | None): Time program for Saturday.
+            dhw_time_program_sunday (str | None): Time program for Sunday.
+            dhw_time_program_standard_values (str | None): Standard values for time program.
 
         Returns:
             dict[str, Any]: The prepared state for the hot water.
@@ -615,6 +665,38 @@ class BSBLAN:
                     "EnumValue": operating_mode,
                     "Type": "1",
                 },
+            )
+        if dhw_time_program_monday is not None:
+            state.update(
+                {"Parameter": "561", "Value": dhw_time_program_monday, "Type": "1"},
+            )
+        if dhw_time_program_tuesday is not None:
+            state.update(
+                {"Parameter": "562", "Value": dhw_time_program_tuesday, "Type": "1"},
+            )
+        if dhw_time_program_wednesday is not None:
+            state.update(
+                {"Parameter": "563", "Value": dhw_time_program_wednesday, "Type": "1"},
+            )
+        if dhw_time_program_thursday is not None:
+            state.update(
+                {"Parameter": "564", "Value": dhw_time_program_thursday, "Type": "1"},
+            )
+        if dhw_time_program_friday is not None:
+            state.update(
+                {"Parameter": "565", "Value": dhw_time_program_friday, "Type": "1"},
+            )
+        if dhw_time_program_saturday is not None:
+            state.update(
+                {"Parameter": "566", "Value": dhw_time_program_saturday, "Type": "1"},
+            )
+        if dhw_time_program_sunday is not None:
+            state.update(
+                {"Parameter": "567", "Value": dhw_time_program_sunday, "Type": "1"},
+            )
+        if dhw_time_program_standard_values is not None:
+            state.update(
+                {"Parameter": "576", "Value": dhw_time_program_standard_values, "Type": "1"},
             )
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
