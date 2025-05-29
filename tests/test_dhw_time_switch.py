@@ -10,6 +10,7 @@ import pytest
 
 from bsblan import BSBLAN, BSBLANError
 from bsblan.constants import MULTI_PARAMETER_ERROR_MSG
+from bsblan.models import DHWTimeSwitchPrograms
 
 
 @pytest.mark.asyncio
@@ -22,7 +23,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     """
     # Test setting time program for Monday
     assert isinstance(mock_bsblan._request, AsyncMock)
-    await mock_bsblan.set_hot_water(dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -33,7 +36,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting time program for Tuesday
-    await mock_bsblan.set_hot_water(dhw_time_program_tuesday="06:00-08:00 17:00-20:00 ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_tuesday="06:00-08:00 17:00-20:00 ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -44,7 +49,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting time program for Wednesday
-    await mock_bsblan.set_hot_water(dhw_time_program_wednesday="07:30-09:00 18:00-21:30 ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_wednesday="07:30-09:00 18:00-21:30 ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -55,7 +62,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting time program for Thursday
-    await mock_bsblan.set_hot_water(dhw_time_program_thursday="06:00-09:00 16:00-22:00 ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_thursday="06:00-09:00 16:00-22:00 ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -66,7 +75,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting time program for Friday
-    await mock_bsblan.set_hot_water(dhw_time_program_friday="06:00-09:00 15:00-23:00 ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_friday="06:00-09:00 15:00-23:00 ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -77,7 +88,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting time program for Saturday
-    await mock_bsblan.set_hot_water(dhw_time_program_saturday="08:00-23:00 ##:##-##:## ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_saturday="08:00-23:00 ##:##-##:## ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -88,7 +101,9 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting time program for Sunday
-    await mock_bsblan.set_hot_water(dhw_time_program_sunday="08:00-22:00 ##:##-##:## ##:##-##:##")
+    await mock_bsblan.set_hot_water(
+        dhw_time_program_sunday="08:00-22:00 ##:##-##:## ##:##-##:##"
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -112,7 +127,7 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
     # Test setting multiple parameters (should raise an error)
     with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
         await mock_bsblan.set_hot_water(
-            dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##", 
+            dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##",
             dhw_time_program_tuesday="06:00-08:00 17:00-20:00 ##:##-##:##",
         )
 
@@ -126,11 +141,12 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
 
     """
     # Test preparing Monday time program
+    dhw_programs = DHWTimeSwitchPrograms(monday="13:00-14:00 ##:##-##:## ##:##-##:##")
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
         operating_mode=None,
-        dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##",
+        dhw_time_programs=dhw_programs,
     )
     assert state == {
         "Parameter": "561",
@@ -139,11 +155,12 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
     }
 
     # Test preparing Tuesday time program
+    dhw_programs = DHWTimeSwitchPrograms(tuesday="06:00-08:00 17:00-20:00 ##:##-##:##")
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
         operating_mode=None,
-        dhw_time_program_tuesday="06:00-08:00 17:00-20:00 ##:##-##:##",
+        dhw_time_programs=dhw_programs,
     )
     assert state == {
         "Parameter": "562",
@@ -152,11 +169,12 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
     }
 
     # Test preparing standard values
+    dhw_programs = DHWTimeSwitchPrograms(standard_values="0")
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
         operating_mode=None,
-        dhw_time_program_standard_values="0",
+        dhw_time_programs=dhw_programs,
     )
     assert state == {
         "Parameter": "576",

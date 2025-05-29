@@ -30,17 +30,20 @@ async def test_hot_water_state(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_api_version", "v3")
-        
+
         # Create a modified API_V3 excluding the time switch parameters
         test_api_v3 = {
             "heating": API_V3["heating"].copy(),
             "staticValues": API_V3["staticValues"].copy(),
             "device": API_V3["device"].copy(),
             "sensor": API_V3["sensor"].copy(),
-            "hot_water": {k: v for k, v in API_V3["hot_water"].items() 
-                         if k not in ["561", "562", "563", "564", "565", "566", "567", "576"]}
+            "hot_water": {
+                k: v
+                for k, v in API_V3["hot_water"].items()
+                if k not in ["561", "562", "563", "564", "565", "566", "567", "576"]
+            },
         }
-        
+
         monkeypatch.setattr(bsblan, "_api_data", test_api_v3)
 
         api_validator = APIValidator(test_api_v3)

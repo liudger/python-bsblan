@@ -14,6 +14,20 @@ from mashumaro.mixins.json import DataClassJSONMixin
 from bsblan.constants import TEMPERATURE_UNITS
 
 
+@dataclass
+class DHWTimeSwitchPrograms:
+    """Dataclass for DHW time switch programs."""
+
+    monday: str | None = None
+    tuesday: str | None = None
+    wednesday: str | None = None
+    thursday: str | None = None
+    friday: str | None = None
+    saturday: str | None = None
+    sunday: str | None = None
+    standard_values: str | None = None
+
+
 class DataType(IntEnum):
     """Enumeration of BSB-LAN data types."""
 
@@ -163,7 +177,7 @@ class Sensor(DataClassJSONMixin):
 
 
 @dataclass
-class HotWaterState(DataClassJSONMixin):
+class HotWaterState(DataClassJSONMixin):  # pylint: disable=too-many-instance-attributes
     """Object holds info about object for hot water climate."""
 
     operating_mode: EntityInfo | None = None

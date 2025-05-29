@@ -222,10 +222,12 @@ async def main() -> None:
         # Get hot water state
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
         await print_hot_water_state(hot_water_state)
-        
+
         # Example: Set DHW time program for Monday
         print("\nSetting DHW time program for Monday to 13:00-14:00")
-        await bsblan.set_hot_water(dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##")
+        await bsblan.set_hot_water(
+            dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##"
+        )
 
 
 if __name__ == "__main__":
