@@ -58,7 +58,7 @@ async def test_hot_water_state(
 
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
 
-        # Assertions
+        # Assertions for existing parameters
         assert isinstance(hot_water_state, HotWaterState)
         assert hot_water_state.operating_mode is not None
         assert hot_water_state.operating_mode.value == 1
@@ -69,11 +69,53 @@ async def test_hot_water_state(
         assert hot_water_state.reduced_setpoint is not None
         assert hot_water_state.reduced_setpoint.value == 10.0
 
-        # Verify method calls
-        request_mock.assert_called_once_with(
-            params={
-                "Parameter": (
-                    "1600,1610,1614,1612,1620,1640,1645,1641,1642,1644,8830,8820"
-                )
-            },
-        )
+        # Assertions for new parameters
+        assert hot_water_state.eco_mode_selection is not None
+        assert hot_water_state.eco_mode_selection.value == 0
+        assert hot_water_state.dhw_charging_priority is not None
+        assert hot_water_state.dhw_charging_priority.value == 0
+        assert hot_water_state.legionella_dwelling_time is not None
+        assert hot_water_state.legionella_dwelling_time.value == 10
+        assert hot_water_state.legionella_circulation_pump is not None
+        assert hot_water_state.legionella_circulation_pump.value == 0
+        assert hot_water_state.legionella_circulation_temp_diff is not None
+        assert hot_water_state.legionella_circulation_temp_diff.value == 5.0
+        assert hot_water_state.dhw_circulation_pump_release is not None
+        assert hot_water_state.dhw_circulation_pump_release.value == 1
+        assert hot_water_state.dhw_circulation_pump_cycling is not None
+        assert hot_water_state.dhw_circulation_pump_cycling.value == 5
+        assert hot_water_state.dhw_circulation_setpoint is not None
+        assert hot_water_state.dhw_circulation_setpoint.value == 45.0
+        assert hot_water_state.operating_mode_changeover is not None
+        assert hot_water_state.operating_mode_changeover.value == 0
+
+        # The Parameter string in the request should include all parameters
+        request_mock.assert_called_once()
+        params = request_mock.call_args[1]["params"]["Parameter"].split(",")
+
+        # Check that new parameters are included in the request
+        expected_params = [
+            "1600",
+            "1601",
+            "1610",
+            "1614",
+            "1612",
+            "1620",
+            "1630",
+            "1640",
+            "1645",
+            "1641",
+            "1642",
+            "1644",
+            "1646",
+            "1647",
+            "1648",
+            "1660",
+            "1661",
+            "1663",
+            "1680",
+            "8830",
+            "8820",
+        ]
+        for param in expected_params:
+            assert param in params
