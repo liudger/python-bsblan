@@ -5,7 +5,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, Mapping, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 import aiohttp
 from aiohttp.hdrs import METH_POST
@@ -309,7 +312,7 @@ class BSBLAN:
                     headers=headers,
                 ) as response:
                     response.raise_for_status()
-                    response_data = cast(dict[str, Any], await response.json())
+                    response_data = cast("dict[str, Any]", await response.json())
                     return self._process_response(response_data, base_path)
         except asyncio.TimeoutError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
@@ -318,35 +321,38 @@ class BSBLAN:
         except ValueError as e:
             raise BSBLANError(str(e)) from e
 
-    def _process_response(self, response_data: dict[str, Any], base_path: str) -> dict[str, Any]:
+    def _process_response(
+        self, response_data: dict[str, Any], base_path: str
+    ) -> dict[str, Any]:
         """Process response data based on firmware version.
-        
+
         BSB-LAN 5.0+ includes additional 'payload' field in /JQ responses
         that needs to be handled for compatibility.
-        
+
         Args:
             response_data: Raw response data from BSB-LAN
             base_path: The API endpoint that was called
-            
+
         Returns:
             Processed response data compatible with existing code
+
         """
         # For non-JQ endpoints, return response as-is
         if base_path != "/JQ":
             return response_data
-            
+
         # Check if we have a firmware version to determine processing
         if not self._firmware_version:
             return response_data
-            
+
         # For BSB-LAN 5.0+, remove 'payload' field if present as it's for debugging
         version = pkg_version.parse(self._firmware_version)
-        if version >= pkg_version.parse("5.0.0"):
+        if version >= pkg_version.parse("5.0.0") and "payload" in response_data:
             # Remove payload field if present - it's added for debugging in 5.0+
-            if "payload" in response_data:
-                processed_data = {k: v for k, v in response_data.items() if k != "payload"}
-                return processed_data
-                
+            return {
+                k: v for k, v in response_data.items() if k != "payload"
+            }
+
         return response_data
 
     def _build_url(self, base_path: str) -> URL:
