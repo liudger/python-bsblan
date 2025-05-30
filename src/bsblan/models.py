@@ -14,6 +14,20 @@ from mashumaro.mixins.json import DataClassJSONMixin
 from bsblan.constants import TEMPERATURE_UNITS
 
 
+@dataclass
+class DHWTimeSwitchPrograms:
+    """Dataclass for DHW time switch programs."""
+
+    monday: str | None = None
+    tuesday: str | None = None
+    wednesday: str | None = None
+    thursday: str | None = None
+    friday: str | None = None
+    saturday: str | None = None
+    sunday: str | None = None
+    standard_values: str | None = None
+
+
 class DataType(IntEnum):
     """Enumeration of BSB-LAN data types."""
 
@@ -163,7 +177,7 @@ class Sensor(DataClassJSONMixin):
 
 
 @dataclass
-class HotWaterState(DataClassJSONMixin):
+class HotWaterState(DataClassJSONMixin):  # pylint: disable=too-many-instance-attributes
     """Object holds info about object for hot water climate."""
 
     operating_mode: EntityInfo | None = None
@@ -178,6 +192,14 @@ class HotWaterState(DataClassJSONMixin):
     legionella_function_time: EntityInfo | None = None
     dhw_actual_value_top_temperature: EntityInfo | None = None
     state_dhw_pump: EntityInfo | None = None
+    dhw_time_program_monday: EntityInfo | None = None
+    dhw_time_program_tuesday: EntityInfo | None = None
+    dhw_time_program_wednesday: EntityInfo | None = None
+    dhw_time_program_thursday: EntityInfo | None = None
+    dhw_time_program_friday: EntityInfo | None = None
+    dhw_time_program_saturday: EntityInfo | None = None
+    dhw_time_program_sunday: EntityInfo | None = None
+    dhw_time_program_standard_values: EntityInfo | None = None
 
 
 @dataclass

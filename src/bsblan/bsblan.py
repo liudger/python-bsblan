@@ -34,7 +34,15 @@ from .exceptions import (
     BSBLANInvalidParameterError,
     BSBLANVersionError,
 )
-from .models import Device, HotWaterState, Info, Sensor, State, StaticState
+from .models import (
+    Device,
+    DHWTimeSwitchPrograms,
+    HotWaterState,
+    Info,
+    Sensor,
+    State,
+    StaticState,
+)
 from .utility import APIValidator
 
 if TYPE_CHECKING:
@@ -558,18 +566,42 @@ class BSBLAN:
         nominal_setpoint: float | None = None,
         reduced_setpoint: float | None = None,
         operating_mode: str | None = None,
+        dhw_time_programs: DHWTimeSwitchPrograms | None = None,
     ) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
         Args:
             nominal_setpoint (float | None): The nominal setpoint temperature to set.
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
+            operating_mode (str | None): The operating mode to set.
+            dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
 
         """
+        # Validate only one parameter is being set
+        time_program_params = []
+        if dhw_time_programs:
+            if dhw_time_programs.monday:
+                time_program_params.append(dhw_time_programs.monday)
+            if dhw_time_programs.tuesday:
+                time_program_params.append(dhw_time_programs.tuesday)
+            if dhw_time_programs.wednesday:
+                time_program_params.append(dhw_time_programs.wednesday)
+            if dhw_time_programs.thursday:
+                time_program_params.append(dhw_time_programs.thursday)
+            if dhw_time_programs.friday:
+                time_program_params.append(dhw_time_programs.friday)
+            if dhw_time_programs.saturday:
+                time_program_params.append(dhw_time_programs.saturday)
+            if dhw_time_programs.sunday:
+                time_program_params.append(dhw_time_programs.sunday)
+            if dhw_time_programs.standard_values:
+                time_program_params.append(dhw_time_programs.standard_values)
+
         self._validate_single_parameter(
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            *time_program_params,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
@@ -577,6 +609,7 @@ class BSBLAN:
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            dhw_time_programs,
         )
         await self._set_hot_water_state(state)
 
@@ -585,12 +618,15 @@ class BSBLAN:
         nominal_setpoint: float | None,
         reduced_setpoint: float | None,
         operating_mode: str | None,
+        dhw_time_programs: DHWTimeSwitchPrograms | None = None,
     ) -> dict[str, Any]:
         """Prepare the hot water state for setting.
 
         Args:
             nominal_setpoint (float | None): The nominal setpoint temperature to set.
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
+            operating_mode (str | None): The operating mode to set.
+            dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
 
         Returns:
             dict[str, Any]: The prepared state for the hot water.
@@ -616,6 +652,23 @@ class BSBLAN:
                     "Type": "1",
                 },
             )
+
+        if dhw_time_programs:
+            time_program_mapping = {
+                "561": dhw_time_programs.monday,
+                "562": dhw_time_programs.tuesday,
+                "563": dhw_time_programs.wednesday,
+                "564": dhw_time_programs.thursday,
+                "565": dhw_time_programs.friday,
+                "566": dhw_time_programs.saturday,
+                "567": dhw_time_programs.sunday,
+                "576": dhw_time_programs.standard_values,
+            }
+
+            for param, value in time_program_mapping.items():
+                if value is not None:
+                    state.update({"Parameter": param, "Value": value, "Type": "1"})
+
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
         return state

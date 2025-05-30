@@ -17,6 +17,7 @@ from bsblan import (
     State,
     StaticState,
 )
+from bsblan.models import DHWTimeSwitchPrograms
 
 
 async def get_attribute(
@@ -157,6 +158,27 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
         "Current Temperature": await get_attribute(
             hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
         ),
+        "Time Program Monday": await get_attribute(
+            hot_water_state.dhw_time_program_monday, "value", "N/A"
+        ),
+        "Time Program Tuesday": await get_attribute(
+            hot_water_state.dhw_time_program_tuesday, "value", "N/A"
+        ),
+        "Time Program Wednesday": await get_attribute(
+            hot_water_state.dhw_time_program_wednesday, "value", "N/A"
+        ),
+        "Time Program Thursday": await get_attribute(
+            hot_water_state.dhw_time_program_thursday, "value", "N/A"
+        ),
+        "Time Program Friday": await get_attribute(
+            hot_water_state.dhw_time_program_friday, "value", "N/A"
+        ),
+        "Time Program Saturday": await get_attribute(
+            hot_water_state.dhw_time_program_saturday, "value", "N/A"
+        ),
+        "Time Program Sunday": await get_attribute(
+            hot_water_state.dhw_time_program_sunday, "value", "N/A"
+        ),
     }
     print_attributes("Hot Water State", attributes)
 
@@ -201,6 +223,14 @@ async def main() -> None:
         # Get hot water state
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
         await print_hot_water_state(hot_water_state)
+
+        # Example: Set DHW time program for Monday
+        print("\nSetting DHW time program for Monday to 13:00-14:00")
+
+        dhw_programs = DHWTimeSwitchPrograms(
+            monday="13:00-14:00 ##:##-##:## ##:##-##:##"
+        )
+        await bsblan.set_hot_water(dhw_time_programs=dhw_programs)
 
 
 if __name__ == "__main__":
