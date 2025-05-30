@@ -225,9 +225,11 @@ async def main() -> None:
 
         # Example: Set DHW time program for Monday
         print("\nSetting DHW time program for Monday to 13:00-14:00")
-        await bsblan.set_hot_water(
-            dhw_time_program_monday="13:00-14:00 ##:##-##:## ##:##-##:##"
+        from bsblan.models import DHWTimeSwitchPrograms
+        dhw_programs = DHWTimeSwitchPrograms(
+            monday="13:00-14:00 ##:##-##:## ##:##-##:##"
         )
+        await bsblan.set_hot_water(dhw_time_programs=dhw_programs)
 
 
 if __name__ == "__main__":

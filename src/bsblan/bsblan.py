@@ -567,7 +567,6 @@ class BSBLAN:
         reduced_setpoint: float | None = None,
         operating_mode: str | None = None,
         dhw_time_programs: DHWTimeSwitchPrograms | None = None,
-        **kwargs: str | None,
     ) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
@@ -576,22 +575,8 @@ class BSBLAN:
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
             operating_mode (str | None): The operating mode to set.
             dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
-            **kwargs: Legacy parameters for backward compatibility including:
-                dhw_time_program_monday, dhw_time_program_tuesday, etc.
 
         """
-        # Handle backward compatibility through kwargs
-        if dhw_time_programs is None and kwargs:
-            dhw_time_programs = DHWTimeSwitchPrograms(
-                monday=kwargs.get("dhw_time_program_monday"),
-                tuesday=kwargs.get("dhw_time_program_tuesday"),
-                wednesday=kwargs.get("dhw_time_program_wednesday"),
-                thursday=kwargs.get("dhw_time_program_thursday"),
-                friday=kwargs.get("dhw_time_program_friday"),
-                saturday=kwargs.get("dhw_time_program_saturday"),
-                sunday=kwargs.get("dhw_time_program_sunday"),
-                standard_values=kwargs.get("dhw_time_program_standard_values"),
-            )
 
         # Validate only one parameter is being set
         time_program_params = []
