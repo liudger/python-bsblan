@@ -561,13 +561,22 @@ class BSBLAN:
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return HotWaterState.from_dict(data)
 
-    async def set_hot_water(
+    async def set_hot_water(  # noqa: PLR0913
         self,
         nominal_setpoint: float | None = None,
         reduced_setpoint: float | None = None,
         operating_mode: str | None = None,
         dhw_time_programs: DHWTimeSwitchPrograms | None = None,
-    ) -> None:
+        eco_mode_selection: str | None = None,
+        dhw_charging_priority: str | None = None,
+        legionella_dwelling_time: float | None = None,
+        legionella_circulation_pump: str | None = None,
+        legionella_circulation_temp_diff: float | None = None,
+        dhw_circulation_pump_release: str | None = None,
+        dhw_circulation_pump_cycling: float | None = None,
+        dhw_circulation_setpoint: float | None = None,
+        operating_mode_changeover: str | None = None,
+    ) -> None:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
         """Change the state of the hot water system through BSB-Lan.
 
         Args:
@@ -575,6 +584,16 @@ class BSBLAN:
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
             operating_mode (str | None): The operating mode to set.
             dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
+            eco_mode_selection (str | None): Eco mode selection.
+            dhw_charging_priority (str | None): DHW charging priority.
+            legionella_dwelling_time (float | None): Legionella dwelling time.
+            legionella_circulation_pump (str | None): Legionella circulation pump.
+            legionella_circulation_temp_diff (float | None): Legionella circulation
+                temperature difference.
+            dhw_circulation_pump_release (str | None): DHW circulation pump release.
+            dhw_circulation_pump_cycling (float | None): DHW circulation pump cycling.
+            dhw_circulation_setpoint (float | None): DHW circulation setpoint.
+            operating_mode_changeover (str | None): Operating mode changeover.
 
         """
         # Validate only one parameter is being set
@@ -601,6 +620,15 @@ class BSBLAN:
             nominal_setpoint,
             reduced_setpoint,
             operating_mode,
+            eco_mode_selection,
+            dhw_charging_priority,
+            legionella_dwelling_time,
+            legionella_circulation_pump,
+            legionella_circulation_temp_diff,
+            dhw_circulation_pump_release,
+            dhw_circulation_pump_cycling,
+            dhw_circulation_setpoint,
+            operating_mode_changeover,
             *time_program_params,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
@@ -610,16 +638,34 @@ class BSBLAN:
             reduced_setpoint,
             operating_mode,
             dhw_time_programs,
+            eco_mode_selection,
+            dhw_charging_priority,
+            legionella_dwelling_time,
+            legionella_circulation_pump,
+            legionella_circulation_temp_diff,
+            dhw_circulation_pump_release,
+            dhw_circulation_pump_cycling,
+            dhw_circulation_setpoint,
+            operating_mode_changeover,
         )
         await self._set_hot_water_state(state)
 
-    def _prepare_hot_water_state(
+    def _prepare_hot_water_state(  # noqa: PLR0913, PLR0912
         self,
         nominal_setpoint: float | None,
         reduced_setpoint: float | None,
         operating_mode: str | None,
         dhw_time_programs: DHWTimeSwitchPrograms | None = None,
-    ) -> dict[str, Any]:
+        eco_mode_selection: str | None = None,
+        dhw_charging_priority: str | None = None,
+        legionella_dwelling_time: float | None = None,
+        legionella_circulation_pump: str | None = None,
+        legionella_circulation_temp_diff: float | None = None,
+        dhw_circulation_pump_release: str | None = None,
+        dhw_circulation_pump_cycling: float | None = None,
+        dhw_circulation_setpoint: float | None = None,
+        operating_mode_changeover: str | None = None,
+    ) -> dict[str, Any]:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches
         """Prepare the hot water state for setting.
 
         Args:
@@ -627,6 +673,16 @@ class BSBLAN:
             reduced_setpoint (float | None): The reduced setpoint temperature to set.
             operating_mode (str | None): The operating mode to set.
             dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
+            eco_mode_selection (str | None): Eco mode selection.
+            dhw_charging_priority (str | None): DHW charging priority.
+            legionella_dwelling_time (float | None): Legionella dwelling time.
+            legionella_circulation_pump (str | None): Legionella circulation pump.
+            legionella_circulation_temp_diff (float | None): Legionella circulation
+                temperature difference.
+            dhw_circulation_pump_release (str | None): DHW circulation pump release.
+            dhw_circulation_pump_cycling (float | None): DHW circulation pump cycling.
+            dhw_circulation_setpoint (float | None): DHW circulation setpoint.
+            operating_mode_changeover (str | None): Operating mode changeover.
 
         Returns:
             dict[str, Any]: The prepared state for the hot water.
@@ -649,6 +705,78 @@ class BSBLAN:
                 {
                     "Parameter": "1600",
                     "EnumValue": operating_mode,
+                    "Type": "1",
+                },
+            )
+        if eco_mode_selection is not None:
+            state.update(
+                {
+                    "Parameter": "1601",
+                    "EnumValue": eco_mode_selection,
+                    "Type": "1",
+                },
+            )
+        if dhw_charging_priority is not None:
+            state.update(
+                {
+                    "Parameter": "1630",
+                    "EnumValue": dhw_charging_priority,
+                    "Type": "1",
+                },
+            )
+        if legionella_dwelling_time is not None:
+            state.update(
+                {
+                    "Parameter": "1646",
+                    "Value": str(legionella_dwelling_time),
+                    "Type": "1",
+                },
+            )
+        if legionella_circulation_pump is not None:
+            state.update(
+                {
+                    "Parameter": "1647",
+                    "EnumValue": legionella_circulation_pump,
+                    "Type": "1",
+                },
+            )
+        if legionella_circulation_temp_diff is not None:
+            state.update(
+                {
+                    "Parameter": "1648",
+                    "Value": str(legionella_circulation_temp_diff),
+                    "Type": "1",
+                },
+            )
+        if dhw_circulation_pump_release is not None:
+            state.update(
+                {
+                    "Parameter": "1660",
+                    "EnumValue": dhw_circulation_pump_release,
+                    "Type": "1",
+                },
+            )
+        if dhw_circulation_pump_cycling is not None:
+            state.update(
+                {
+                    "Parameter": "1661",
+                    "Value": str(dhw_circulation_pump_cycling),
+                    "Type": "1",
+                },
+            )
+        if dhw_circulation_setpoint is not None:
+            state.update(
+                {
+                    "Parameter": "1663",
+                    "Value": str(dhw_circulation_setpoint),
+                    "Type": "1",
+                },
+            )
+        if operating_mode_changeover is not None:
+            state.update(
+                {
+                    "Parameter": "1680",
+                    "EnumValue": operating_mode_changeover,
                     "Type": "1",
                 },
             )

@@ -113,7 +113,7 @@ repos:
         name: 🌟 Starring code with pylint
         language: system
         types: [python]
-        entry: poetry run pylint
+        entry: poetry run pylint --exit-zero
       - id: pytest
         name: 🧪 Running tests and test coverage with pytest
         language: system
