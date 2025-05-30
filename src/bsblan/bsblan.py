@@ -577,7 +577,6 @@ class BSBLAN:
             dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
 
         """
-
         # Validate only one parameter is being set
         time_program_params = []
         if dhw_time_programs:

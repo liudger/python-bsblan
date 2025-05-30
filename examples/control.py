@@ -17,6 +17,7 @@ from bsblan import (
     State,
     StaticState,
 )
+from bsblan.models import DHWTimeSwitchPrograms
 
 
 async def get_attribute(
@@ -225,7 +226,7 @@ async def main() -> None:
 
         # Example: Set DHW time program for Monday
         print("\nSetting DHW time program for Monday to 13:00-14:00")
-        from bsblan.models import DHWTimeSwitchPrograms
+
         dhw_programs = DHWTimeSwitchPrograms(
             monday="13:00-14:00 ##:##-##:## ##:##-##:##"
         )
