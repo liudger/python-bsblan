@@ -349,9 +349,7 @@ class BSBLAN:
         version = pkg_version.parse(self._firmware_version)
         if version >= pkg_version.parse("5.0.0") and "payload" in response_data:
             # Remove payload field if present - it's added for debugging in 5.0+
-            return {
-                k: v for k, v in response_data.items() if k != "payload"
-            }
+            return {k: v for k, v in response_data.items() if k != "payload"}
 
         return response_data
 

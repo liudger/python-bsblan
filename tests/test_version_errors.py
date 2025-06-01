@@ -133,7 +133,7 @@ async def test_process_response_v5_payload_removal() -> None:
     response_with_payload = {
         "8700": {"value": "20.5", "unit": "°C"},
         "8740": {"value": "21.0", "unit": "°C"},
-        "payload": "debug_payload_data_here"
+        "payload": "debug_payload_data_here",
     }
 
     # Process the response
@@ -142,7 +142,7 @@ async def test_process_response_v5_payload_removal() -> None:
     # Payload should be removed
     expected = {
         "8700": {"value": "20.5", "unit": "°C"},
-        "8740": {"value": "21.0", "unit": "°C"}
+        "8740": {"value": "21.0", "unit": "°C"},
     }
 
     assert processed == expected
@@ -162,7 +162,7 @@ async def test_process_response_non_jq_endpoint() -> None:
     response_with_payload = {
         "name": "BSB-LAN",
         "version": "5.0.16",
-        "payload": "should_remain_for_non_jq"
+        "payload": "should_remain_for_non_jq",
     }
 
     # Process the response for non-JQ endpoint
