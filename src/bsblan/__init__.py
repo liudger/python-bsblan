@@ -1,7 +1,7 @@
 """Asynchronous Python client for BSBLAN."""
 
 from .bsblan import BSBLAN, BSBLANConfig
-from .exceptions import BSBLANConnectionError, BSBLANError
+from .exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
 from .models import (
     Device,
     DHWTimeSwitchPrograms,
@@ -15,6 +15,7 @@ from .models import (
 __all__ = [
     "BSBLAN",
     "BSBLANConfig",
+    "BSBLANAuthError",
     "BSBLANConnectionError",
     "BSBLANError",
     "DHWTimeSwitchPrograms",
