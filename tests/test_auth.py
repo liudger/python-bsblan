@@ -3,9 +3,7 @@
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 
-import pytest
 from aiohttp.helpers import BasicAuth
-from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
@@ -38,8 +36,13 @@ def test_get_auth_with_credentials() -> None:
 def test_bsblan_auth_error_default_message() -> None:
     """Test BSBLANAuthError default message."""
     error = BSBLANAuthError()
-    assert error.message == "Authentication failed. Please check your username and password."
-    assert str(error) == "Authentication failed. Please check your username and password."
+    assert (
+        error.message
+        == "Authentication failed. Please check your username and password."
+    )
+    assert (
+        str(error) == "Authentication failed. Please check your username and password."
+    )
 
 
 def test_bsblan_auth_error_custom_message() -> None:
