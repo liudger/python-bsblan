@@ -7,6 +7,7 @@ from aiohttp.helpers import BasicAuth
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
+from bsblan.exceptions import BSBLANAuthError
 
 
 def test_get_auth_without_credentials() -> None:
@@ -30,3 +31,23 @@ def test_get_auth_with_credentials() -> None:
     assert isinstance(auth, BasicAuth)
     assert auth.login == "testuser"
     assert auth.password == "testpassword"  # noqa: S105
+
+
+def test_bsblan_auth_error_default_message() -> None:
+    """Test BSBLANAuthError default message."""
+    error = BSBLANAuthError()
+    assert (
+        error.message
+        == "Authentication failed. Please check your username and password."
+    )
+    assert (
+        str(error) == "Authentication failed. Please check your username and password."
+    )
+
+
+def test_bsblan_auth_error_custom_message() -> None:
+    """Test BSBLANAuthError with custom message."""
+    custom_message = "Invalid credentials provided"
+    error = BSBLANAuthError(custom_message)
+    assert error.message == custom_message
+    assert str(error) == custom_message

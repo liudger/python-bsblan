@@ -55,3 +55,9 @@ class BSBLANInvalidParameterError(BSBLANError):
         """
         self.message = f"Invalid values provided: {parameter}"
         super().__init__(self.message)
+
+
+class BSBLANAuthError(BSBLANError):
+    """Raised when authentication fails."""
+
+    message: str = "Authentication failed. Please check your username and password."

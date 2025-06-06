@@ -32,6 +32,7 @@ from .constants import (
     APIConfig,
 )
 from .exceptions import (
+    BSBLANAuthError,
     BSBLANConnectionError,
     BSBLANError,
     BSBLANInvalidParameterError,
@@ -316,6 +317,10 @@ class BSBLAN:
                     return self._process_response(response_data, base_path)
         except asyncio.TimeoutError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
+        except aiohttp.ClientResponseError as e:
+            if e.status in (401, 403):
+                raise BSBLANAuthError from e
+            raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
         except aiohttp.ClientError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
         except ValueError as e:

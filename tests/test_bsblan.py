@@ -13,7 +13,7 @@ from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.exceptions import BSBLANConnectionError, BSBLANError
+from bsblan.exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
 
 from . import load_fixture
 
@@ -202,6 +202,7 @@ async def test_not_authorized_401_response(aresponses: ResponsesMockServer) -> N
         aresponses.Response(
             status=401,
             headers={"Content-Type": "text/html"},
+            text="Unauthorized",
         ),
     )
     async with aiohttp.ClientSession() as session:
@@ -211,5 +212,29 @@ async def test_not_authorized_401_response(aresponses: ResponsesMockServer) -> N
             password=os.getenv("PASSWORD"),  # Compliant
         )
         bsblan = BSBLAN(config, session=session)
-        with pytest.raises(BSBLANError):
-            assert await bsblan._request("GET", "/JQ")
+        with pytest.raises(BSBLANAuthError):
+            await bsblan._request("POST", "/JQ")
+
+
+@pytest.mark.asyncio
+async def test_forbidden_403_response(aresponses: ResponsesMockServer) -> None:
+    """Test forbidden access response handling."""
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            status=403,
+            headers={"Content-Type": "text/html"},
+            text="Forbidden",
+        ),
+    )
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(
+            host="example.com",
+            username="testuser",
+            password="testpass",  # noqa: S106
+        )
+        bsblan = BSBLAN(config, session=session)
+        with pytest.raises(BSBLANAuthError):
+            await bsblan._request("POST", "/JQ")
