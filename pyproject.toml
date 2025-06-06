@@ -59,7 +59,7 @@ pyupgrade = "3.19.1"
 flake8-simplify = "0.22.0"
 vulture = "2.14"
 darglint = "1.8.1"
-safety = "3.5.1"
+safety = "3.5.2"
 codespell = "2.4.1"
 bandit = "1.8.3"
 
