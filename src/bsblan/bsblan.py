@@ -26,6 +26,7 @@ from .constants import (
     HVAC_MODE_DICT_REVERSE,
     MULTI_PARAMETER_ERROR_MSG,
     NO_STATE_ERROR_MSG,
+    ROOM_TEMPERATURE_PUSH_PARAM,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     TEMPERATURE_RANGE_ERROR_MSG,
     VERSION_ERROR_MSG,
@@ -493,6 +494,73 @@ class BSBLAN:
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Info.from_dict(data)
+
+    async def push_temperature(self, room_temperature: str) -> None:
+        """Push room temperature to the heating system through BSB-Lan.
+
+        This functionality is useful for heating systems without a built-in
+        thermostat, allowing external temperature sensors to provide room
+        temperature data to the heating system.
+
+        Args:
+            room_temperature (str): The current room temperature to push to
+                                   the heating system.
+
+        """
+        # Only initialize temperature range if not already done
+        if not self._temperature_range_initialized:
+            await self._initialize_temperature_range()
+
+        # Validate the room temperature
+        self._validate_room_temperature(room_temperature)
+
+        # Prepare and set the temperature push state
+        state = self._prepare_temperature_push_state(room_temperature)
+        await self._set_thermostat_state(state)
+
+    def _prepare_temperature_push_state(self, room_temperature: str) -> dict[str, Any]:
+        """Prepare the temperature push state for setting.
+
+        Args:
+            room_temperature (str): The room temperature to push.
+
+        Returns:
+            dict[str, Any]: The prepared state for temperature push.
+
+        """
+        return {
+            "Parameter": ROOM_TEMPERATURE_PUSH_PARAM,
+            "Value": room_temperature,
+            "Type": "1",
+        }
+
+    def _validate_room_temperature(self, room_temperature: str) -> None:
+        """Validate the room temperature for pushing.
+
+        Args:
+            room_temperature (str): The room temperature to validate.
+
+        Raises:
+            BSBLANError: If the temperature range is not initialized.
+            BSBLANInvalidParameterError: If the room temperature is invalid.
+
+        """
+        if self._min_temp is None or self._max_temp is None:
+            raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
+
+        try:
+            temp = float(room_temperature)
+            # Room temperature can be outside the thermostat range,
+            # but should be within reasonable bounds (-50°C to 100°C or -58°F to 212°F)
+            if self._temperature_unit == "°F":
+                min_bound, max_bound = -58.0, 212.0
+            else:
+                min_bound, max_bound = -50.0, 100.0
+
+            if not (min_bound <= temp <= max_bound):
+                raise BSBLANInvalidParameterError(room_temperature)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(room_temperature) from err
 
     async def thermostat(
         self,

@@ -185,3 +185,6 @@ ATTR_OUTSIDE_TEMPERATURE: Final[str] = "outside_temperature"
 
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
+
+# Temperature Push Parameters
+ROOM_TEMPERATURE_PUSH_PARAM: Final[str] = "10000"
