@@ -550,12 +550,12 @@ class BSBLAN:
 
         try:
             temp = float(room_temperature)
-            # Room temperature can be outside the thermostat range,
-            # but should be within reasonable bounds (-50°C to 100°C or -58°F to 212°F)
+            # Room temperature should be within reasonable indoor bounds
+            # (-10°C to 50°C or 14°F to 122°F)
             if self._temperature_unit == "°F":
-                min_bound, max_bound = -58.0, 212.0
+                min_bound, max_bound = 14.0, 122.0
             else:
-                min_bound, max_bound = -50.0, 100.0
+                min_bound, max_bound = -10.0, 50.0
 
             if not (min_bound <= temp <= max_bound):
                 raise BSBLANInvalidParameterError(room_temperature)
