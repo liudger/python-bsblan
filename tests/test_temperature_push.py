@@ -107,8 +107,8 @@ async def test_push_temperature_fahrenheit(
     """Test pushing room temperature in Fahrenheit."""
     # Set temperature unit to Fahrenheit
     mock_bsblan._temperature_unit = "°F"
-    mock_bsblan._min_temp = 50.0
-    mock_bsblan._max_temp = 86.0
+    mock_bsblan._min_temp = 41.0
+    mock_bsblan._max_temp = 95.0
 
     expected_data = {
         "Parameter": "10000",
@@ -130,10 +130,10 @@ async def test_push_temperature_edge_values_celsius(
     mock_aresponses: ResponsesMockServer,
 ) -> None:
     """Test pushing edge temperature values in Celsius."""
-    # Test minimum valid temperature
+    # Test minimum valid temperature (-10°C)
     expected_data_min = {
         "Parameter": "10000",
-        "Value": "-50.0",
+        "Value": "-10.0",
         "Type": "1",
     }
     mock_aresponses.add(
@@ -142,12 +142,12 @@ async def test_push_temperature_edge_values_celsius(
         "POST",
         create_response_handler(expected_data_min),
     )
-    await mock_bsblan.push_temperature("-50.0")
+    await mock_bsblan.push_temperature("-10.0")
 
-    # Test maximum valid temperature
+    # Test maximum valid temperature (50°C)
     expected_data_max = {
         "Parameter": "10000",
-        "Value": "100.0",
+        "Value": "50.0",
         "Type": "1",
     }
     mock_aresponses.add(
@@ -156,7 +156,7 @@ async def test_push_temperature_edge_values_celsius(
         "POST",
         create_response_handler(expected_data_max),
     )
-    await mock_bsblan.push_temperature("100.0")
+    await mock_bsblan.push_temperature("50.0")
 
 
 @pytest.mark.asyncio
@@ -168,10 +168,10 @@ async def test_push_temperature_edge_values_fahrenheit(
     # Set temperature unit to Fahrenheit
     mock_bsblan._temperature_unit = "°F"
 
-    # Test minimum valid temperature
+    # Test minimum valid temperature (14°F)
     expected_data_min = {
         "Parameter": "10000",
-        "Value": "-58.0",
+        "Value": "14.0",
         "Type": "1",
     }
     mock_aresponses.add(
@@ -180,12 +180,12 @@ async def test_push_temperature_edge_values_fahrenheit(
         "POST",
         create_response_handler(expected_data_min),
     )
-    await mock_bsblan.push_temperature("-58.0")
+    await mock_bsblan.push_temperature("14.0")
 
-    # Test maximum valid temperature
+    # Test maximum valid temperature (122°F)
     expected_data_max = {
         "Parameter": "10000",
-        "Value": "212.0",
+        "Value": "122.0",
         "Type": "1",
     }
     mock_aresponses.add(
@@ -194,7 +194,7 @@ async def test_push_temperature_edge_values_fahrenheit(
         "POST",
         create_response_handler(expected_data_max),
     )
-    await mock_bsblan.push_temperature("212.0")
+    await mock_bsblan.push_temperature("122.0")
 
 
 @pytest.mark.asyncio
@@ -207,13 +207,13 @@ async def test_push_temperature_invalid_value(mock_bsblan: BSBLAN) -> None:
 @pytest.mark.asyncio
 async def test_push_temperature_out_of_bounds_celsius(mock_bsblan: BSBLAN) -> None:
     """Test pushing temperature out of bounds in Celsius."""
-    # Test below minimum
+    # Test below minimum (-10°C)
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.push_temperature("-51.0")
+        await mock_bsblan.push_temperature("-11.0")
 
-    # Test above maximum
+    # Test above maximum (50°C)
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.push_temperature("101.0")
+        await mock_bsblan.push_temperature("51.0")
 
 
 @pytest.mark.asyncio
@@ -222,13 +222,13 @@ async def test_push_temperature_out_of_bounds_fahrenheit(mock_bsblan: BSBLAN) ->
     # Set temperature unit to Fahrenheit
     mock_bsblan._temperature_unit = "°F"
 
-    # Test below minimum
+    # Test below minimum (14°F)
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.push_temperature("-59.0")
+        await mock_bsblan.push_temperature("13.0")
 
-    # Test above maximum
+    # Test above maximum (122°F)
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.push_temperature("213.0")
+        await mock_bsblan.push_temperature("123.0")
 
 
 @pytest.mark.asyncio
@@ -250,8 +250,8 @@ def test_validate_room_temperature_valid_celsius(mock_bsblan: BSBLAN) -> None:
     # Should not raise exception
     mock_bsblan._validate_room_temperature("22.0")
     mock_bsblan._validate_room_temperature("0.0")
-    mock_bsblan._validate_room_temperature("-10.5")
-    mock_bsblan._validate_room_temperature("45.2")
+    mock_bsblan._validate_room_temperature("-5.0")
+    mock_bsblan._validate_room_temperature("45.0")
 
 
 def test_validate_room_temperature_valid_fahrenheit(mock_bsblan: BSBLAN) -> None:
@@ -262,8 +262,8 @@ def test_validate_room_temperature_valid_fahrenheit(mock_bsblan: BSBLAN) -> None
     # Should not raise exception
     mock_bsblan._validate_room_temperature("72.0")
     mock_bsblan._validate_room_temperature("32.0")
-    mock_bsblan._validate_room_temperature("0.0")
-    mock_bsblan._validate_room_temperature("100.5")
+    mock_bsblan._validate_room_temperature("20.0")
+    mock_bsblan._validate_room_temperature("100.0")
 
 
 def test_validate_room_temperature_invalid_celsius(mock_bsblan: BSBLAN) -> None:
@@ -272,10 +272,10 @@ def test_validate_room_temperature_invalid_celsius(mock_bsblan: BSBLAN) -> None:
         mock_bsblan._validate_room_temperature("invalid")
 
     with pytest.raises(BSBLANInvalidParameterError):
-        mock_bsblan._validate_room_temperature("-51.0")
+        mock_bsblan._validate_room_temperature("-11.0")
 
     with pytest.raises(BSBLANInvalidParameterError):
-        mock_bsblan._validate_room_temperature("101.0")
+        mock_bsblan._validate_room_temperature("51.0")
 
 
 def test_validate_room_temperature_invalid_fahrenheit(mock_bsblan: BSBLAN) -> None:
@@ -287,10 +287,10 @@ def test_validate_room_temperature_invalid_fahrenheit(mock_bsblan: BSBLAN) -> No
         mock_bsblan._validate_room_temperature("invalid")
 
     with pytest.raises(BSBLANInvalidParameterError):
-        mock_bsblan._validate_room_temperature("-59.0")
+        mock_bsblan._validate_room_temperature("13.0")
 
     with pytest.raises(BSBLANInvalidParameterError):
-        mock_bsblan._validate_room_temperature("213.0")
+        mock_bsblan._validate_room_temperature("123.0")
 
 
 def test_validate_room_temperature_no_range() -> None:

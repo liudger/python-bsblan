@@ -31,8 +31,8 @@ async def test_initialize_temperature_range_celsius() -> None:
     bsblan = BSBLAN(config)
 
     # Create mock static values with Celsius unit
-    min_temp = EntityInfo(name="Min Temp", value="10", unit="°C", desc="", data_type=0)
-    max_temp = EntityInfo(name="Max Temp", value="30", unit="°C", desc="", data_type=0)
+    min_temp = EntityInfo(name="Min Temp", value="5", unit="°C", desc="", data_type=0)
+    max_temp = EntityInfo(name="Max Temp", value="35", unit="°C", desc="", data_type=0)
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
@@ -40,8 +40,8 @@ async def test_initialize_temperature_range_celsius() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._min_temp == 10.0
-        assert bsblan._max_temp == 30.0
+        assert bsblan._min_temp == 5.0
+        assert bsblan._max_temp == 35.0
         assert bsblan._temperature_range_initialized is True
         assert bsblan._temperature_unit == "°C"
 
@@ -53,8 +53,8 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
     bsblan = BSBLAN(config)
 
     # Create mock static values with Fahrenheit unit
-    min_temp = EntityInfo(name="Min Temp", value="50", unit="°F", desc="", data_type=0)
-    max_temp = EntityInfo(name="Max Temp", value="86", unit="°F", desc="", data_type=0)
+    min_temp = EntityInfo(name="Min Temp", value="41", unit="°F", desc="", data_type=0)
+    max_temp = EntityInfo(name="Max Temp", value="95", unit="°F", desc="", data_type=0)
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
@@ -62,8 +62,8 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._min_temp == 50.0
-        assert bsblan._max_temp == 86.0
+        assert bsblan._min_temp == 41.0
+        assert bsblan._max_temp == 95.0
         assert bsblan._temperature_range_initialized is True
         assert bsblan._temperature_unit == "°F"
 
@@ -79,10 +79,10 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
 
     # Create mock static values with HTML degree symbol
     min_temp = EntityInfo(
-        name="Min Temp", value="10", unit="&deg;C", desc="", data_type=0
+        name="Min Temp", value="5", unit="&deg;C", desc="", data_type=0
     )
     max_temp = EntityInfo(
-        name="Max Temp", value="30", unit="&deg;C", desc="", data_type=0
+        name="Max Temp", value="35", unit="&deg;C", desc="", data_type=0
     )
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
@@ -91,7 +91,7 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._min_temp == 10.0
-        assert bsblan._max_temp == 30.0
+        assert bsblan._min_temp == 5.0
+        assert bsblan._max_temp == 35.0
         assert bsblan._temperature_range_initialized is True
         assert bsblan._temperature_unit == "°C"

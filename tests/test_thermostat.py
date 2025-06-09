@@ -34,8 +34,8 @@ async def mock_bsblan() -> AsyncGenerator[BSBLAN, None]:
         bsblan = BSBLAN(config, session=session)
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
-        bsblan._min_temp = 8.0
-        bsblan._max_temp = 30.0
+        bsblan._min_temp = 5.0
+        bsblan._max_temp = 35.0
         bsblan._temperature_range_initialized = True
         yield bsblan
 
@@ -132,7 +132,7 @@ async def test_change_hvac_mode(
 async def test_invalid_temperature(mock_bsblan: BSBLAN) -> None:
     """Test setting an invalid temperature."""
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.thermostat(target_temperature="35")
+        await mock_bsblan.thermostat(target_temperature="40")
 
 
 @pytest.mark.asyncio
