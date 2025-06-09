@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 from aresponses import Response, ResponsesMockServer
@@ -54,22 +54,19 @@ async def mock_aresponses() -> AsyncGenerator[ResponsesMockServer, None]:
         yield aresponses
 
 
-def create_response_handler(expected_data: dict[str, Any]) -> Response:
-    """Create a response handler that checks the request data."""
+def create_inf_telegram_response_handler(
+    expected_param: str, expected_value: str
+) -> Response:
+    """Create a response handler for INF telegram requests."""
 
     async def response_handler(request: aiohttp.web.Request) -> Response:
-        """Check the request data."""
-        assert request.method == "POST"
+        """Check the INF telegram request."""
+        assert request.method == "GET"
         assert request.host == "example.com"
-        assert request.path_qs == "/JS"
-        actual_data = json.loads(await request.text())
-
-        for key, value in expected_data.items():
-            assert key in actual_data, f"Expected key '{key}' not found in actual data"
-            assert actual_data[key] == value, (
-                f"Mismatch for key '{key}': expected {value}, "
-                f"got {actual_data[key]}"
-            )
+        expected_path = f"/I{expected_param}={expected_value}"
+        assert request.path_qs == expected_path, (
+            f"Expected path '{expected_path}', got '{request.path_qs}'"
+        )
 
         return Response(
             text=json.dumps({"status": "success"}),
@@ -85,16 +82,11 @@ async def test_push_temperature_celsius(
     mock_aresponses: ResponsesMockServer,
 ) -> None:
     """Test pushing room temperature in Celsius."""
-    expected_data = {
-        "Parameter": "10000",
-        "Value": "22.5",
-        "Type": "1",
-    }
     mock_aresponses.add(
         "example.com",
-        "/JS",
-        "POST",
-        create_response_handler(expected_data),
+        "/I10000=22.5",
+        "GET",
+        create_inf_telegram_response_handler("10000", "22.5"),
     )
     await mock_bsblan.push_temperature("22.5")
 
@@ -110,16 +102,11 @@ async def test_push_temperature_fahrenheit(
     mock_bsblan._min_temp = 41.0
     mock_bsblan._max_temp = 95.0
 
-    expected_data = {
-        "Parameter": "10000",
-        "Value": "72.0",
-        "Type": "1",
-    }
     mock_aresponses.add(
         "example.com",
-        "/JS",
-        "POST",
-        create_response_handler(expected_data),
+        "/I10000=72.0",
+        "GET",
+        create_inf_telegram_response_handler("10000", "72.0"),
     )
     await mock_bsblan.push_temperature("72.0")
 
@@ -131,30 +118,20 @@ async def test_push_temperature_edge_values_celsius(
 ) -> None:
     """Test pushing edge temperature values in Celsius."""
     # Test minimum valid temperature (-10°C)
-    expected_data_min = {
-        "Parameter": "10000",
-        "Value": "-10.0",
-        "Type": "1",
-    }
     mock_aresponses.add(
         "example.com",
-        "/JS",
-        "POST",
-        create_response_handler(expected_data_min),
+        "/I10000=-10.0",
+        "GET",
+        create_inf_telegram_response_handler("10000", "-10.0"),
     )
     await mock_bsblan.push_temperature("-10.0")
 
     # Test maximum valid temperature (50°C)
-    expected_data_max = {
-        "Parameter": "10000",
-        "Value": "50.0",
-        "Type": "1",
-    }
     mock_aresponses.add(
         "example.com",
-        "/JS",
-        "POST",
-        create_response_handler(expected_data_max),
+        "/I10000=50.0",
+        "GET",
+        create_inf_telegram_response_handler("10000", "50.0"),
     )
     await mock_bsblan.push_temperature("50.0")
 
@@ -169,30 +146,20 @@ async def test_push_temperature_edge_values_fahrenheit(
     mock_bsblan._temperature_unit = "°F"
 
     # Test minimum valid temperature (14°F)
-    expected_data_min = {
-        "Parameter": "10000",
-        "Value": "14.0",
-        "Type": "1",
-    }
     mock_aresponses.add(
         "example.com",
-        "/JS",
-        "POST",
-        create_response_handler(expected_data_min),
+        "/I10000=14.0",
+        "GET",
+        create_inf_telegram_response_handler("10000", "14.0"),
     )
     await mock_bsblan.push_temperature("14.0")
 
     # Test maximum valid temperature (122°F)
-    expected_data_max = {
-        "Parameter": "10000",
-        "Value": "122.0",
-        "Type": "1",
-    }
     mock_aresponses.add(
         "example.com",
-        "/JS",
-        "POST",
-        create_response_handler(expected_data_max),
+        "/I10000=122.0",
+        "GET",
+        create_inf_telegram_response_handler("10000", "122.0"),
     )
     await mock_bsblan.push_temperature("122.0")
 
@@ -229,20 +196,6 @@ async def test_push_temperature_out_of_bounds_fahrenheit(mock_bsblan: BSBLAN) ->
     # Test above maximum (122°F)
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan.push_temperature("123.0")
-
-
-@pytest.mark.asyncio
-async def test_prepare_temperature_push_state(mock_bsblan: BSBLAN) -> None:
-    """Test preparing temperature push state."""
-    state = mock_bsblan._prepare_temperature_push_state("25.0")
-
-    expected_state = {
-        "Parameter": "10000",
-        "Value": "25.0",
-        "Type": "1",
-    }
-
-    assert state == expected_state
 
 
 def test_validate_room_temperature_valid_celsius(mock_bsblan: BSBLAN) -> None:

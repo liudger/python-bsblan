@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 import aiohttp
-from aiohttp.hdrs import METH_POST
+from aiohttp.hdrs import METH_GET, METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
 from yarl import URL
@@ -496,11 +496,15 @@ class BSBLAN:
         return Info.from_dict(data)
 
     async def push_temperature(self, room_temperature: str) -> None:
-        """Push room temperature to the heating system through BSB-Lan.
+        """Push room temperature to the heating system through BSB-Lan INF telegram.
 
         This functionality is useful for heating systems without a built-in
         thermostat, allowing external temperature sensors to provide room
         temperature data to the heating system.
+
+        The room temperature is sent as an INF telegram using parameter 10000
+        for heating circuit 1, which must be sent at least every 10 minutes
+        to maintain temperature regulation.
 
         Args:
             room_temperature (str): The current room temperature to push to
@@ -514,25 +518,25 @@ class BSBLAN:
         # Validate the room temperature
         self._validate_room_temperature(room_temperature)
 
-        # Prepare and set the temperature push state
-        state = self._prepare_temperature_push_state(room_temperature)
-        await self._set_thermostat_state(state)
+        # Send the temperature as an INF telegram
+        await self._send_inf_telegram(ROOM_TEMPERATURE_PUSH_PARAM, room_temperature)
 
-    def _prepare_temperature_push_state(self, room_temperature: str) -> dict[str, Any]:
-        """Prepare the temperature push state for setting.
+    async def _send_inf_telegram(self, parameter: str, value: str) -> None:
+        """Send an INF telegram to the heating system.
+
+        INF telegrams use the /I endpoint with a specific URL format for
+        sending information telegrams to the heating system.
 
         Args:
-            room_temperature (str): The room temperature to push.
-
-        Returns:
-            dict[str, Any]: The prepared state for temperature push.
+            parameter (str): The parameter number to send the value to.
+            value (str): The value to send.
 
         """
-        return {
-            "Parameter": ROOM_TEMPERATURE_PUSH_PARAM,
-            "Value": room_temperature,
-            "Type": "1",
-        }
+        base_path = f"/I{parameter}={value}"
+        response = await self._request(
+            method=METH_GET, base_path=base_path, params=None
+        )
+        logger.debug("Response for INF telegram: %s", response)
 
     def _validate_room_temperature(self, room_temperature: str) -> None:
         """Validate the room temperature for pushing.
