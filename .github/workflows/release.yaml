@@ -51,4 +51,9 @@ jobs:
         uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
-          release-signing-artifacts: true
+          release-signing-artifacts: false
+      - name: 📤 Upload signature files to release
+        uses: softprops/action-gh-release@v2.3.0
+        if: github.event_name == 'release' && github.event.action == 'published'
+        with:
+          files: ./dist/*.sigstore.json
