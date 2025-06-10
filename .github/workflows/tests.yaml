@@ -21,7 +21,9 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
       - name: 🏗 Set up uv
-        run: pipx install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
       - name: 🏗 Set up Python ${{ matrix.python }}
         id: python
         uses: actions/setup-python@v5.6.0
@@ -49,7 +51,9 @@ jobs:
       - name: ⬇️ Download coverage data
         uses: actions/download-artifact@v4.3.0
       - name: 🏗 Set up uv
-        run: pipx install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
       - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
         uses: actions/setup-python@v5.6.0
