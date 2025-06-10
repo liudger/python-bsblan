@@ -83,8 +83,37 @@ jobs:
               sync
             fi
           done
-          # Wait a bit more for file system operations to complete
-          sleep 3
+          # Poll for file system operations to complete
+          max_wait_time=30
+          wait_interval=2
+          waited_time=0
+          while [ $waited_time -lt $max_wait_time ]; do
+            all_files_ready=true
+            for file in ./dist/*.sigstore.json; do
+              if [ -f "$file" ]; then
+                # Test file readability
+                if ! cat "$file" > /dev/null; then
+                  echo "File $file is not readable yet."
+                  all_files_ready=false
+                  break
+                fi
+              else
+                echo "File $file does not exist yet."
+                all_files_ready=false
+                break
+              fi
+            done
+            if [ "$all_files_ready" = true ]; then
+              echo "All files are ready."
+              break
+            fi
+            echo "Waiting for files to be ready..."
+            sleep $wait_interval
+            waited_time=$((waited_time + wait_interval))
+          done
+          if [ $waited_time -ge $max_wait_time ]; then
+            echo "Error: Files not ready after $max_wait_time seconds."
+            exit 1
       - name: 📋 List signature files explicitly
         id: list-files
         run: |
