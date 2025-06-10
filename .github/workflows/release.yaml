@@ -105,6 +105,10 @@ jobs:
               echo "Uploading $file..."
               # Use GitHub CLI for more reliable uploads
               gh release upload ${{ github.event.release.tag_name }} "$file" --clobber
+              if [ $? -ne 0 ]; then
+                echo "✗ Failed to upload $file" >&2
+                exit 1
+              fi
               echo "✓ Uploaded $file"
               sleep 1  # Small delay between uploads
             fi
