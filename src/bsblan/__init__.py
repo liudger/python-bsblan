@@ -14,15 +14,15 @@ from .models import (
 
 __all__ = [
     "BSBLAN",
-    "BSBLANConfig",
     "BSBLANAuthError",
+    "BSBLANConfig",
     "BSBLANConnectionError",
     "BSBLANError",
     "DHWTimeSwitchPrograms",
-    "Info",
-    "State",
     "Device",
-    "Sensor",
-    "StaticState",
     "HotWaterState",
+    "Info",
+    "Sensor",
+    "State",
+    "StaticState",
 ]
