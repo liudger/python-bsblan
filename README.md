@@ -137,20 +137,20 @@ Thank you for being involved! :heart_eyes:
 
 ## Setting up development environment
 
-This Python project is fully managed using the [Poetry][poetry] dependency manager.
+This Python project is fully managed using the [uv][uv] dependency manager.
 But also relies on the use of NodeJS for certain checks during development.
 
 You need at least:
 
 - Python 3.12+
-- [Poetry][poetry-install]
+- [uv][uv-install]
 - NodeJS 22.14.0+ (including NPM)
 
 To install all packages, including all development requirements:
 
 ```bash
 npm install
-poetry install
+uv sync --dev
 ```
 
 As this repository uses the [pre-commit][pre-commit] framework, all changes
@@ -158,13 +158,13 @@ are linted and tested with each commit. You can run all checks and tests
 manually, using the following command:
 
 ```bash
-poetry run pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 To run just the Python tests:
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ## Authors & contributors
@@ -214,6 +214,8 @@ SOFTWARE.
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2025.svg
 [poetry]: https://python-poetry.org
 [poetry-install]: https://python-poetry.org/docs/#installation
+[uv]: https://docs.astral.sh/uv/
+[uv-install]: https://docs.astral.sh/uv/getting-started/installation/
 [pre-commit]: https://pre-commit.com/
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [pypi]: https://pypi.org/project/python-bsblan/

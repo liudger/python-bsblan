@@ -32,8 +32,9 @@ async def test_initialize_api_data_unexpected_none() -> None:
     bsblan._api_version = "v3"
 
     # Mock API_VERSIONS to return None for this specific test
-    with patch("bsblan.bsblan.API_VERSIONS", {"v3": None}), pytest.raises(
-        BSBLANError, match=API_DATA_NOT_INITIALIZED_ERROR_MSG
+    with (
+        patch("bsblan.bsblan.API_VERSIONS", {"v3": None}),
+        pytest.raises(BSBLANError, match=API_DATA_NOT_INITIALIZED_ERROR_MSG),
     ):
         await bsblan._initialize_api_data()
 

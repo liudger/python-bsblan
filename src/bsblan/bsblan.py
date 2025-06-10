@@ -50,8 +50,9 @@ from .models import (
 from .utility import APIValidator
 
 if TYPE_CHECKING:
+    from typing import Self
+
     from aiohttp.client import ClientSession
-    from typing_extensions import Self
 
 SectionLiteral = Literal["heating", "staticValues", "device", "sensor", "hot_water"]
 
@@ -315,7 +316,7 @@ class BSBLAN:
                     response.raise_for_status()
                     response_data = cast("dict[str, Any]", await response.json())
                     return self._process_response(response_data, base_path)
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
         except aiohttp.ClientResponseError as e:
             if e.status in (401, 403):

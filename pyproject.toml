@@ -1,14 +1,15 @@
-[tool.poetry]
+[project]
 name = "python-bsblan"
 version = "0.0.0"
 description = "Asynchronous Python client for BSBLAN API"
-authors = ["Willem-Jan van Rootselaar <liudgervr@gmail.com>"]
-maintainers = ["Willem-Jan van Rootselaar <liudgervr@gmail.com>"]
-license = "MIT"
+authors = [
+    {name = "Willem-Jan van Rootselaar", email = "liudgervr@gmail.com"}
+]
+maintainers = [
+    {name = "Willem-Jan van Rootselaar", email = "liudgervr@gmail.com"}
+]
+license = {text = "MIT"}
 readme = "README.md"
-homepage = "https://github.com/liudger/python-bsblan"
-repository = "https://github.com/liudger/python-bsblan"
-documentation = "https://github.com/liudger/python-bsblan"
 keywords = ["bsblan", "thermostat", "client" , "api", "async"]
 classifiers = [
   "License :: OSI Approved :: MIT License",
@@ -21,47 +22,26 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-packages = [
-  { include = "bsblan", from = "src" },
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.8.1",
+    "yarl>=1.7.2",
+    "packaging>=21.3",
+    "backoff>=2.2.1",
+    "mashumaro>=3.13.1",
+    "orjson>=3.9.10",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-aiohttp = ">=3.8.1"
-yarl = ">=1.7.2"
-packaging = ">=21.3"
-backoff = "^2.2.1"
-mashumaro = "^3.13.1"
-orjson = "^3.9.10"
-
-[tool.poetry.urls]
+[project.urls]
+Homepage = "https://github.com/liudger/python-bsblan"
+Repository = "https://github.com/liudger/python-bsblan"
+Documentation = "https://github.com/liudger/python-bsblan"
 "Bug Tracker" = "https://github.com/liudger/python-bsblan/issues"
 Changelog = "https://github.com/liudger/python-bsblan/releases"
 
-[tool.poetry.group.dev.dependencies]
-covdefaults = "2.3.0"
-ruff = "0.7.4"
-aresponses = "3.0.0"
-black = "25.1.0"
-blacken-docs = "1.19.1"
-coverage = "7.8.2"
-flake8 = "7.2.0"
-isort = "6.0.1"
-mypy = "1.16.0"
-pre-commit = "4.2.0"
-pre-commit-hooks = "5.0.0"
-pylint = "3.3.7"
-pytest = "8.3.5"
-pytest-asyncio = "1.0.0"
-pytest-cov = "6.1.1"
-yamllint = "1.37.1"
-pyupgrade = "3.19.1"
-flake8-simplify = "0.22.0"
-vulture = "2.14"
-darglint = "1.8.1"
-safety = "3.5.1"
-codespell = "2.4.1"
-bandit = "1.8.3"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bsblan"]
 
 
 [tool.coverage.run]
@@ -173,6 +153,36 @@ runtime-evaluated-base-classes = ["mashumaro.mixins.orjson.DataClassORJSONMixin"
 [tool.ruff.lint.mccabe]
 max-complexity = 25
 
+[tool.codespell]
+ignore-words-list = "astroid"
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "aresponses==3.0.0",
+    "bandit==1.8.3",
+    "black==25.1.0",
+    "blacken-docs==1.19.1",
+    "codespell==2.4.1",
+    "covdefaults==2.3.0",
+    "coverage==7.8.2",
+    "darglint==1.8.1",
+    "flake8==7.2.0",
+    "flake8-simplify==0.22.0",
+    "isort==6.0.1",
+    "mypy==1.16.0",
+    "pre-commit==4.2.0",
+    "pre-commit-hooks==5.0.0",
+    "pylint==3.3.7",
+    "pytest>=8.3.5",
+    "pytest-asyncio==1.0.0",
+    "pytest-cov==6.1.1",
+    "pyupgrade==3.19.1",
+    "ruff==0.7.4",
+    "safety==3.5.1",
+    "vulture==2.14",
+    "yamllint==1.37.1",
+]

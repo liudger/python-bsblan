@@ -1,4 +1,17 @@
 ---
+ignore: |
+  .venv/
+  venv/
+  node_modules/
+  dist/
+  build/
+  .tox/
+  .cache/
+  .pytest_cache/
+  .mypy_cache/
+  .ruff_cache/
+  htmlcov/
+
 rules:
   braces:
     level: error
