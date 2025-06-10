@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import pytest
@@ -19,6 +19,9 @@ from bsblan.exceptions import (
     BSBLANError,
     BSBLANInvalidParameterError,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 logger = logging.getLogger(__name__)
 

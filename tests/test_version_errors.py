@@ -74,8 +74,9 @@ async def test_fetch_firmware_version() -> None:
     )
 
     # Mock device method to return our test device
-    with patch.object(bsblan, "device", AsyncMock(return_value=device)), patch.object(
-        bsblan, "_set_api_version"
+    with (
+        patch.object(bsblan, "device", AsyncMock(return_value=device)),
+        patch.object(bsblan, "_set_api_version"),
     ):
         await bsblan._fetch_firmware_version()
 

@@ -1,7 +1,8 @@
 """Fixtures for the BSBLAN tests."""
 
 import json
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 from unittest.mock import AsyncMock
 
 import aiohttp
