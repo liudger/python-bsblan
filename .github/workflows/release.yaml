@@ -85,4 +85,4 @@ jobs:
         uses: softprops/action-gh-release@v2.3.0
         if: github.event_name == 'release' && github.event.action == 'published'
         with:
-          files: dist/*.sigstore.json
+          files: ./dist/*.sigstore.json
