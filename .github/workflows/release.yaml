@@ -79,10 +79,35 @@ jobs:
               echo "Checking file: $file"
               # Test file readability
               cat "$file" > /dev/null && echo "✓ File is readable" || echo "✗ File read error"
+              # Ensure file handles are closed
+              sync
             fi
           done
+          # Wait a bit more for file system operations to complete
+          sleep 3
+      - name: 📋 List signature files explicitly
+        id: list-files
+        run: |
+          echo "signature_files<<EOF" >> $GITHUB_OUTPUT
+          find ./dist -name "*.sigstore.json" -type f | tr '\n' '\0' | xargs -0 -I {} echo "{}"
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Also create a space-separated list for the upload action
+          FILES=$(find ./dist -name "*.sigstore.json" -type f | tr '\n' ' ')
+          echo "files_list=$FILES" >> $GITHUB_OUTPUT
+          echo "Found files: $FILES"
       - name: 📤 Upload signature files to release
-        uses: softprops/action-gh-release@v2.3.0
         if: github.event_name == 'release' && github.event.action == 'published'
-        with:
-          files: ./dist/*.sigstore.json
+        run: |
+          # Upload files individually to avoid Node.js file handle issues
+          for file in ./dist/*.sigstore.json; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file..."
+              # Use GitHub CLI for more reliable uploads
+              gh release upload ${{ github.event.release.tag_name }} "$file" --clobber
+              echo "✓ Uploaded $file"
+              sleep 1  # Small delay between uploads
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
