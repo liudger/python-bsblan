@@ -52,6 +52,35 @@ jobs:
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
           release-signing-artifacts: false
+      - name: 🔍 Verify signature files
+        run: |
+          # Retry mechanism for file system sync
+          max_retries=5
+          retry_delay=2
+          retries=0
+          while [ $retries -lt $max_retries ]; do
+            echo "Checking for signature files (attempt $((retries + 1))/$max_retries)..."
+            if find ./dist -name "*.sigstore.json" -type f -exec echo "Found: {}" \; -exec ls -la {} \;; then
+              echo "Signature files found and listed."
+              break
+            else
+              echo "Files not ready, retrying in $retry_delay seconds..."
+              sleep $retry_delay
+              retries=$((retries + 1))
+            fi
+          done
+          if [ $retries -eq $max_retries ]; then
+            echo "Error: Signature files not found after $max_retries attempts."
+            exit 1
+          fi
+          # Ensure files are not locked or being written to
+          for file in ./dist/*.sigstore.json; do
+            if [ -f "$file" ]; then
+              echo "Checking file: $file"
+              # Test file readability
+              cat "$file" > /dev/null && echo "✓ File is readable" || echo "✗ File read error"
+            fi
+          done
       - name: 📤 Upload signature files to release
         uses: softprops/action-gh-release@v2.3.0
         if: github.event_name == 'release' && github.event.action == 'published'
