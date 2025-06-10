@@ -52,8 +52,22 @@ jobs:
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
           release-signing-artifacts: false
+      - name: 🔍 Verify signature files
+        run: |
+          # Wait a moment for file system sync
+          sleep 2
+          echo "Verifying signature files exist and are readable:"
+          find ./dist -name "*.sigstore.json" -type f -exec echo "Found: {}" \; -exec ls -la {} \;
+          # Ensure files are not locked or being written to
+          for file in ./dist/*.sigstore.json; do
+            if [ -f "$file" ]; then
+              echo "Checking file: $file"
+              # Test file readability
+              cat "$file" > /dev/null && echo "✓ File is readable" || echo "✗ File read error"
+            fi
+          done
       - name: 📤 Upload signature files to release
         uses: softprops/action-gh-release@v2.3.0
         if: github.event_name == 'release' && github.event.action == 'published'
         with:
-          files: ./dist/*.sigstore.json
+          files: dist/*.sigstore.json
