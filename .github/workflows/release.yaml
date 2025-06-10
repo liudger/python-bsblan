@@ -114,6 +114,7 @@ jobs:
           if [ $waited_time -ge $max_wait_time ]; then
             echo "Error: Files not ready after $max_wait_time seconds."
             exit 1
+          fi
       - name: 📋 List signature files explicitly
         id: list-files
         run: |
