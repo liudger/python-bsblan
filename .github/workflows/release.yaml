@@ -79,10 +79,68 @@ jobs:
               echo "Checking file: $file"
               # Test file readability
               cat "$file" > /dev/null && echo "✓ File is readable" || echo "✗ File read error"
+              # Ensure file handles are closed
+              sync
             fi
           done
+          # Poll for file system operations to complete
+          max_wait_time=30
+          wait_interval=2
+          waited_time=0
+          while [ $waited_time -lt $max_wait_time ]; do
+            all_files_ready=true
+            for file in ./dist/*.sigstore.json; do
+              if [ -f "$file" ]; then
+                # Test file readability
+                if ! cat "$file" > /dev/null; then
+                  echo "File $file is not readable yet."
+                  all_files_ready=false
+                  break
+                fi
+              else
+                echo "File $file does not exist yet."
+                all_files_ready=false
+                break
+              fi
+            done
+            if [ "$all_files_ready" = true ]; then
+              echo "All files are ready."
+              break
+            fi
+            echo "Waiting for files to be ready..."
+            sleep $wait_interval
+            waited_time=$((waited_time + wait_interval))
+          done
+          if [ $waited_time -ge $max_wait_time ]; then
+            echo "Error: Files not ready after $max_wait_time seconds."
+            exit 1
+      - name: 📋 List signature files explicitly
+        id: list-files
+        run: |
+          echo "signature_files<<EOF" >> $GITHUB_OUTPUT
+          find ./dist -name "*.sigstore.json" -type f | tr '\n' '\0' | xargs -0 -I {} echo "{}"
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Also create a space-separated list for the upload action
+          FILES=$(find ./dist -name "*.sigstore.json" -type f | tr '\n' ' ')
+          echo "files_list=$FILES" >> $GITHUB_OUTPUT
+          echo "Found files: $FILES"
       - name: 📤 Upload signature files to release
-        uses: softprops/action-gh-release@v2.3.0
         if: github.event_name == 'release' && github.event.action == 'published'
-        with:
-          files: ./dist/*.sigstore.json
+        run: |
+          # Upload files individually to avoid Node.js file handle issues
+          for file in ./dist/*.sigstore.json; do
+            if [ -f "$file" ]; then
+              echo "Uploading $file..."
+              # Use GitHub CLI for more reliable uploads
+              gh release upload ${{ github.event.release.tag_name }} "$file" --clobber
+              if [ $? -ne 0 ]; then
+                echo "✗ Failed to upload $file" >&2
+                exit 1
+              fi
+              echo "✓ Uploaded $file"
+              sleep 1  # Small delay between uploads
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
