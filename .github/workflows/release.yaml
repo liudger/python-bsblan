@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-python@v5.6.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
-          cache: 'uv'
       - name: 🏗 Install dependencies
         run: uv sync
       - name: 🏗 Set package version
