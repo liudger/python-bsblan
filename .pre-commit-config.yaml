@@ -97,12 +97,7 @@ repos:
         always_run: true
         args:
           - --branch=main
-      - id: uv-check
-        name: 📜 Check pyproject with uv
-        language: system
-        entry: uv check
-        pass_filenames: false
-        always_run: true
+
       - id: prettier
         name: 💄 Ensuring files are prettier
         language: system
