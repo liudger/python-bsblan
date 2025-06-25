@@ -1419,7 +1419,7 @@ dev = [
     { name = "pytest-cov", specifier = "==6.1.1" },
     { name = "pyupgrade", specifier = "==3.20.0" },
     { name = "ruff", specifier = "==0.11.13" },
-    { name = "safety", specifier = "==3.5.1" },
+    { name = "safety", specifier = "==3.5.2" },
     { name = "vulture", specifier = "==2.14" },
     { name = "yamllint", specifier = "==1.37.1" },
 ]
@@ -1626,7 +1626,7 @@ wheels = [
 
 [[package]]
 name = "safety"
-version = "3.5.1"
+version = "3.5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -1649,9 +1649,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2d/9c/df6ab5f077e22bb4a10aa9208691c6be5c0ad15193439435216ed536f7f3/safety-3.5.1.tar.gz", hash = "sha256:7fde2dbb497f2a167fe2dd864c8ab3296bbcd6e8a4f0490b047d5c84a60a653f", size = 273818, upload-time = "2025-05-14T00:48:05.355Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/af/f135abb8d147629e9a27f436db5135314adc864a98b62922b33d6f05c836/safety-3.5.2.tar.gz", hash = "sha256:ecbb2e76f9574284f2c0e168e71ec92b39018ae9516b3b00f132de57ecaa09cb", size = 278892, upload-time = "2025-06-04T23:37:20.384Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/86/0db21a336311ee9762c035b9ae898840197a6ed80575a874e64b5a567169/safety-3.5.1-py3-none-any.whl", hash = "sha256:535bba9e2c274fcabc508db7005407fc348635b29e516a68bb515a686f8e03d9", size = 271124, upload-time = "2025-05-14T00:48:03.071Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/9b/a2a05f12c24e0b5fad981f06d4aebd02079cd6cc250da27a4b14222b6d10/safety-3.5.2-py3-none-any.whl", hash = "sha256:d5baff410c548393e80ba2bd2ab1de2701a690ca3577e457335917b9db4641e1", size = 274043, upload-time = "2025-06-04T23:37:18.784Z" },
 ]
 
 [[package]]
