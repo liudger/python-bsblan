@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 import aiohttp
-from aiohttp.hdrs import METH_POST
+from aiohttp.hdrs import METH_GET, METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
 from yarl import URL
@@ -26,6 +26,7 @@ from .constants import (
     HVAC_MODE_DICT_REVERSE,
     MULTI_PARAMETER_ERROR_MSG,
     NO_STATE_ERROR_MSG,
+    ROOM_TEMPERATURE_PUSH_PARAM,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     TEMPERATURE_RANGE_ERROR_MSG,
     VERSION_ERROR_MSG,
@@ -493,6 +494,77 @@ class BSBLAN:
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Info.from_dict(data)
+
+    async def push_temperature(self, room_temperature: str) -> None:
+        """Push room temperature to the heating system through BSB-Lan INF telegram.
+
+        This functionality is useful for heating systems without a built-in
+        thermostat, allowing external temperature sensors to provide room
+        temperature data to the heating system.
+
+        The room temperature is sent as an INF telegram using parameter 10000
+        for heating circuit 1, which must be sent at least every 10 minutes
+        to maintain temperature regulation.
+
+        Args:
+            room_temperature (str): The current room temperature to push to
+                                   the heating system.
+
+        """
+        # Only initialize temperature range if not already done
+        if not self._temperature_range_initialized:
+            await self._initialize_temperature_range()
+
+        # Validate the room temperature
+        self._validate_room_temperature(room_temperature)
+
+        # Send the temperature as an INF telegram
+        await self._send_inf_telegram(ROOM_TEMPERATURE_PUSH_PARAM, room_temperature)
+
+    async def _send_inf_telegram(self, parameter: str, value: str) -> None:
+        """Send an INF telegram to the heating system.
+
+        INF telegrams use the /I endpoint with a specific URL format for
+        sending information telegrams to the heating system.
+
+        Args:
+            parameter (str): The parameter number to send the value to.
+            value (str): The value to send.
+
+        """
+        base_path = f"/I{parameter}={value}"
+        response = await self._request(
+            method=METH_GET, base_path=base_path, params=None
+        )
+        logger.debug("Response for INF telegram: %s", response)
+
+    def _validate_room_temperature(self, room_temperature: str) -> None:
+        """Validate the room temperature for pushing.
+
+        Args:
+            room_temperature (str): The room temperature to validate.
+
+        Raises:
+            BSBLANError: If the temperature range is not initialized.
+            BSBLANInvalidParameterError: If the room temperature is invalid.
+
+        """
+        if self._min_temp is None or self._max_temp is None:
+            raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
+
+        try:
+            temp = float(room_temperature)
+            # Room temperature should be within reasonable indoor bounds
+            # (-10°C to 50°C or 14°F to 122°F)
+            if self._temperature_unit == "°F":
+                min_bound, max_bound = 14.0, 122.0
+            else:
+                min_bound, max_bound = -10.0, 50.0
+
+            if not (min_bound <= temp <= max_bound):
+                raise BSBLANInvalidParameterError(room_temperature)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(room_temperature) from err
 
     async def thermostat(
         self,
