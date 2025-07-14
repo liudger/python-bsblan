@@ -25,8 +25,8 @@ def test_validate_target_temperature_invalid_value() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._min_temp = 10.0
-    bsblan._max_temp = 30.0
+    bsblan._min_temp = 5.0
+    bsblan._max_temp = 35.0
 
     # Test with non-numeric value
     with pytest.raises(BSBLANInvalidParameterError):
@@ -39,16 +39,16 @@ def test_validate_target_temperature_out_of_range() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._min_temp = 10.0
-    bsblan._max_temp = 30.0
+    bsblan._min_temp = 5.0
+    bsblan._max_temp = 35.0
 
     # Test with value below minimum
     with pytest.raises(BSBLANInvalidParameterError):
-        bsblan._validate_target_temperature("5.0")
+        bsblan._validate_target_temperature("4.0")
 
     # Test with value above maximum
     with pytest.raises(BSBLANInvalidParameterError):
-        bsblan._validate_target_temperature("35.0")
+        bsblan._validate_target_temperature("36.0")
 
 
 def test_validate_target_temperature_valid() -> None:
@@ -57,8 +57,8 @@ def test_validate_target_temperature_valid() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._min_temp = 10.0
-    bsblan._max_temp = 30.0
+    bsblan._min_temp = 5.0
+    bsblan._max_temp = 35.0
 
     # Test with valid value (should not raise exception)
     bsblan._validate_target_temperature("22.0")
