@@ -40,6 +40,7 @@ from .exceptions import (
 )
 from .models import (
     Device,
+    DeviceTime,
     DHWTimeSwitchPrograms,
     HotWaterState,
     Info,
@@ -493,6 +494,35 @@ class BSBLAN:
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return Info.from_dict(data)
+
+    async def time(self) -> DeviceTime:
+        """Get the current time from the BSB-LAN device.
+
+        Returns:
+            DeviceTime: The current time information from the BSB-LAN device.
+
+        """
+        # Get only parameter 0 for time
+        data = await self._request(params={"Parameter": "0"})
+        # Create the data dictionary in the expected format
+        time_data = {"time": data["0"]}
+        return DeviceTime.from_dict(time_data)
+
+    async def set_time(self, time_value: str) -> None:
+        """Set the time on the BSB-LAN device.
+
+        Args:
+            time_value (str): The time value to set. Format should match the 
+                device's expected time format (typically date and time).
+
+        """
+        state = {
+            "Parameter": "0",
+            "Value": time_value,
+            "Type": "1",
+        }
+        response = await self._request(base_path="/JS", data=state)
+        logger.debug("Response for setting time: %s", response)
 
     async def thermostat(
         self,
