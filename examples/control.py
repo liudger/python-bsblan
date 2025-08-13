@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import datetime
 from typing import Any
 
 from bsblan import (
     BSBLAN,
     BSBLANConfig,
     Device,
+    DeviceTime,
     HotWaterState,
     Info,
     Sensor,
@@ -86,6 +88,21 @@ async def print_sensor(sensor: Sensor) -> None:
         ),
     }
     print_attributes("Sensor Information", attributes)
+
+
+async def print_device_time(device_time: DeviceTime) -> None:
+    """Print device time information.
+
+    Args:
+        device_time (DeviceTime): The device time information from the BSBLan device.
+
+    """
+    attributes = {
+        "Current Time": await get_attribute(device_time.time, "value", "N/A"),
+        "Time Unit": await get_attribute(device_time.time, "unit", "N/A"),
+        "Time Description": await get_attribute(device_time.time, "desc", "N/A"),
+    }
+    print_attributes("Device Time", attributes)
 
 
 async def print_device_info(device: Device, info: Info) -> None:
@@ -216,6 +233,10 @@ async def main() -> None:
         info: Info = await bsblan.info()
         await print_device_info(device, info)
 
+        # Get and print device time
+        device_time: DeviceTime = await bsblan.time()
+        await print_device_time(device_time)
+
         # Get and print static state
         static_state: StaticState = await bsblan.static_values()
         await print_static_state(static_state)
@@ -231,6 +252,15 @@ async def main() -> None:
             monday="13:00-14:00 ##:##-##:## ##:##-##:##"
         )
         await bsblan.set_hot_water(dhw_time_programs=dhw_programs)
+
+        # Example: Set device time
+        print("\nSetting device time to current system time")
+        # Get current local system time and format it for BSB-LAN (DD.MM.YYYY HH:MM:SS)
+        # Note: Using local time intentionally to sync BSB-LAN with system clock
+        current_time = datetime.now().replace(microsecond=0)  # noqa: DTZ005
+        formatted_time = current_time.strftime("%d.%m.%Y %H:%M:%S")
+        print(f"Current system time: {formatted_time}")
+        await bsblan.set_time(formatted_time)
 
 
 if __name__ == "__main__":

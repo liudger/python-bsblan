@@ -212,6 +212,13 @@ class HotWaterState(DataClassJSONMixin):  # pylint: disable=too-many-instance-at
 
 
 @dataclass
+class DeviceTime(DataClassJSONMixin):
+    """Object holds device time information."""
+
+    time: EntityInfo
+
+
+@dataclass
 class Device(DataClassJSONMixin):
     """Object holds bsblan device information."""
 
