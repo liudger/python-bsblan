@@ -1,0 +1,15 @@
+{
+  "0": {
+    "name": "Current date / Current time of day",
+    "dataType_name": "DATETIME",
+    "dataType_family": "DTTM",
+    "destination": 0,
+    "error": 0,
+    "value": "13.08.2025 11:51:37",
+    "desc": "",
+    "payload": "007D080D030B332501",
+    "dataType": 5,
+    "readwrite": 0,
+    "unit": ""
+  }
+}

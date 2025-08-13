@@ -4,6 +4,7 @@
 # pylint: disable=protected-access
 # file deepcode ignore W0212: this is a testfile
 
+import json
 from unittest.mock import AsyncMock
 
 import pytest
@@ -11,6 +12,7 @@ import pytest
 from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANInvalidParameterError
 from bsblan.models import DeviceTime, EntityInfo
+from tests import load_fixture
 
 
 @pytest.mark.asyncio
@@ -21,18 +23,8 @@ async def test_get_time(mock_bsblan: BSBLAN) -> None:
         mock_bsblan (BSBLAN): The mock BSBLAN instance.
 
     """
-    # Mock the response for parameter 0 (time)
-    time_response = {
-        "0": {
-            "name": "Date/Time",
-            "value": "01.01.2024 12:30:45",
-            "unit": "",
-            "desc": "Date and time",
-            "dataType": 5,  # DATETIME
-            "readonly": 0,
-            "error": 0,
-        }
-    }
+    # Load the time response from fixture
+    time_response = json.loads(load_fixture("time.json"))
 
     assert isinstance(mock_bsblan._request, AsyncMock)
     mock_bsblan._request.return_value = time_response
@@ -46,9 +38,9 @@ async def test_get_time(mock_bsblan: BSBLAN) -> None:
     # Verify the response structure
     assert isinstance(device_time, DeviceTime)
     assert isinstance(device_time.time, EntityInfo)
-    assert device_time.time.name == "Date/Time"
-    assert device_time.time.value == "01.01.2024 12:30:45"
-    assert device_time.time.desc == "Date and time"
+    assert device_time.time.name == "Current date / Current time of day"
+    assert device_time.time.value == "13.08.2025 11:51:37"
+    assert device_time.time.desc == ""
     assert device_time.time.data_type == 5
 
 
