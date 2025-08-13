@@ -50,72 +50,67 @@ async def test_hot_water_state(
         api_validator.validated_sections.add("hot_water")
         bsblan._api_validator = api_validator
 
-        # Mock the request response
-        request_mock = AsyncMock(
-            return_value=json.loads(load_fixture("hot_water_state.json")),
-        )
+        # Set up the hot water parameter cache with all available parameters
+        hot_water_cache = {
+            "1600": "operating_mode",
+            "1610": "nominal_setpoint",
+            "1612": "reduced_setpoint",
+            "1620": "release",
+            "8830": "dhw_actual_value_top_temperature",
+            "8820": "state_dhw_pump",
+            # Add other parameters that would be in the full cache
+            "1601": "eco_mode_selection",
+            "1614": "nominal_setpoint_max",
+        }
+        bsblan.set_hot_water_cache(hot_water_cache)
+
+        # Mock the request response to only return requested parameters
+        fixture_data = json.loads(load_fixture("hot_water_state.json"))
+
+        def mock_request(**kwargs: Any) -> dict[str, Any]:
+            # Extract requested parameter IDs from the Parameter query
+            param_string = kwargs.get("params", {}).get("Parameter", "")
+            if param_string:
+                requested_param_ids = param_string.split(",")
+                # Return only the requested parameters from the fixture
+                return {
+                    param_id: fixture_data[param_id]
+                    for param_id in requested_param_ids
+                    if param_id in fixture_data
+                }
+            return fixture_data
+
+        request_mock = AsyncMock(side_effect=mock_request)
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
 
-        # Assertions for existing parameters
+        # Assertions for essential hot water state parameters only
         assert isinstance(hot_water_state, HotWaterState)
         assert hot_water_state.operating_mode is not None
         assert hot_water_state.operating_mode.value == 1
         assert hot_water_state.nominal_setpoint is not None
         assert hot_water_state.nominal_setpoint.value == 50.0
-        assert hot_water_state.nominal_setpoint_max is not None
-        assert hot_water_state.nominal_setpoint_max.value == 65.0
         assert hot_water_state.reduced_setpoint is not None
         assert hot_water_state.reduced_setpoint.value == 10.0
-
-        # Assertions for new parameters
-        assert hot_water_state.eco_mode_selection is not None
-        assert hot_water_state.eco_mode_selection.value == 0
-        assert hot_water_state.dhw_charging_priority is not None
-        assert hot_water_state.dhw_charging_priority.value == 0
-        assert hot_water_state.legionella_dwelling_time is not None
-        assert hot_water_state.legionella_dwelling_time.value == 10
-        assert hot_water_state.legionella_circulation_pump is not None
-        assert hot_water_state.legionella_circulation_pump.value == 0
-        assert hot_water_state.legionella_circulation_temp_diff is not None
-        assert hot_water_state.legionella_circulation_temp_diff.value == 5.0
-        assert hot_water_state.dhw_circulation_pump_release is not None
-        assert hot_water_state.dhw_circulation_pump_release.value == 1
-        assert hot_water_state.dhw_circulation_pump_cycling is not None
-        assert hot_water_state.dhw_circulation_pump_cycling.value == 5
-        assert hot_water_state.dhw_circulation_setpoint is not None
-        assert hot_water_state.dhw_circulation_setpoint.value == 45.0
-        assert hot_water_state.operating_mode_changeover is not None
-        assert hot_water_state.operating_mode_changeover.value == 0
-
-        # The Parameter string in the request should include all parameters
+        assert hot_water_state.release is not None
+        assert hot_water_state.release.value == 2
+        assert hot_water_state.dhw_actual_value_top_temperature is not None
+        assert hot_water_state.dhw_actual_value_top_temperature.value == 36.5
+        assert hot_water_state.state_dhw_pump is not None
+        assert hot_water_state.state_dhw_pump.value == 255
+        # The Parameter string should only include the 6 essential parameters
         request_mock.assert_called_once()
         params = request_mock.call_args[1]["params"]["Parameter"].split(",")
+        assert len(params) == 6
 
-        # Check that new parameters are included in the request
-        expected_params = [
-            "1600",
-            "1601",
-            "1610",
-            "1614",
-            "1612",
-            "1620",
-            "1630",
-            "1640",
-            "1645",
-            "1641",
-            "1642",
-            "1644",
-            "1646",
-            "1647",
-            "1648",
-            "1660",
-            "1661",
-            "1663",
-            "1680",
-            "8830",
-            "8820",
+        expected_essential_params = [
+            "1600",  # operating_mode
+            "1610",  # nominal_setpoint
+            "1612",  # reduced_setpoint
+            "1620",  # release
+            "8830",  # dhw_actual_value_top_temperature
+            "8820",  # state_dhw_pump
         ]
-        for param in expected_params:
+        for param in expected_essential_params:
             assert param in params
