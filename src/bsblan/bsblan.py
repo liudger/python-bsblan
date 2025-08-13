@@ -521,7 +521,7 @@ class BSBLAN:
 
         """
         self._validate_time_format(time_value)
-        state = {
+        state: dict[str, object] = {
             "Parameter": "0",
             "Value": time_value,
             "Type": "1",

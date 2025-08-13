@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import datetime
 from typing import Any
 
 from bsblan import (
@@ -253,9 +254,13 @@ async def main() -> None:
         await bsblan.set_hot_water(dhw_time_programs=dhw_programs)
 
         # Example: Set device time
-        print("\nSetting device time to current time (example)")
-        # Note: In real usage, you would set this to the current system time
-        # await bsblan.set_time("13.08.2025 10:25:55")
+        print("\nSetting device time to current system time")
+        # Get current local system time and format it for BSB-LAN (DD.MM.YYYY HH:MM:SS)
+        # Note: Using local time intentionally to sync BSB-LAN with system clock
+        current_time = datetime.now().replace(microsecond=0)  # noqa: DTZ005
+        formatted_time = current_time.strftime("%d.%m.%Y %H:%M:%S")
+        print(f"Current system time: {formatted_time}")
+        await bsblan.set_time(formatted_time)
 
 
 if __name__ == "__main__":
