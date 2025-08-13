@@ -65,7 +65,7 @@ async def test_hot_water_state(
         bsblan.set_hot_water_cache(hot_water_cache)
 
         # Mock the request response to only return requested parameters
-        fixture_data = json.loads(load_fixture("hot_water_state.json"))
+        fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
 
         def mock_request(**kwargs: Any) -> dict[str, Any]:
             # Extract requested parameter IDs from the Parameter query

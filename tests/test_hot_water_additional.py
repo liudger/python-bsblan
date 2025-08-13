@@ -48,7 +48,7 @@ async def test_hot_water_config(
         bsblan.set_hot_water_cache(hot_water_cache)
 
         # Mock the request response
-        fixture_data = json.loads(load_fixture("hot_water_state.json"))
+        fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
 
         def mock_request(**kwargs: Any) -> dict[str, Any]:
             param_string = kwargs.get("params", {}).get("Parameter", "")
