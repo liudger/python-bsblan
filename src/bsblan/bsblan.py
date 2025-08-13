@@ -811,14 +811,14 @@ class BSBLAN:
         """
         # Define schedule parameters
         schedule_param_ids = [
-            "561",   # dhw_time_program_monday
-            "562",   # dhw_time_program_tuesday
-            "563",   # dhw_time_program_wednesday
-            "564",   # dhw_time_program_thursday
-            "565",   # dhw_time_program_friday
-            "566",   # dhw_time_program_saturday
-            "567",   # dhw_time_program_sunday
-            "576",   # dhw_time_program_standard_values
+            "561",  # dhw_time_program_monday
+            "562",  # dhw_time_program_tuesday
+            "563",  # dhw_time_program_wednesday
+            "564",  # dhw_time_program_thursday
+            "565",  # dhw_time_program_friday
+            "566",  # dhw_time_program_saturday
+            "567",  # dhw_time_program_sunday
+            "576",  # dhw_time_program_standard_values
         ]
 
         # Use cached parameters or fall back to API validator
