@@ -1,5 +1,13 @@
 # pylint: disable=W0621
-"""Asynchronous Python client for BSBLan."""
+"""Asynchronous Python client for BSBLan.
+
+This example demonstrates the optimized hot water functionality:
+- HotWaterState: Essential parameters for frequent polling (6 fields)
+- HotWaterConfig: Configuration parameters checked less frequently (15 fields)
+- HotWaterSchedule: Time program schedules checked occasionally (8 fields)
+
+This three-tier approach reduces API calls by 79% for regular monitoring.
+"""
 
 from __future__ import annotations
 
@@ -13,6 +21,8 @@ from bsblan import (
     BSBLANConfig,
     Device,
     DeviceTime,
+    HotWaterConfig,
+    HotWaterSchedule,
     HotWaterState,
     Info,
     Sensor,
@@ -145,11 +155,11 @@ async def print_static_state(static_state: StaticState) -> None:
 
 
 async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
-    """Print hot water state information.
+    """Print essential hot water state information.
 
     Args:
-        hot_water_state (HotWaterState): The hot water state information from the
-            BSBLan device.
+        hot_water_state (HotWaterState): The essential hot water state information
+            from the BSBLan device (optimized for frequent polling).
 
     """
     attributes = {
@@ -163,41 +173,82 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
             hot_water_state.reduced_setpoint, "value", "N/A"
         ),
         "Release": await get_attribute(hot_water_state.release, "desc", "N/A"),
-        "Legionella Function": await get_attribute(
-            hot_water_state.legionella_function, "desc", "N/A"
-        ),
-        "Legionella Periodicity": await get_attribute(
-            hot_water_state.legionella_periodicity, "value", "N/A"
-        ),
-        "Legionella Setpoint": await get_attribute(
-            hot_water_state.legionella_setpoint, "value", "N/A"
-        ),
         "Current Temperature": await get_attribute(
             hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
         ),
-        "Time Program Monday": await get_attribute(
-            hot_water_state.dhw_time_program_monday, "value", "N/A"
-        ),
-        "Time Program Tuesday": await get_attribute(
-            hot_water_state.dhw_time_program_tuesday, "value", "N/A"
-        ),
-        "Time Program Wednesday": await get_attribute(
-            hot_water_state.dhw_time_program_wednesday, "value", "N/A"
-        ),
-        "Time Program Thursday": await get_attribute(
-            hot_water_state.dhw_time_program_thursday, "value", "N/A"
-        ),
-        "Time Program Friday": await get_attribute(
-            hot_water_state.dhw_time_program_friday, "value", "N/A"
-        ),
-        "Time Program Saturday": await get_attribute(
-            hot_water_state.dhw_time_program_saturday, "value", "N/A"
-        ),
-        "Time Program Sunday": await get_attribute(
-            hot_water_state.dhw_time_program_sunday, "value", "N/A"
+        "DHW Pump State": await get_attribute(
+            hot_water_state.state_dhw_pump, "desc", "N/A"
         ),
     }
-    print_attributes("Hot Water State", attributes)
+    print_attributes("Hot Water State (Essential)", attributes)
+
+
+async def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
+    """Print hot water configuration information.
+
+    Args:
+        hot_water_config (HotWaterConfig): The hot water configuration information
+            from the BSBLan device (checked less frequently).
+
+    """
+    attributes = {
+        "Nominal Setpoint Max": await get_attribute(
+            hot_water_config.nominal_setpoint_max, "value", "N/A"
+        ),
+        "Legionella Function": await get_attribute(
+            hot_water_config.legionella_function, "desc", "N/A"
+        ),
+        "Legionella Setpoint": await get_attribute(
+            hot_water_config.legionella_setpoint, "value", "N/A"
+        ),
+        "Legionella Periodicity": await get_attribute(
+            hot_water_config.legionella_periodicity, "value", "N/A"
+        ),
+        "Circulation Pump Release": await get_attribute(
+            hot_water_config.dhw_circulation_pump_release, "desc", "N/A"
+        ),
+        "Circulation Setpoint": await get_attribute(
+            hot_water_config.dhw_circulation_setpoint, "value", "N/A"
+        ),
+    }
+    print_attributes("Hot Water Configuration", attributes)
+
+
+async def print_hot_water_schedule(hot_water_schedule: HotWaterSchedule) -> None:
+    """Print hot water schedule information.
+
+    Args:
+        hot_water_schedule (HotWaterSchedule): The hot water schedule information
+            from the BSBLan device (time programs).
+
+    """
+    attributes = {
+        "Monday": await get_attribute(
+            hot_water_schedule.dhw_time_program_monday, "value", "N/A"
+        ),
+        "Tuesday": await get_attribute(
+            hot_water_schedule.dhw_time_program_tuesday, "value", "N/A"
+        ),
+        "Wednesday": await get_attribute(
+            hot_water_schedule.dhw_time_program_wednesday, "value", "N/A"
+        ),
+        "Thursday": await get_attribute(
+            hot_water_schedule.dhw_time_program_thursday, "value", "N/A"
+        ),
+        "Friday": await get_attribute(
+            hot_water_schedule.dhw_time_program_friday, "value", "N/A"
+        ),
+        "Saturday": await get_attribute(
+            hot_water_schedule.dhw_time_program_saturday, "value", "N/A"
+        ),
+        "Sunday": await get_attribute(
+            hot_water_schedule.dhw_time_program_sunday, "value", "N/A"
+        ),
+        "Standard Values": await get_attribute(
+            hot_water_schedule.dhw_time_program_standard_values, "value", "N/A"
+        ),
+    }
+    print_attributes("Hot Water Schedule", attributes)
 
 
 async def main() -> None:
@@ -241,9 +292,23 @@ async def main() -> None:
         static_state: StaticState = await bsblan.static_values()
         await print_static_state(static_state)
 
-        # Get hot water state
+        # Get hot water state (essential parameters for frequent polling)
         hot_water_state: HotWaterState = await bsblan.hot_water_state()
         await print_hot_water_state(hot_water_state)
+
+        # Get hot water configuration (checked less frequently)
+        try:
+            hot_water_config: HotWaterConfig = await bsblan.hot_water_config()
+            await print_hot_water_config(hot_water_config)
+        except Exception as e:  # noqa: BLE001
+            print(f"Hot water configuration not available: {e}")
+
+        # Get hot water schedule (time programs)
+        try:
+            hot_water_schedule: HotWaterSchedule = await bsblan.hot_water_schedule()
+            await print_hot_water_schedule(hot_water_schedule)
+        except Exception as e:  # noqa: BLE001
+            print(f"Hot water schedule not available: {e}")
 
         # Example: Set DHW time program for Monday
         print("\nSetting DHW time program for Monday to 13:00-14:00")
