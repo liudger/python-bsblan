@@ -92,7 +92,10 @@ async def test_set_time_different_format(mock_bsblan: BSBLAN) -> None:
 
 @pytest.mark.asyncio
 async def test_set_time_invalid_formats(mock_bsblan: BSBLAN) -> None:
-    """Test setting device time with invalid formats.
+    """Verify that BSBLANInvalidParameterError is raised for invalid time formats.
+
+    Verifies that BSBLANInvalidParameterError is raised for invalid time formats
+    when setting device time.
 
     Args:
         mock_bsblan (BSBLAN): The mock BSBLAN instance.
@@ -126,7 +129,9 @@ async def test_set_time_invalid_formats(mock_bsblan: BSBLAN) -> None:
 
 @pytest.mark.asyncio
 async def test_set_time_valid_formats(mock_bsblan: BSBLAN) -> None:
-    """Test setting device time with valid formats.
+    """Test that setting device time with valid formats does not raise an exception.
+
+    Verifies that no exception is raised for valid time formats.
 
     Args:
         mock_bsblan (BSBLAN): The mock BSBLAN instance.

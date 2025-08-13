@@ -175,6 +175,10 @@ API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API validator not initial
 DEFAULT_PORT: Final[int] = 80
 SCAN_INTERVAL: Final[int] = 12  # seconds
 
+# Time validation constants
+MIN_VALID_YEAR: Final[int] = 1900  # Reasonable minimum year for BSB-LAN devices
+MAX_VALID_YEAR: Final[int] = 2100  # Reasonable maximum year for BSB-LAN devices
+
 # Configuration Keys
 CONF_PASSKEY: Final[str] = "passkey"
 

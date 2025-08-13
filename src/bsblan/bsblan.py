@@ -25,6 +25,8 @@ from .constants import (
     FIRMWARE_VERSION_ERROR_MSG,
     HVAC_MODE_DICT,
     HVAC_MODE_DICT_REVERSE,
+    MAX_VALID_YEAR,
+    MIN_VALID_YEAR,
     MULTI_PARAMETER_ERROR_MSG,
     NO_STATE_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
@@ -645,7 +647,7 @@ class BSBLAN:
         if not (1 <= month <= 12):
             msg = f"Invalid month: {month}"
             raise BSBLANInvalidParameterError(msg)
-        if not (1900 <= year <= 2100):  # Reasonable year range
+        if not (MIN_VALID_YEAR <= year <= MAX_VALID_YEAR):
             msg = f"Invalid year: {year}"
             raise BSBLANInvalidParameterError(msg)
         if not (0 <= hour <= 23):
