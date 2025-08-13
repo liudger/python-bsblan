@@ -176,7 +176,7 @@ dev = [
     "hatch>=1.14.1",
     "isort==6.0.1",
     "mypy==1.17.1",
-    "pre-commit==4.2.0",
+    "pre-commit==4.3.0",
     "pre-commit-hooks==6.0.0",
     "pylint==3.3.8",
     "pytest>=8.3.5",
