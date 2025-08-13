@@ -175,7 +175,7 @@ dev = [
     # hatch is required to support type hinting and proper packaging of the py.typed file.
     "hatch>=1.14.1",
     "isort==6.0.1",
-    "mypy==1.17.0",
+    "mypy==1.17.1",
     "pre-commit==4.2.0",
     "pre-commit-hooks==5.0.0",
     "pylint==3.3.7",
