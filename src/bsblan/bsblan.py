@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -512,10 +513,14 @@ class BSBLAN:
         """Set the time on the BSB-LAN device.
 
         Args:
-            time_value (str): The time value to set. Format should match the 
-                device's expected time format (typically date and time).
+            time_value (str): The time value to set in format "DD.MM.YYYY HH:MM:SS"
+                (e.g., "13.08.2025 10:25:55").
+
+        Raises:
+            BSBLANInvalidParameterError: If the time format is invalid.
 
         """
+        self._validate_time_format(time_value)
         state = {
             "Parameter": "0",
             "Value": time_value,
@@ -612,6 +617,58 @@ class BSBLAN:
         """
         if hvac_mode not in HVAC_MODE_DICT_REVERSE:
             raise BSBLANInvalidParameterError(hvac_mode)
+
+    def _validate_time_format(self, time_value: str) -> None:
+        """Validate the time format.
+
+        Args:
+            time_value (str): The time value to validate.
+
+        Raises:
+            BSBLANInvalidParameterError: If the time format is invalid.
+
+        """
+        # BSB-LAN supports format: DD.MM.YYYY HH:MM:SS (e.g., "13.08.2025 10:25:55")
+        pattern = r"^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})$"
+
+        match = re.match(pattern, time_value)
+        if not match:
+            msg = f"Invalid time format: {time_value}. Expected DD.MM.YYYY HH:MM:SS"
+            raise BSBLANInvalidParameterError(msg)
+
+        day, month, year, hour, minute, second = map(int, match.groups())
+
+        # Validate ranges
+        if not (1 <= day <= 31):
+            msg = f"Invalid day: {day}"
+            raise BSBLANInvalidParameterError(msg)
+        if not (1 <= month <= 12):
+            msg = f"Invalid month: {month}"
+            raise BSBLANInvalidParameterError(msg)
+        if not (1900 <= year <= 2100):  # Reasonable year range
+            msg = f"Invalid year: {year}"
+            raise BSBLANInvalidParameterError(msg)
+        if not (0 <= hour <= 23):
+            msg = f"Invalid hour: {hour}"
+            raise BSBLANInvalidParameterError(msg)
+        if not (0 <= minute <= 59):
+            msg = f"Invalid minute: {minute}"
+            raise BSBLANInvalidParameterError(msg)
+        if not (0 <= second <= 59):
+            msg = f"Invalid second: {second}"
+            raise BSBLANInvalidParameterError(msg)
+
+        # Additional validation for days per month
+        if month in [4, 6, 9, 11] and day > 30:
+            msg = f"Invalid day {day} for month {month}"
+            raise BSBLANInvalidParameterError(msg)
+        if month == 2:
+            # Leap year check
+            is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+            max_day = 29 if is_leap else 28
+            if day > max_day:
+                msg = f"Invalid day {day} for February in year {year}"
+                raise BSBLANInvalidParameterError(msg)
 
     async def _set_thermostat_state(self, state: dict[str, Any]) -> None:
         """Set the thermostat state.
