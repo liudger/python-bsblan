@@ -41,7 +41,6 @@ API_V1: Final[APIConfig] = {
         "730": "max_temp",
     },
     "device": {
-        "0": "time",
         "6224": "device_identification",
         "6225": "controller_family",
         "6226": "controller_variant",
@@ -98,7 +97,6 @@ API_V3: Final[APIConfig] = {
         "716": "max_temp",
     },
     "device": {
-        "0": "time",
         "6224": "device_identification",
         "6225": "controller_family",
         "6226": "controller_variant",
