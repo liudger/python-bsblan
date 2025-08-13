@@ -45,6 +45,8 @@ from .models import (
     Device,
     DeviceTime,
     DHWTimeSwitchPrograms,
+    HotWaterConfig,
+    HotWaterSchedule,
     HotWaterState,
     Info,
     Sensor,
@@ -92,6 +94,7 @@ class BSBLAN:
     _initialized: bool = False
     _api_validator: APIValidator = field(init=False)
     _temperature_unit: str = "°C"
+    _hot_water_param_cache: dict[str, str] = field(default_factory=dict)
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -189,11 +192,35 @@ class BSBLAN:
             # Update API data with validated configuration
             if self._api_data:
                 self._api_data[section] = api_validator.get_section_params(section)
+
+            # Cache hot water parameters if this is the hot_water section
+            if section == "hot_water":
+                self._populate_hot_water_cache()
         except BSBLANError as err:
             logger.warning("Failed to validate section %s: %s", section, str(err))
             # Reset validation state for this section
             api_validator.reset_validation(section)
             raise
+
+    def _populate_hot_water_cache(self) -> None:
+        """Populate the hot water parameter cache with all available parameters."""
+        if not self._api_validator:
+            return
+
+        # Get all hot water parameters and cache them
+        hotwater_params = self._api_validator.get_section_params("hot_water")
+        self._hot_water_param_cache = hotwater_params.copy()
+        logger.debug("Cached %d hot water parameters", len(self._hot_water_param_cache))
+
+    def set_hot_water_cache(self, params: dict[str, str]) -> None:
+        """Set the hot water parameter cache manually (for testing).
+
+        Args:
+            params: Dictionary of parameter_id -> parameter_name mappings
+
+        """
+        self._hot_water_param_cache = params.copy()
+        logger.debug("Manually set cache with %d hot water parameters", len(params))
 
     async def _fetch_firmware_version(self) -> None:
         """Fetch the firmware version if not already available."""
@@ -683,17 +710,136 @@ class BSBLAN:
         logger.debug("Response for setting: %s", response)
 
     async def hot_water_state(self) -> HotWaterState:
-        """Get the current hot water state from BSBLAN device.
+        """Get essential hot water state for frequent polling.
+
+        This method returns only the most important hot water parameters
+        that are typically checked frequently for monitoring purposes.
+        This reduces API calls and improves performance for regular polling.
 
         Returns:
-            HotWaterState: The current hot water state.
+            HotWaterState: Essential hot water state information.
 
         """
-        hotwater_params = self._api_validator.get_section_params("hot_water")
-        params = await self._extract_params_summary(hotwater_params)
+        # Define essential parameters for frequent monitoring
+        essential_param_ids = [
+            "1600",  # operating_mode
+            "1610",  # nominal_setpoint
+            "1612",  # reduced_setpoint
+            "1620",  # release
+            "8830",  # dhw_actual_value_top_temperature
+            "8820",  # state_dhw_pump
+        ]
+
+        # Use cached parameters or fall back to API validator
+        hotwater_params = (
+            self._hot_water_param_cache
+            or self._api_validator.get_section_params("hot_water")
+        )
+        essential_params = {
+            param_id: param_name
+            for param_id, param_name in hotwater_params.items()
+            if param_id in essential_param_ids
+        }
+
+        if not essential_params:
+            msg = "No essential hot water parameters available"
+            raise BSBLANError(msg)
+
+        params = await self._extract_params_summary(essential_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return HotWaterState.from_dict(data)
+
+    async def hot_water_config(self) -> HotWaterConfig:
+        """Get hot water configuration and advanced settings.
+
+        This method returns configuration parameters that are typically
+        set once and checked less frequently.
+
+        Returns:
+            HotWaterConfig: Hot water configuration information.
+
+        """
+        # Define configuration parameters
+        config_param_ids = [
+            "1601",  # eco_mode_selection
+            "1611",  # nominal_setpoint_max
+            "1640",  # dhw_charging_priority
+            "1602",  # operating_mode_changeover
+            "1642",  # legionella_function
+            "1644",  # legionella_setpoint
+            "1645",  # legionella_periodicity
+            "1646",  # legionella_function_day
+            "1647",  # legionella_function_time
+            "1648",  # legionella_dwelling_time
+            "1649",  # legionella_circulation_pump
+            "1650",  # legionella_circulation_temp_diff
+            "1660",  # dhw_circulation_pump_release
+            "1661",  # dhw_circulation_pump_cycling
+            "1663",  # dhw_circulation_setpoint
+        ]
+
+        # Use cached parameters or fall back to API validator
+        hotwater_params = (
+            self._hot_water_param_cache
+            or self._api_validator.get_section_params("hot_water")
+        )
+        config_params = {
+            param_id: param_name
+            for param_id, param_name in hotwater_params.items()
+            if param_id in config_param_ids
+        }
+
+        if not config_params:
+            msg = "No hot water configuration parameters available"
+            raise BSBLANError(msg)
+
+        params = await self._extract_params_summary(config_params)
+        data = await self._request(params={"Parameter": params["string_par"]})
+        data = dict(zip(params["list"], list(data.values()), strict=True))
+        return HotWaterConfig.from_dict(data)
+
+    async def hot_water_schedule(self) -> HotWaterSchedule:
+        """Get hot water time program schedules.
+
+        This method returns time program settings that are typically
+        configured once and rarely changed.
+
+        Returns:
+            HotWaterSchedule: Hot water schedule information.
+
+        """
+        # Define schedule parameters
+        schedule_param_ids = [
+            "561",   # dhw_time_program_monday
+            "562",   # dhw_time_program_tuesday
+            "563",   # dhw_time_program_wednesday
+            "564",   # dhw_time_program_thursday
+            "565",   # dhw_time_program_friday
+            "566",   # dhw_time_program_saturday
+            "567",   # dhw_time_program_sunday
+            "576",   # dhw_time_program_standard_values
+        ]
+
+        # Use cached parameters or fall back to API validator
+        hotwater_params = (
+            self._hot_water_param_cache
+            or self._api_validator.get_section_params("hot_water")
+        )
+        schedule_params = {
+            param_id: param_name
+            for param_id, param_name in hotwater_params.items()
+            if param_id in schedule_param_ids
+        }
+
+        if not schedule_params:
+            msg = "No hot water schedule parameters available"
+            raise BSBLANError(msg)
+
+        params = await self._extract_params_summary(schedule_params)
+        data = await self._request(params={"Parameter": params["string_par"]})
+        data = dict(zip(params["list"], list(data.values()), strict=True))
+        return HotWaterSchedule.from_dict(data)
 
     async def set_hot_water(  # noqa: PLR0913
         self,
