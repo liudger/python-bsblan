@@ -37,7 +37,7 @@ async def test_validate_api_section_key_error(monkeypatch: Any) -> None:
         # Set up basic initialization
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
-        bsblan._api_data = {"other_section": {}}  # Missing section
+        bsblan._api_data = {"other_section": {}}  # type: ignore[assignment]
 
         # Mock API validator
         mock_validator = MagicMock()
@@ -53,7 +53,7 @@ async def test_validate_api_section_key_error(monkeypatch: Any) -> None:
             BSBLANError,
             match="Section 'nonexistent' not found in API data",
         ):
-            await bsblan._validate_api_section("nonexistent")
+            await bsblan._validate_api_section("nonexistent")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

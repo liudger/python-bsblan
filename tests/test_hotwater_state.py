@@ -73,11 +73,12 @@ async def test_hot_water_state(
             if param_string:
                 requested_param_ids = param_string.split(",")
                 # Return only the requested parameters from the fixture
-                return {
+                result: dict[str, Any] = {
                     param_id: fixture_data[param_id]
                     for param_id in requested_param_ids
                     if param_id in fixture_data
                 }
+                return result
             return fixture_data
 
         request_mock = AsyncMock(side_effect=mock_request)
