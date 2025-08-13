@@ -255,7 +255,7 @@ async def main() -> None:
         # Example: Set device time
         print("\nSetting device time to current time (example)")
         # Note: In real usage, you would set this to the current system time
-        # await bsblan.set_time("01.01.2024 12:30:45")
+        # await bsblan.set_time("13.08.2025 10:25:55")
 
 
 if __name__ == "__main__":
