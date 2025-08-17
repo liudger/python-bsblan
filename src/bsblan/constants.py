@@ -31,7 +31,8 @@ class APIConfig(TypedDict):
 BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     "700": "hvac_mode",
     "710": "target_temperature",
-    "900": "hvac_mode2",
+    "900": "hvac_mode_changeover",
+    # -------
     "8000": "hvac_action",
     "8740": "current_temperature",
     "8749": "room1_thermostat_mode",
@@ -72,8 +73,10 @@ BASE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
     "1661": "dhw_circulation_pump_cycling",
     "1663": "dhw_circulation_setpoint",
     "1680": "operating_mode_changeover",
+    # -------
     "8830": "dhw_actual_value_top_temperature",
     "8820": "state_dhw_pump",
+    # -------
     "561": "dhw_time_program_monday",
     "562": "dhw_time_program_tuesday",
     "563": "dhw_time_program_wednesday",

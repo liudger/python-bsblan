@@ -59,32 +59,32 @@ async def test_state(monkeypatch: Any) -> None:
         assert state.target_temperature.desc == ""
         assert state.target_temperature.unit == "°C"
 
-        # HVAC mode 2 assertions
-        assert state.hvac_mode2 is not None
-        assert state.hvac_mode2.value == 2
-        assert state.hvac_mode2.desc == "Reduced"
+    # HVAC mode changeover assertions
+    assert state.hvac_mode_changeover is not None
+    assert state.hvac_mode_changeover.value == 2
+    assert state.hvac_mode_changeover.desc == "Reduced"
 
-        # HVAC action assertions
-        assert state.hvac_action is not None
-        assert state.hvac_action.value == 122
-        assert state.hvac_action.desc == "Room temperature limitation"
+    # HVAC action assertions
+    assert state.hvac_action is not None
+    assert state.hvac_action.value == 122
+    assert state.hvac_action.desc == "Room temperature limitation"
 
-        # Current temperature assertions
-        assert state.current_temperature is not None
-        assert state.current_temperature.value == 19.3
-        assert state.current_temperature.unit == "°C"
+    # Current temperature assertions
+    assert state.current_temperature is not None
+    assert state.current_temperature.value == 19.3
+    assert state.current_temperature.unit == "°C"
 
-        # Room thermostat mode assertions
-        assert state.room1_thermostat_mode is not None
-        assert state.room1_thermostat_mode.value == 0
-        assert state.room1_thermostat_mode.desc == "No demand"
+    # Room thermostat mode assertions
+    assert state.room1_thermostat_mode is not None
+    assert state.room1_thermostat_mode.value == 0
+    assert state.room1_thermostat_mode.desc == "No demand"
 
-        # Room temperature setpoint boost assertions
-        assert state.room1_temp_setpoint_boost is not None
-        assert state.room1_temp_setpoint_boost.value == "---"
-        assert state.room1_temp_setpoint_boost.unit == "°C"
+    # Room temperature setpoint boost assertions
+    assert state.room1_temp_setpoint_boost is not None
+    assert state.room1_temp_setpoint_boost.value == "---"
+    assert state.room1_temp_setpoint_boost.unit == "°C"
 
-        # Verify API call
-        request_mock.assert_called_once_with(
-            params={"Parameter": "700,710,900,8000,8740,8749,770"}
-        )
+    # Verify API call
+    request_mock.assert_called_once_with(
+        params={"Parameter": "700,710,900,8000,8740,8749,770"}
+    )
