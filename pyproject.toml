@@ -46,11 +46,24 @@ packages = ["src/bsblan"]
 
 [tool.coverage.run]
 plugins = ["covdefaults"]
-source = ["bsblan"]
+source = ["src/bsblan"]
+omit = [
+    "tests/*",
+    "*/tests/*",
+    "test_*",
+    "*test*"
+]
 
 [tool.coverage.report]
 show_missing = true
 fail_under = 53
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
 
 [tool.mypy]
 # Specify the target platform details in config, so your developers are
