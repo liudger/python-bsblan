@@ -154,7 +154,7 @@ class State(DataClassJSONMixin):
     hvac_mode: EntityInfo
     target_temperature: EntityInfo
     hvac_action: EntityInfo
-    hvac_mode2: EntityInfo | None = None
+    hvac_mode_changeover: EntityInfo | None = None
     current_temperature: EntityInfo | None = None
     room1_thermostat_mode: EntityInfo | None = None
     room1_temp_setpoint_boost: EntityInfo | None = None
@@ -177,16 +177,34 @@ class Sensor(DataClassJSONMixin):
 
 
 @dataclass
-class HotWaterState(DataClassJSONMixin):  # pylint: disable=too-many-instance-attributes
-    """Object holds info about object for hot water climate."""
+class HotWaterState(DataClassJSONMixin):
+    """Essential hot water state information for frequent polling.
+
+    This class contains only the most important hot water parameters
+    that are typically checked frequently for monitoring purposes.
+    """
 
     operating_mode: EntityInfo | None = None
-    eco_mode_selection: EntityInfo | None = None
     nominal_setpoint: EntityInfo | None = None
-    nominal_setpoint_max: EntityInfo | None = None
     reduced_setpoint: EntityInfo | None = None
     release: EntityInfo | None = None
+    dhw_actual_value_top_temperature: EntityInfo | None = None
+    state_dhw_pump: EntityInfo | None = None
+
+
+@dataclass
+class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-attributes
+    """Hot water configuration and advanced settings.
+
+    This class contains configuration parameters that are typically
+    set once and checked less frequently.
+    """
+
+    eco_mode_selection: EntityInfo | None = None
+    nominal_setpoint_max: EntityInfo | None = None
     dhw_charging_priority: EntityInfo | None = None
+    operating_mode_changeover: EntityInfo | None = None
+    # Legionella protection settings
     legionella_function: EntityInfo | None = None
     legionella_setpoint: EntityInfo | None = None
     legionella_periodicity: EntityInfo | None = None
@@ -195,12 +213,20 @@ class HotWaterState(DataClassJSONMixin):  # pylint: disable=too-many-instance-at
     legionella_dwelling_time: EntityInfo | None = None
     legionella_circulation_pump: EntityInfo | None = None
     legionella_circulation_temp_diff: EntityInfo | None = None
+    # DHW circulation pump settings
     dhw_circulation_pump_release: EntityInfo | None = None
     dhw_circulation_pump_cycling: EntityInfo | None = None
     dhw_circulation_setpoint: EntityInfo | None = None
-    operating_mode_changeover: EntityInfo | None = None
-    dhw_actual_value_top_temperature: EntityInfo | None = None
-    state_dhw_pump: EntityInfo | None = None
+
+
+@dataclass
+class HotWaterSchedule(DataClassJSONMixin):
+    """Hot water time program schedules.
+
+    This class contains time program settings that are typically
+    configured once and rarely changed.
+    """
+
     dhw_time_program_monday: EntityInfo | None = None
     dhw_time_program_tuesday: EntityInfo | None = None
     dhw_time_program_wednesday: EntityInfo | None = None
