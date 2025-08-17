@@ -2,7 +2,21 @@
 """Asynchronous Python client for BSBLan.
 
 This example demonstrates the optimized hot water functionality:
-- HotWaterState: Essential parameters for frequent polling (6 fields)
+- HotWaterState: Essential param    attributes = {
+        "Operating Mode": await get_attribute(
+            hot_water_state.operating_mode, "desc", "N/A"
+        ),
+        "Nominal Setpoint": await get_attribute(
+            hot_water_state.nominal_setpoint, "value", "N/A"
+        ),
+        "Release": await get_attribute(hot_water_state.release, "desc", "N/A"),
+        "Current Temperature": await get_attribute(
+            hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
+        ),
+        "DHW Pump State": await get_attribute(
+            hot_water_state.state_dhw_pump, "desc", "N/A"
+        ),
+    } polling (6 fields)
 - HotWaterConfig: Configuration parameters checked less frequently (15 fields)
 - HotWaterSchedule: Time program schedules checked occasionally (8 fields)
 
@@ -169,9 +183,6 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
         "Nominal Setpoint": await get_attribute(
             hot_water_state.nominal_setpoint, "value", "N/A"
         ),
-        "Reduced Setpoint": await get_attribute(
-            hot_water_state.reduced_setpoint, "value", "N/A"
-        ),
         "Release": await get_attribute(hot_water_state.release, "desc", "N/A"),
         "Current Temperature": await get_attribute(
             hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
@@ -194,6 +205,9 @@ async def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
     attributes = {
         "Nominal Setpoint Max": await get_attribute(
             hot_water_config.nominal_setpoint_max, "value", "N/A"
+        ),
+        "Reduced Setpoint": await get_attribute(
+            hot_water_config.reduced_setpoint, "value", "N/A"
         ),
         "Legionella Function": await get_attribute(
             hot_water_config.legionella_function, "desc", "N/A"

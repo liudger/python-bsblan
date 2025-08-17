@@ -186,7 +186,6 @@ class HotWaterState(DataClassJSONMixin):
 
     operating_mode: EntityInfo | None = None
     nominal_setpoint: EntityInfo | None = None
-    reduced_setpoint: EntityInfo | None = None
     release: EntityInfo | None = None
     dhw_actual_value_top_temperature: EntityInfo | None = None
     state_dhw_pump: EntityInfo | None = None
@@ -202,6 +201,7 @@ class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-a
 
     eco_mode_selection: EntityInfo | None = None
     nominal_setpoint_max: EntityInfo | None = None
+    reduced_setpoint: EntityInfo | None = None
     dhw_charging_priority: EntityInfo | None = None
     operating_mode_changeover: EntityInfo | None = None
     # Legionella protection settings

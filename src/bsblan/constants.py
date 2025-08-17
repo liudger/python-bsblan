@@ -195,7 +195,6 @@ HOT_WATER_ESSENTIAL_PARAMS: Final[set[str]] = {
     in {
         "operating_mode",
         "nominal_setpoint",
-        "reduced_setpoint",
         "release",
         "dhw_actual_value_top_temperature",
         "state_dhw_pump",
@@ -210,6 +209,7 @@ HOT_WATER_CONFIG_PARAMS: Final[set[str]] = {
     in {
         "eco_mode_selection",
         "nominal_setpoint_max",
+        "reduced_setpoint",
         "dhw_charging_priority",
         "operating_mode_changeover",
         "legionella_function",
