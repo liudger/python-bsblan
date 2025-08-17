@@ -44,15 +44,18 @@ def test_build_api_config_versions(
     # Check expected parameters are included
     for param_id in expected_includes:
         assert param_id in (
-            config["heating"] | config["staticValues"] | config["device"]
-            | config["sensor"] | config["hot_water"]
+            config["heating"]
+            | config["staticValues"]
+            | config["device"]
+            | config["sensor"]
+            | config["hot_water"]
         ), f"Parameter {param_id} missing in {version} config"
 
     # Check excluded parameters are not included
     for param_id in expected_excludes:
-        assert param_id not in (
-            config["heating"] | config["staticValues"]
-        ), f"Parameter {param_id} should not be in {version} config"
+        assert param_id not in (config["heating"] | config["staticValues"]), (
+            f"Parameter {param_id} should not be in {version} config"
+        )
 
 
 @pytest.mark.parametrize(
@@ -63,14 +66,13 @@ def test_build_api_config_versions(
     ],
 )
 def test_pre_built_api_configurations(
-    api_config: dict,
+    api_config: dict[str, dict[str, str]],
     should_have: set[str],
     should_not_have: set[str],
 ) -> None:
     """Test that pre-built API configurations are correct."""
-    all_params = (
-        set(api_config["heating"].keys())
-        | set(api_config["staticValues"].keys())
+    all_params = set(api_config["heating"].keys()) | set(
+        api_config["staticValues"].keys()
     )
 
     for param_id in should_have:
@@ -83,9 +85,7 @@ def test_pre_built_api_configurations(
 def test_hot_water_parameter_groups_completeness() -> None:
     """Test that hot water parameter groups cover all parameters."""
     all_grouped_params = (
-        HOT_WATER_ESSENTIAL_PARAMS
-        | HOT_WATER_CONFIG_PARAMS
-        | HOT_WATER_SCHEDULE_PARAMS
+        HOT_WATER_ESSENTIAL_PARAMS | HOT_WATER_CONFIG_PARAMS | HOT_WATER_SCHEDULE_PARAMS
     )
 
     # All BASE_HOT_WATER_PARAMS should be categorized into one of the groups
@@ -113,7 +113,7 @@ def test_hot_water_parameter_groups_no_overlap(
     ("group", "expected_count"),
     [
         (HOT_WATER_ESSENTIAL_PARAMS, 5),  # Current optimized count
-        (HOT_WATER_CONFIG_PARAMS, 16),   # Configuration parameters
+        (HOT_WATER_CONFIG_PARAMS, 16),  # Configuration parameters
         (HOT_WATER_SCHEDULE_PARAMS, 8),  # Time program parameters
     ],
 )
