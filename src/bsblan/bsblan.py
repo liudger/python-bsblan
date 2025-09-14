@@ -612,7 +612,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "700",
-                    "EnumValue": HVAC_MODE_DICT_REVERSE[hvac_mode],
+                    "Value": str(HVAC_MODE_DICT_REVERSE[hvac_mode]),
                     "Type": "1",
                 },
             )
@@ -948,7 +948,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "1600",
-                    "EnumValue": operating_mode,
+                    "Value": str(operating_mode),
                     "Type": "1",
                 },
             )
@@ -956,7 +956,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "1601",
-                    "EnumValue": eco_mode_selection,
+                    "Value": str(eco_mode_selection),
                     "Type": "1",
                 },
             )
@@ -964,7 +964,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "1630",
-                    "EnumValue": dhw_charging_priority,
+                    "Value": str(dhw_charging_priority),
                     "Type": "1",
                 },
             )
@@ -980,7 +980,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "1647",
-                    "EnumValue": legionella_circulation_pump,
+                    "Value": str(legionella_circulation_pump),
                     "Type": "1",
                 },
             )
@@ -996,7 +996,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "1660",
-                    "EnumValue": dhw_circulation_pump_release,
+                    "Value": str(dhw_circulation_pump_release),
                     "Type": "1",
                 },
             )
@@ -1020,7 +1020,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "1680",
-                    "EnumValue": operating_mode_changeover,
+                    "Value": str(operating_mode_changeover),
                     "Type": "1",
                 },
             )
