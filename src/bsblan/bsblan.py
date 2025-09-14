@@ -358,8 +358,10 @@ class BSBLAN:
             raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
         except aiohttp.ClientError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
-        except ValueError as e:
-            raise BSBLANError(str(e)) from e
+        except (ValueError, UnicodeDecodeError) as e:
+            # Handle JSON decode errors and other parsing issues
+            error_msg = f"Invalid response format from BSB-LAN device: {e!s}"
+            raise BSBLANError(error_msg) from e
 
     def _process_response(
         self, response_data: dict[str, Any], base_path: str
