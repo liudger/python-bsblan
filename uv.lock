@@ -1639,7 +1639,7 @@ dev = [
     { name = "pytest-cov", specifier = "==6.2.1" },
     { name = "pyupgrade", specifier = "==3.20.0" },
     { name = "ruff", specifier = "==0.12.8" },
-    { name = "safety", specifier = "==3.6.0" },
+    { name = "safety", specifier = "==3.6.1" },
     { name = "vulture", specifier = "==2.14" },
     { name = "yamllint", specifier = "==1.37.1" },
 ]
@@ -1866,7 +1866,7 @@ wheels = [
 
 [[package]]
 name = "safety"
-version = "3.6.0"
+version = "3.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -1889,9 +1889,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/c0/832778e8f53e922f1939455cab4149339ca66c4f06e3c67599511d857279/safety-3.6.0.tar.gz", hash = "sha256:a820f827699f83d3d5c2faab24c0ac4d094911931503180847d97942c0a6f7e3", size = 291056, upload-time = "2025-07-09T11:49:52.384Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/53/9be210e9247b00f4de3775e387fefb40d0481d781672e2bcba9cfa69baeb/safety-3.6.1.tar.gz", hash = "sha256:4d021e61cb8be527274560e5729616155b42e5442ca54e62c57da40076d80fd4", size = 295015, upload-time = "2025-09-01T22:30:00.328Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/45/12/7f7dfcd6975011e73573ac8acdd301b29f976d27e6149d8448051ad62189/safety-3.6.0-py3-none-any.whl", hash = "sha256:9cddbfd7a578b35e4d29df4fb6e3808425ed792a09d81400a5b7f4b4535ef666", size = 285260, upload-time = "2025-07-09T11:49:50.994Z" },
+    { url = "https://files.pythonhosted.org/packages/38/81/41d93a3bac0badcc21fbe838574fa32e214405244dd04e29ffcf34dba8dc/safety-3.6.1-py3-none-any.whl", hash = "sha256:22bc89d4e6471aa0fce41952bb5f7cb5f2f126127976024fe55c641c5447ce0b", size = 286051, upload-time = "2025-09-01T22:29:58.35Z" },
 ]
 
 [[package]]
