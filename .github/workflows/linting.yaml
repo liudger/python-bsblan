@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.3.0
+        uses: actions/checkout@v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.3.0
+        uses: actions/checkout@v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.3.0
+        uses: actions/checkout@v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.3.0
+        uses: actions/checkout@v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.3.0
+        uses: actions/checkout@v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.3.0
+        uses: actions/checkout@v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@v6
         with:
