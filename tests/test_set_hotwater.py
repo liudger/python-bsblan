@@ -53,7 +53,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "1601",
-            "EnumValue": "1",
+            "Value": "1",
             "Type": "1",
         },
     )
@@ -63,7 +63,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "1630",
-            "EnumValue": "1",
+            "Value": "1",
             "Type": "1",
         },
     )
@@ -83,7 +83,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "1647",
-            "EnumValue": "1",
+            "Value": "1",
             "Type": "1",
         },
     )
@@ -103,7 +103,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "1660",
-            "EnumValue": "2",
+            "Value": "2",
             "Type": "1",
         },
     )
@@ -133,7 +133,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "1680",
-            "EnumValue": "1",
+            "Value": "1",
             "Type": "1",
         },
     )
@@ -188,7 +188,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
 
     assert state == {
         "Parameter": "1600",
-        "EnumValue": "3",
+        "Value": "3",
         "Type": "1",
     }
 
@@ -201,7 +201,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     )
     assert state == {
         "Parameter": "1601",
-        "EnumValue": "1",
+        "Value": "1",
         "Type": "1",
     }
 
@@ -213,7 +213,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     )
     assert state == {
         "Parameter": "1630",
-        "EnumValue": "1",
+        "Value": "1",
         "Type": "1",
     }
 
@@ -237,7 +237,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     )
     assert state == {
         "Parameter": "1647",
-        "EnumValue": "1",
+        "Value": "1",
         "Type": "1",
     }
 
@@ -254,7 +254,7 @@ async def test_set_hot_water_state(
     """
     state = {
         "Parameter": "1600",
-        "EnumValue": "3",
+        "Value": "3",
         "Type": "1",
     }
     await mock_bsblan._set_hot_water_state(state)
