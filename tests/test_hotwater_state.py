@@ -12,7 +12,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig, HotWaterState
-from bsblan.constants import API_V3
+from bsblan.constants import API_V3, APIConfig
 from bsblan.utility import APIValidator
 
 from . import load_fixture
@@ -32,7 +32,7 @@ async def test_hot_water_state(
         monkeypatch.setattr(bsblan, "_api_version", "v3")
 
         # Create a modified API_V3 excluding the time switch parameters
-        test_api_v3 = {
+        test_api_v3: APIConfig = {
             "heating": API_V3["heating"].copy(),
             "staticValues": API_V3["staticValues"].copy(),
             "device": API_V3["device"].copy(),
