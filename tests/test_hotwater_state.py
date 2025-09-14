@@ -12,7 +12,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig, HotWaterState
-from bsblan.constants import API_V3
+from bsblan.constants import API_V3, APIConfig
 from bsblan.utility import APIValidator
 
 from . import load_fixture
@@ -32,7 +32,7 @@ async def test_hot_water_state(
         monkeypatch.setattr(bsblan, "_api_version", "v3")
 
         # Create a modified API_V3 excluding the time switch parameters
-        test_api_v3 = {
+        test_api_v3: APIConfig = {
             "heating": API_V3["heating"].copy(),
             "staticValues": API_V3["staticValues"].copy(),
             "device": API_V3["device"].copy(),
@@ -54,12 +54,12 @@ async def test_hot_water_state(
         hot_water_cache = {
             "1600": "operating_mode",
             "1610": "nominal_setpoint",
-            "1612": "reduced_setpoint",
             "1620": "release",
             "8830": "dhw_actual_value_top_temperature",
             "8820": "state_dhw_pump",
             # Add other parameters that would be in the full cache
             "1601": "eco_mode_selection",
+            "1612": "reduced_setpoint",  # Now in config
             "1614": "nominal_setpoint_max",
         }
         bsblan.set_hot_water_cache(hot_water_cache)
@@ -92,23 +92,20 @@ async def test_hot_water_state(
         assert hot_water_state.operating_mode.value == 1
         assert hot_water_state.nominal_setpoint is not None
         assert hot_water_state.nominal_setpoint.value == 50.0
-        assert hot_water_state.reduced_setpoint is not None
-        assert hot_water_state.reduced_setpoint.value == 10.0
         assert hot_water_state.release is not None
         assert hot_water_state.release.value == 2
         assert hot_water_state.dhw_actual_value_top_temperature is not None
         assert hot_water_state.dhw_actual_value_top_temperature.value == 36.5
         assert hot_water_state.state_dhw_pump is not None
         assert hot_water_state.state_dhw_pump.value == 255
-        # The Parameter string should only include the 6 essential parameters
+        # The Parameter string should only include the 5 essential parameters
         request_mock.assert_called_once()
         params = request_mock.call_args[1]["params"]["Parameter"].split(",")
-        assert len(params) == 6
+        assert len(params) == 5
 
         expected_essential_params = [
             "1600",  # operating_mode
             "1610",  # nominal_setpoint
-            "1612",  # reduced_setpoint
             "1620",  # release
             "8830",  # dhw_actual_value_top_temperature
             "8820",  # state_dhw_pump

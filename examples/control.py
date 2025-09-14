@@ -2,8 +2,8 @@
 """Asynchronous Python client for BSBLan.
 
 This example demonstrates the optimized hot water functionality:
-- HotWaterState: Essential parameters for frequent polling (6 fields)
-- HotWaterConfig: Configuration parameters checked less frequently (15 fields)
+- HotWaterState: Essential parameters for frequent polling (5 fields)
+- HotWaterConfig: Configuration parameters checked less frequently (16 fields)
 - HotWaterSchedule: Time program schedules checked occasionally (8 fields)
 
 This three-tier approach reduces API calls by 79% for regular monitoring.
@@ -169,9 +169,6 @@ async def print_hot_water_state(hot_water_state: HotWaterState) -> None:
         "Nominal Setpoint": await get_attribute(
             hot_water_state.nominal_setpoint, "value", "N/A"
         ),
-        "Reduced Setpoint": await get_attribute(
-            hot_water_state.reduced_setpoint, "value", "N/A"
-        ),
         "Release": await get_attribute(hot_water_state.release, "desc", "N/A"),
         "Current Temperature": await get_attribute(
             hot_water_state.dhw_actual_value_top_temperature, "value", "N/A"
@@ -194,6 +191,9 @@ async def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
     attributes = {
         "Nominal Setpoint Max": await get_attribute(
             hot_water_config.nominal_setpoint_max, "value", "N/A"
+        ),
+        "Reduced Setpoint": await get_attribute(
+            hot_water_config.reduced_setpoint, "value", "N/A"
         ),
         "Legionella Function": await get_attribute(
             hot_water_config.legionella_function, "desc", "N/A"
@@ -300,14 +300,14 @@ async def main() -> None:
         try:
             hot_water_config: HotWaterConfig = await bsblan.hot_water_config()
             await print_hot_water_config(hot_water_config)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
             print(f"Hot water configuration not available: {e}")
 
         # Get hot water schedule (time programs)
         try:
             hot_water_schedule: HotWaterSchedule = await bsblan.hot_water_schedule()
             await print_hot_water_schedule(hot_water_schedule)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
             print(f"Hot water schedule not available: {e}")
 
         # Example: Set DHW time program for Monday
@@ -321,8 +321,8 @@ async def main() -> None:
         # Example: Set device time
         print("\nSetting device time to current system time")
         # Get current local system time and format it for BSB-LAN (DD.MM.YYYY HH:MM:SS)
-        # Note: Using local time intentionally to sync BSB-LAN with system clock
-        current_time = datetime.now().replace(microsecond=0)  # noqa: DTZ005
+        # Note: Using local time intentionally for this demo to sync BSB-LAN
+        current_time = datetime.now().replace(microsecond=0)  # noqa: DTZ005 - Demo uses local time
         formatted_time = current_time.strftime("%d.%m.%Y %H:%M:%S")
         print(f"Current system time: {formatted_time}")
         await bsblan.set_time(formatted_time)

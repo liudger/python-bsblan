@@ -71,7 +71,7 @@ def create_response_handler(expected_data: dict[str, Any]) -> Response:
 
         for key, value in expected_data.items():
             assert key in actual_data, f"Expected key '{key}' not found in actual data"
-            if key == "EnumValue":
+            if key == "Value":
                 # Allow both string and integer representations
                 assert str(actual_data[key]) == str(value)
             else:
@@ -116,7 +116,7 @@ async def test_change_hvac_mode(
     """Test changing BSBLAN HVAC mode."""
     expected_data = {
         "Parameter": "700",
-        "EnumValue": 1,  # 1 corresponds to "auto" mode
+        "Value": "1",  # 1 corresponds to "auto" mode
         "Type": "1",
     }
     mock_aresponses.add(
