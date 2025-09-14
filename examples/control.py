@@ -2,8 +2,8 @@
 """Asynchronous Python client for BSBLan.
 
 This example demonstrates the optimized hot water functionality:
-- HotWaterState: Essential parameters for frequent polling (6 fields)
-- HotWaterConfig: Configuration parameters checked less frequently (15 fields)
+- HotWaterState: Essential parameters for frequent polling (5 fields)
+- HotWaterConfig: Configuration parameters checked less frequently (16 fields)
 - HotWaterSchedule: Time program schedules checked occasionally (8 fields)
 
 This three-tier approach reduces API calls by 79% for regular monitoring.
