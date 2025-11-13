@@ -378,8 +378,6 @@ class BSBLAN:
                 raise BSBLANError(API_VERSION_ERROR_MSG)
             # Copy each section dictionary to avoid modifying the shared constant
             source_config: APIConfig = API_VERSIONS[self._api_version]
-            if source_config is None:
-                raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
             self._api_data = cast(
                 "APIConfig",
                 {
