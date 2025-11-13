@@ -1,7 +1,7 @@
 """Tests for temperature validation error handling."""
 # pylint: disable=protected-access
 
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock
 
 import aiohttp
@@ -9,7 +9,7 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_VERSIONS, TEMPERATURE_RANGE_ERROR_MSG
+from bsblan.constants import API_VERSIONS, TEMPERATURE_RANGE_ERROR_MSG, APIConfig
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -77,7 +77,15 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         client = BSBLAN(config, session=session)
 
         client._api_version = "v1"
-        client._api_data = API_VERSIONS["v1"].copy()
+        # Deep copy to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
         client._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to return data without min_temp
@@ -102,7 +110,15 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         client = BSBLAN(config, session=session)
 
         client._api_version = "v1"
-        client._api_data = API_VERSIONS["v1"].copy()
+        # Deep copy to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
         client._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to return data without max_temp
@@ -127,7 +143,15 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
         client = BSBLAN(config, session=session)
 
         client._api_version = "v1"
-        client._api_data = API_VERSIONS["v1"].copy()
+        # Deep copy to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
         client._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to raise an error

@@ -7,7 +7,7 @@ import contextlib
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 import json
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 from unittest.mock import AsyncMock
 
 import aiohttp
@@ -19,6 +19,7 @@ from bsblan.constants import (
     API_DATA_NOT_INITIALIZED_ERROR_MSG,
     API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
     API_VERSIONS,
+    APIConfig,
 )
 from bsblan.exceptions import BSBLANError
 from bsblan.utility import APIValidator
@@ -192,7 +193,15 @@ async def test_validate_section_already_validated(monkeypatch: Any) -> None:
         client = BSBLAN(config, session=session)
 
         client._api_version = "v1"
-        client._api_data = API_VERSIONS["v1"].copy()
+        # Deep copy to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
         client._api_validator = APIValidator(client._api_data)
 
         # Mock request
@@ -218,7 +227,15 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
         client = BSBLAN(config, session=session)
 
         client._api_version = "v1"
-        client._api_data = API_VERSIONS["v1"].copy()
+        # Deep copy to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
         client._api_validator = APIValidator(client._api_data)
 
         # Mock request to raise an error
