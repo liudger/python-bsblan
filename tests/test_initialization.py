@@ -238,7 +238,7 @@ async def test_initialize_api_validator() -> None:
                 }
             return {}
 
-        bsblan._validate_api_section = mock_validate_section  # type: ignore[method-assign, assignment]
+        bsblan._validate_api_section = mock_validate_section  # type: ignore[method-assign]
 
         await bsblan._initialize_api_validator()
 
