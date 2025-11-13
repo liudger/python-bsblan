@@ -164,8 +164,8 @@ class State(DataClassJSONMixin):
 class StaticState(DataClassJSONMixin):
     """Class for entities that are not changing."""
 
-    min_temp: EntityInfo
-    max_temp: EntityInfo
+    min_temp: EntityInfo | None = None
+    max_temp: EntityInfo | None = None
 
 
 @dataclass

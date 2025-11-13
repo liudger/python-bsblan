@@ -7,7 +7,8 @@ import contextlib
 # file deepcode ignore W0212: this is a testfile
 # pylint: disable=protected-access
 import json
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn, cast
+from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
@@ -17,6 +18,8 @@ from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
     API_DATA_NOT_INITIALIZED_ERROR_MSG,
     API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
+    API_VERSIONS,
+    APIConfig,
 )
 from bsblan.exceptions import BSBLANError
 from bsblan.utility import APIValidator
@@ -180,3 +183,65 @@ async def test_validate_api_section_validation_error(
             assert not bsblan._api_validator.is_section_validated("device")
         finally:
             APIValidator.validate_section = original_validate  # type: ignore[method-assign]
+
+
+@pytest.mark.asyncio
+async def test_validate_section_already_validated(monkeypatch: Any) -> None:
+    """Test section validation returns None when already validated (line 160)."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        client = BSBLAN(config, session=session)
+
+        client._api_version = "v1"
+        # Deep copy to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
+        client._api_validator = APIValidator(client._api_data)
+
+        # Mock request
+        request_mock: AsyncMock = AsyncMock(
+            return_value={"710": {"name": "Target", "value": "20", "unit": "°C"}}
+        )
+        monkeypatch.setattr(client, "_request", request_mock)
+
+        # First validation should succeed
+        response_data = await client._validate_api_section("heating")
+        assert response_data is not None
+
+        # Second call should return None (already validated)
+        response_data = await client._validate_api_section("heating")
+        assert response_data is None
+
+
+@pytest.mark.asyncio
+async def test_validation_error_resets_section(monkeypatch: Any) -> None:
+    """Test that validation errors reset the section (line 212)."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        client = BSBLAN(config, session=session)
+
+        client._api_version = "v1"
+        # Copy each section dictionary to avoid modifying the shared constant
+        source_config = API_VERSIONS["v1"]
+        client._api_data = cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
+        client._api_validator = APIValidator(client._api_data)
+
+        # Mock request to raise an error
+        request_mock: AsyncMock = AsyncMock(side_effect=BSBLANError("Test error"))
+        monkeypatch.setattr(client, "_request", request_mock)
+
+        # This should raise BSBLANError and reset validation
+        with pytest.raises(BSBLANError, match="Test error"):
+            await client._validate_api_section("heating")

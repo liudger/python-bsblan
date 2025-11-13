@@ -138,7 +138,15 @@ class BSBLAN:
 
         # Initialize API data if not already done
         if self._api_data is None:
-            self._api_data = API_VERSIONS[self._api_version]
+            # Copy each section dictionary to avoid modifying the shared constant
+            source_config: APIConfig = API_VERSIONS[self._api_version]
+            self._api_data = cast(
+                "APIConfig",
+                {
+                    section: cast("dict[str, str]", params).copy()
+                    for section, params in source_config.items()
+                },
+            )
 
         # Initialize the API validator
         self._api_validator = APIValidator(self._api_data)
@@ -152,13 +160,24 @@ class BSBLAN:
             "hot_water",
         ]
         for section in sections:
-            await self._validate_api_section(section)
+            response_data = await self._validate_api_section(section)
 
-    async def _validate_api_section(self, section: SectionLiteral) -> None:
+            # Extract temperature unit from heating section validation
+            # (parameter 710 - target_temperature is always in heating section)
+            if section == "heating" and response_data:
+                self._extract_temperature_unit_from_response(response_data)
+
+    async def _validate_api_section(
+        self, section: SectionLiteral
+    ) -> dict[str, Any] | None:
         """Validate a specific section of the API configuration.
 
         Args:
             section: The section name to validate
+
+        Returns:
+            dict[str, Any] | None: The response data from the device, or None if
+                section was already validated or validation failed
 
         Raises:
             BSBLANError: If the API validator is not initialized
@@ -174,7 +193,7 @@ class BSBLAN:
         api_validator = self._api_validator
 
         if api_validator.is_section_validated(section):
-            return
+            return None
 
         # Get parameters for the section
         try:
@@ -204,6 +223,8 @@ class BSBLAN:
             # Reset validation state for this section
             api_validator.reset_validation(section)
             raise
+        else:
+            return response_data
 
     def _populate_hot_water_cache(self) -> None:
         """Populate the hot water parameter cache with all available parameters."""
@@ -214,6 +235,43 @@ class BSBLAN:
         hotwater_params = self._api_validator.get_section_params("hot_water")
         self._hot_water_param_cache = hotwater_params.copy()
         logger.debug("Cached %d hot water parameters", len(self._hot_water_param_cache))
+
+    def _extract_temperature_unit_from_response(
+        self, response_data: dict[str, Any]
+    ) -> None:
+        """Extract temperature unit from heating section response data.
+
+        Gets the unit from parameter 710 (target_temperature) which is always
+        present in the heating section.
+
+        Args:
+            response_data: The response data from heating section validation
+
+        """
+        # Look for parameter 710 (target_temperature) in the response
+        for param_id, param_data in response_data.items():
+            # Check if this is parameter 710 and has unit information
+            if param_id == "710" and isinstance(param_data, dict):
+                unit = param_data.get("unit", "")
+                if unit in ("&deg;C", "°C"):
+                    self._temperature_unit = "°C"
+                elif unit == "°F":
+                    self._temperature_unit = "°F"
+                else:
+                    # Keep default if unit is empty or unknown
+                    logger.debug(
+                        "Unknown or empty temperature unit from parameter 710: '%s'. "
+                        "Using default (°C)",
+                        unit,
+                    )
+                logger.debug("Temperature unit set to: %s", self._temperature_unit)
+                return
+
+        # If we didn't find parameter 710, log a warning
+        logger.warning(
+            "Could not find parameter 710 in heating section response. "
+            "Using default temperature unit (°C)"
+        )
 
     def set_hot_water_cache(self, params: dict[str, str]) -> None:
         """Set the hot water parameter cache manually (for testing).
@@ -256,23 +314,40 @@ class BSBLAN:
             raise BSBLANVersionError(VERSION_ERROR_MSG)
 
     async def _initialize_temperature_range(self) -> None:
-        """Initialize the temperature range from static values."""
+        """Initialize the temperature range from static values.
+
+        Note: Temperature unit is extracted during API validator initialization
+        from the heating section response (parameter 710), so no extra API call
+        is needed here.
+        """
         if not self._temperature_range_initialized:
-            static_values = await self.static_values()
-            self._min_temp = float(static_values.min_temp.value)
-            self._max_temp = float(static_values.max_temp.value)
+            # Try to get temperature range from static values
+            try:
+                static_values = await self.static_values()
+                if static_values.min_temp is not None:
+                    self._min_temp = float(static_values.min_temp.value)
+                    logger.debug("Min temperature initialized: %f", self._min_temp)
+                else:
+                    logger.warning(
+                        "min_temp not available from device, "
+                        "temperature range will be None"
+                    )
+
+                if static_values.max_temp is not None:
+                    self._max_temp = float(static_values.max_temp.value)
+                    logger.debug("Max temperature initialized: %f", self._max_temp)
+                else:
+                    logger.warning(
+                        "max_temp not available from device, "
+                        "temperature range will be None"
+                    )
+            except BSBLANError as err:
+                logger.warning(
+                    "Failed to get static values: %s. Temperature range will be None",
+                    str(err),
+                )
+
             self._temperature_range_initialized = True
-            logger.debug(
-                "Temperature range initialized: min=%f, max=%f",
-                self._min_temp,
-                self._max_temp,
-            )
-            # also set unit of temperature
-            if static_values.min_temp.unit in ("&deg;C", "°C"):
-                self._temperature_unit = "°C"
-            else:
-                self._temperature_unit = "°F"
-            logger.debug("Temperature unit: %s", self._temperature_unit)
 
     @property
     def get_temperature_unit(self) -> str:
@@ -301,7 +376,15 @@ class BSBLAN:
         if self._api_data is None:
             if self._api_version is None:
                 raise BSBLANError(API_VERSION_ERROR_MSG)
-            self._api_data = API_VERSIONS[self._api_version]
+            # Copy each section dictionary to avoid modifying the shared constant
+            source_config: APIConfig = API_VERSIONS[self._api_version]
+            self._api_data = cast(
+                "APIConfig",
+                {
+                    section: cast("dict[str, str]", params).copy()
+                    for section, params in source_config.items()
+                },
+            )
             logger.debug("API data initialized for version: %s", self._api_version)
         if self._api_data is None:
             raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)

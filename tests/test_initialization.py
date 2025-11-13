@@ -4,6 +4,7 @@
 # pylint: disable=protected-access
 
 import json
+from typing import Any
 
 import aiohttp
 import pytest
@@ -224,12 +225,23 @@ async def test_initialize_api_validator() -> None:
             "hot_water": {},
         }
 
-        # Create a coroutine mock for _validate_api_section
-        async def mock_validate_section(_section: str) -> None:
-            pass
+        # Create a coroutine mock for _validate_api_section that returns response data
+        async def mock_validate_section(section: str) -> dict[str, Any]:
+            # Return mock response for heating to trigger temperature extraction
+            if section == "heating":
+                return {
+                    "710": {
+                        "name": "Target Temperature",
+                        "value": "20.0",
+                        "unit": "°C",
+                    }
+                }
+            return {}
 
-        bsblan._validate_api_section = mock_validate_section  # type: ignore[method-assign, assignment]
+        bsblan._validate_api_section = mock_validate_section  # type: ignore[method-assign]
 
         await bsblan._initialize_api_validator()
 
         assert bsblan._api_validator is not None
+        # Verify temperature unit was extracted from heating section
+        assert bsblan._temperature_unit == "°C"
