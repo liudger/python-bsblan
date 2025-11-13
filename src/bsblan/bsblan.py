@@ -139,11 +139,14 @@ class BSBLAN:
         # Initialize API data if not already done
         if self._api_data is None:
             # Create a deep copy to avoid modifying the shared constant
-            source_config = API_VERSIONS[self._api_version]
-            self._api_data = {
-                section: params.copy()
-                for section, params in source_config.items()
-            }
+            source_config: APIConfig = API_VERSIONS[self._api_version]
+            self._api_data = cast(
+                "APIConfig",
+                {
+                    section: cast("dict[str, str]", params).copy()
+                    for section, params in source_config.items()
+                },
+            )
 
         # Initialize the API validator
         self._api_validator = APIValidator(self._api_data)
@@ -215,13 +218,13 @@ class BSBLAN:
             # Cache hot water parameters if this is the hot_water section
             if section == "hot_water":
                 self._populate_hot_water_cache()
-
-            return response_data
         except BSBLANError as err:
             logger.warning("Failed to validate section %s: %s", section, str(err))
             # Reset validation state for this section
             api_validator.reset_validation(section)
             raise
+        else:
+            return response_data
 
     def _populate_hot_water_cache(self) -> None:
         """Populate the hot water parameter cache with all available parameters."""
@@ -374,13 +377,16 @@ class BSBLAN:
             if self._api_version is None:
                 raise BSBLANError(API_VERSION_ERROR_MSG)
             # Create a deep copy to avoid modifying the shared constant
-            source_config = API_VERSIONS[self._api_version]
+            source_config: APIConfig = API_VERSIONS[self._api_version]
             if source_config is None:
                 raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
-            self._api_data = {
-                section: params.copy()
-                for section, params in source_config.items()
-            }
+            self._api_data = cast(
+                "APIConfig",
+                {
+                    section: cast("dict[str, str]", params).copy()
+                    for section, params in source_config.items()
+                },
+            )
             logger.debug("API data initialized for version: %s", self._api_version)
         if self._api_data is None:
             raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
