@@ -138,7 +138,7 @@ class BSBLAN:
 
         # Initialize API data if not already done
         if self._api_data is None:
-            # Create a deep copy to avoid modifying the shared constant
+            # Copy each section dictionary to avoid modifying the shared constant
             source_config: APIConfig = API_VERSIONS[self._api_version]
             self._api_data = cast(
                 "APIConfig",
@@ -376,7 +376,7 @@ class BSBLAN:
         if self._api_data is None:
             if self._api_version is None:
                 raise BSBLANError(API_VERSION_ERROR_MSG)
-            # Create a deep copy to avoid modifying the shared constant
+            # Copy each section dictionary to avoid modifying the shared constant
             source_config: APIConfig = API_VERSIONS[self._api_version]
             if source_config is None:
                 raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)

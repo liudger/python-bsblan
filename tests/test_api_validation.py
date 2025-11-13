@@ -227,7 +227,7 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
         client = BSBLAN(config, session=session)
 
         client._api_version = "v1"
-        # Deep copy to avoid modifying the shared constant
+        # Copy each section dictionary to avoid modifying the shared constant
         source_config = API_VERSIONS["v1"]
         client._api_data = cast(
             "APIConfig",
