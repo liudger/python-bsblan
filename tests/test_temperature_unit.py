@@ -36,6 +36,7 @@ async def test_initialize_temperature_range_celsius() -> None:
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
+    # Note: Temperature unit is now set during API validation, not here
     with patch.object(bsblan, "static_values", AsyncMock(return_value=static_values)):
         await bsblan._initialize_temperature_range()
 
@@ -43,7 +44,6 @@ async def test_initialize_temperature_range_celsius() -> None:
         assert bsblan._min_temp == 10.0
         assert bsblan._max_temp == 30.0
         assert bsblan._temperature_range_initialized is True
-        assert bsblan._temperature_unit == "°C"
 
 
 @pytest.mark.asyncio
@@ -58,6 +58,7 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
+    # Note: Temperature unit is now set during API validation, not here
     with patch.object(bsblan, "static_values", AsyncMock(return_value=static_values)):
         await bsblan._initialize_temperature_range()
 
@@ -65,7 +66,6 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
         assert bsblan._min_temp == 50.0
         assert bsblan._max_temp == 86.0
         assert bsblan._temperature_range_initialized is True
-        assert bsblan._temperature_unit == "°F"
 
 
 @pytest.mark.asyncio
@@ -87,6 +87,7 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
+    # Note: Temperature unit is now set during API validation, not here
     with patch.object(bsblan, "static_values", AsyncMock(return_value=static_values)):
         await bsblan._initialize_temperature_range()
 
@@ -94,4 +95,117 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
         assert bsblan._min_temp == 10.0
         assert bsblan._max_temp == 30.0
         assert bsblan._temperature_range_initialized is True
-        assert bsblan._temperature_unit == "°C"
+
+
+@pytest.mark.asyncio
+async def test_extract_temperature_unit_from_response_celsius() -> None:
+    """Test extracting Celsius temperature unit from heating section response."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Mock response data with parameter 710 (target_temperature) having Celsius unit
+    response_data = {
+        "710": {"name": "Comfort setpoint", "value": "20.0", "unit": "°C"},
+        "700": {"name": "Operating mode", "value": "3", "unit": ""},
+    }
+
+    bsblan._extract_temperature_unit_from_response(response_data)
+
+    assert bsblan._temperature_unit == "°C"
+
+
+@pytest.mark.asyncio
+async def test_extract_temperature_unit_from_response_fahrenheit() -> None:
+    """Test extracting Fahrenheit temperature unit from heating section response."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Mock response data with parameter 710 having Fahrenheit unit
+    response_data = {
+        "710": {"name": "Comfort setpoint", "value": "68.0", "unit": "°F"},
+        "700": {"name": "Operating mode", "value": "3", "unit": ""},
+    }
+
+    bsblan._extract_temperature_unit_from_response(response_data)
+
+    assert bsblan._temperature_unit == "°F"
+
+
+@pytest.mark.asyncio
+async def test_extract_temperature_unit_from_response_html_entity() -> None:
+    """Test extracting temperature unit with HTML entity format."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Mock response data with HTML entity format for Celsius
+    response_data = {
+        "710": {"name": "Comfort setpoint", "value": "20.0", "unit": "&deg;C"},
+    }
+
+    bsblan._extract_temperature_unit_from_response(response_data)
+
+    assert bsblan._temperature_unit == "°C"
+
+
+@pytest.mark.asyncio
+async def test_extract_temperature_unit_from_response_missing_param() -> None:
+    """Test behavior when parameter 710 is missing from response."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Set to Fahrenheit first to verify it stays as default when param is missing
+    bsblan._temperature_unit = "°F"
+
+    # Mock response data without parameter 710
+    response_data = {
+        "700": {"name": "Operating mode", "value": "3", "unit": ""},
+    }
+
+    bsblan._extract_temperature_unit_from_response(response_data)
+
+    # Should keep the existing value when param 710 is not found
+    assert bsblan._temperature_unit == "°F"
+
+
+@pytest.mark.asyncio
+async def test_extract_temperature_unit_unknown_unit() -> None:
+    """Test handling of unknown temperature unit (line 254)."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Mock response with unknown unit
+    response_data = {
+        "710": {
+            "name": "Room Temperature",
+            "value": "20.0",
+            "unit": "K",  # Kelvin - unknown unit
+        }
+    }
+
+    # This should log a debug message and keep default (°C)
+    bsblan._extract_temperature_unit_from_response(response_data)
+
+    # Should keep default
+    assert bsblan._temperature_unit == "°C"
+
+
+@pytest.mark.asyncio
+async def test_extract_temperature_unit_empty_unit() -> None:
+    """Test handling of empty temperature unit (line 254)."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Mock response with empty unit
+    response_data = {
+        "710": {
+            "name": "Room Temperature",
+            "value": "20.0",
+            "unit": "",  # Empty unit
+        }
+    }
+
+    # This should log a debug message and keep default (°C)
+    bsblan._extract_temperature_unit_from_response(response_data)
+
+    # Should keep default
+    assert bsblan._temperature_unit == "°C"
