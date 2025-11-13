@@ -95,3 +95,27 @@ async def test_api_data_property_raises_without_version() -> None:
         # This should raise BSBLANError
         with pytest.raises(BSBLANError, match="API version not set"):
             await client._initialize_api_data()
+
+
+@pytest.mark.asyncio
+async def test_initialize_api_data_returns_existing() -> None:
+    """Test _initialize_api_data returns existing data when already initialized."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        client = BSBLAN(config, session=session)
+
+        # Set up with pre-initialized data
+        client._api_version = "v1"
+        existing_data = {
+            "heating": {"710": "Test"},
+            "staticValues": {"714": "Test"},
+            "device": {},
+            "sensor": {},
+            "hot_water": {},
+        }
+        client._api_data = existing_data
+
+        # This should return the existing data without re-initializing
+        result = await client._initialize_api_data()
+        assert result is existing_data
+        assert result == existing_data
