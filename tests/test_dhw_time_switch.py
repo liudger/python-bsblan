@@ -142,6 +142,7 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
         dhw_time_programs=dhw_programs,
     )
@@ -156,6 +157,7 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
         dhw_time_programs=dhw_programs,
     )
@@ -170,6 +172,7 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
         dhw_time_programs=dhw_programs,
     )

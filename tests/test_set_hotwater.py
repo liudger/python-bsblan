@@ -78,52 +78,42 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_circulation_pump="1")
+    await mock_bsblan.set_hot_water(legionella_setpoint=60.0)
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
-            "Parameter": "1647",
-            "Value": "1",
+            "Parameter": "1645",
+            "Value": "60.0",
             "Type": "1",
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_circulation_temp_diff=10.0)
+    await mock_bsblan.set_hot_water(legionella_time="12:00")
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
-            "Parameter": "1648",
-            "Value": "10.0",
+            "Parameter": "1644",
+            "Value": "12:00",
             "Type": "1",
         },
     )
 
-    await mock_bsblan.set_hot_water(dhw_circulation_pump_release="2")
+    await mock_bsblan.set_hot_water(legionella_day="6")
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
-            "Parameter": "1660",
-            "Value": "2",
+            "Parameter": "1642",
+            "Value": "6",
             "Type": "1",
         },
     )
 
-    await mock_bsblan.set_hot_water(dhw_circulation_pump_cycling=10)
+    await mock_bsblan.set_hot_water(nominal_setpoint_max=65.0)
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
-            "Parameter": "1661",
-            "Value": "10",
-            "Type": "1",
-        },
-    )
-
-    await mock_bsblan.set_hot_water(dhw_circulation_setpoint=50.0)
-    mock_bsblan._request.assert_awaited_with(
-        base_path="/JS",
-        data={
-            "Parameter": "1663",
-            "Value": "50.0",
+            "Parameter": "1614",
+            "Value": "65.0",
             "Type": "1",
         },
     )
@@ -151,6 +141,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=60.0,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
     )
     assert state == {
@@ -163,6 +154,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=40.0,
+        nominal_setpoint_max=None,
         operating_mode=None,
     )
     assert state == {
@@ -176,6 +168,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
         mock_bsblan._prepare_hot_water_state(
             nominal_setpoint=None,
             reduced_setpoint=None,
+            nominal_setpoint_max=None,
             operating_mode=None,
         )
 
@@ -183,6 +176,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode="3",
     )
 
@@ -196,6 +190,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
         eco_mode_selection="1",
     )
@@ -208,6 +203,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
         dhw_charging_priority="1",
     )
@@ -220,6 +216,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
         legionella_dwelling_time=15.0,
     )
@@ -232,12 +229,13 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     state = mock_bsblan._prepare_hot_water_state(
         nominal_setpoint=None,
         reduced_setpoint=None,
+        nominal_setpoint_max=None,
         operating_mode=None,
-        legionella_circulation_pump="1",
+        legionella_setpoint=60.0,
     )
     assert state == {
-        "Parameter": "1647",
-        "Value": "1",
+        "Parameter": "1645",
+        "Value": "60.0",
         "Type": "1",
     }
 
