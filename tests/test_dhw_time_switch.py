@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from bsblan import BSBLAN, BSBLANError
+from bsblan import BSBLAN, BSBLANError, SetHotWaterParam
 from bsblan.constants import MULTI_PARAMETER_ERROR_MSG
 from bsblan.models import DHWTimeSwitchPrograms
 
@@ -139,13 +139,8 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
     """
     # Test preparing Monday time program
     dhw_programs = DHWTimeSwitchPrograms(monday="13:00-14:00 ##:##-##:## ##:##-##:##")
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        dhw_time_programs=dhw_programs,
-    )
+    params = SetHotWaterParam(dhw_time_programs=dhw_programs)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "561",
         "Value": "13:00-14:00 ##:##-##:## ##:##-##:##",
@@ -154,13 +149,8 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
 
     # Test preparing Tuesday time program
     dhw_programs = DHWTimeSwitchPrograms(tuesday="06:00-08:00 17:00-20:00 ##:##-##:##")
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        dhw_time_programs=dhw_programs,
-    )
+    params = SetHotWaterParam(dhw_time_programs=dhw_programs)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "562",
         "Value": "06:00-08:00 17:00-20:00 ##:##-##:##",
@@ -169,13 +159,8 @@ async def test_prepare_dhw_time_program_state(mock_bsblan: BSBLAN) -> None:
 
     # Test preparing standard values
     dhw_programs = DHWTimeSwitchPrograms(standard_values="0")
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        dhw_time_programs=dhw_programs,
-    )
+    params = SetHotWaterParam(dhw_time_programs=dhw_programs)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "576",
         "Value": "0",
