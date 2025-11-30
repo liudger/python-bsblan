@@ -199,10 +199,10 @@ async def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
             hot_water_config.legionella_function, "desc", "N/A"
         ),
         "Legionella Setpoint": await get_attribute(
-            hot_water_config.legionella_setpoint, "value", "N/A"
+            hot_water_config.legionella_function_setpoint, "value", "N/A"
         ),
         "Legionella Periodicity": await get_attribute(
-            hot_water_config.legionella_periodicity, "value", "N/A"
+            hot_water_config.legionella_function_periodicity, "value", "N/A"
         ),
         "Circulation Pump Release": await get_attribute(
             hot_water_config.dhw_circulation_pump_release, "desc", "N/A"

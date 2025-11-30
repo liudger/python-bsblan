@@ -68,7 +68,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_dwelling_time=15)
+    await mock_bsblan.set_hot_water(legionella_function_dwelling_time=15)
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -78,7 +78,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_setpoint=60.0)
+    await mock_bsblan.set_hot_water(legionella_function_setpoint=60.0)
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -88,7 +88,17 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_time="12:00")
+    await mock_bsblan.set_hot_water(legionella_function_periodicity="7")
+    mock_bsblan._request.assert_awaited_with(
+        base_path="/JS",
+        data={
+            "Parameter": "1641",
+            "Value": "7",
+            "Type": "1",
+        },
+    )
+
+    await mock_bsblan.set_hot_water(legionella_function_time="12:00")
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -98,7 +108,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_day="6")
+    await mock_bsblan.set_hot_water(legionella_function_day="6")
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -218,7 +228,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
         reduced_setpoint=None,
         nominal_setpoint_max=None,
         operating_mode=None,
-        legionella_dwelling_time=15.0,
+        legionella_function_dwelling_time=15.0,
     )
     assert state == {
         "Parameter": "1646",
@@ -231,7 +241,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
         reduced_setpoint=None,
         nominal_setpoint_max=None,
         operating_mode=None,
-        legionella_setpoint=60.0,
+        legionella_function_setpoint=60.0,
     )
     assert state == {
         "Parameter": "1645",
