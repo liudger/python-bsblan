@@ -206,11 +206,11 @@ class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-a
     operating_mode_changeover: EntityInfo | None = None
     # Legionella protection settings
     legionella_function: EntityInfo | None = None
-    legionella_setpoint: EntityInfo | None = None
-    legionella_periodicity: EntityInfo | None = None
+    legionella_function_setpoint: EntityInfo | None = None
+    legionella_function_periodicity: EntityInfo | None = None
     legionella_function_day: EntityInfo | None = None
     legionella_function_time: EntityInfo | None = None
-    legionella_dwelling_time: EntityInfo | None = None
+    legionella_function_dwelling_time: EntityInfo | None = None
     legionella_circulation_pump: EntityInfo | None = None
     legionella_circulation_temp_diff: EntityInfo | None = None
     # DHW circulation pump settings
