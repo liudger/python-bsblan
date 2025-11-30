@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from bsblan import BSBLAN, BSBLANError
+from bsblan import BSBLAN, BSBLANError, SetHotWaterParam
 from bsblan.constants import MULTI_PARAMETER_ERROR_MSG, NO_STATE_ERROR_MSG
 
 
@@ -148,12 +148,8 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
 
     """
     # Test preparing nominal_setpoint
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=60.0,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-    )
+    params = SetHotWaterParam(nominal_setpoint=60.0)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "1610",
         "Value": "60.0",
@@ -161,12 +157,8 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     }
 
     # Test preparing reduced_setpoint
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=40.0,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-    )
+    params = SetHotWaterParam(reduced_setpoint=40.0)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "1612",
         "Value": "40.0",
@@ -174,21 +166,13 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     }
 
     # Test preparing no parameters (should raise an error)
+    params = SetHotWaterParam()
     with pytest.raises(BSBLANError, match=NO_STATE_ERROR_MSG):
-        mock_bsblan._prepare_hot_water_state(
-            nominal_setpoint=None,
-            reduced_setpoint=None,
-            nominal_setpoint_max=None,
-            operating_mode=None,
-        )
+        mock_bsblan._prepare_hot_water_state(params)
 
     # Test preparing operating_mode
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode="3",
-    )
+    params = SetHotWaterParam(operating_mode="3")
+    state = mock_bsblan._prepare_hot_water_state(params)
 
     assert state == {
         "Parameter": "1600",
@@ -197,52 +181,32 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
     }
 
     # Test preparing new parameters
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        eco_mode_selection="1",
-    )
+    params = SetHotWaterParam(eco_mode_selection="1")
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "1601",
         "Value": "1",
         "Type": "1",
     }
 
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        dhw_charging_priority="1",
-    )
+    params = SetHotWaterParam(dhw_charging_priority="1")
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "1630",
         "Value": "1",
         "Type": "1",
     }
 
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        legionella_function_dwelling_time=15.0,
-    )
+    params = SetHotWaterParam(legionella_function_dwelling_time=15.0)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "1646",
         "Value": "15.0",
         "Type": "1",
     }
 
-    state = mock_bsblan._prepare_hot_water_state(
-        nominal_setpoint=None,
-        reduced_setpoint=None,
-        nominal_setpoint_max=None,
-        operating_mode=None,
-        legionella_function_setpoint=60.0,
-    )
+    params = SetHotWaterParam(legionella_function_setpoint=60.0)
+    state = mock_bsblan._prepare_hot_water_state(params)
     assert state == {
         "Parameter": "1645",
         "Value": "60.0",
