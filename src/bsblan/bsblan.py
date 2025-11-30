@@ -897,10 +897,11 @@ class BSBLAN:
         dhw_time_programs: DHWTimeSwitchPrograms | None = None,
         eco_mode_selection: str | None = None,
         dhw_charging_priority: str | None = None,
-        legionella_setpoint: float | None = None,
-        legionella_time: str | None = None,
-        legionella_day: str | None = None,
-        legionella_dwelling_time: float | None = None,
+        legionella_function_setpoint: float | None = None,
+        legionella_function_periodicity: str | None = None,
+        legionella_function_day: str | None = None,
+        legionella_function_time: str | None = None,
+        legionella_function_dwelling_time: float | None = None,
         operating_mode_changeover: str | None = None,
     ) -> None:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
         """Change the state of the hot water system through BSB-Lan.
@@ -913,10 +914,12 @@ class BSBLAN:
             dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
             eco_mode_selection (str | None): Eco mode selection.
             dhw_charging_priority (str | None): DHW charging priority.
-            legionella_setpoint (float | None): Legionella function setpoint.
-            legionella_time (str | None): Time for legionella function.
-            legionella_day (str | None): Legionella function day.
-            legionella_dwelling_time (float | None): Legionella dwelling time.
+            legionella_function_setpoint (float | None): Legionella function setpoint.
+            legionella_function_periodicity (str | None): Legionella function
+                periodicity.
+            legionella_function_day (str | None): Legionella function day.
+            legionella_function_time (str | None): Time for legionella function.
+            legionella_function_dwelling_time (float | None): Legionella dwelling time.
             operating_mode_changeover (str | None): Operating mode changeover.
 
         """
@@ -947,10 +950,11 @@ class BSBLAN:
             operating_mode,
             eco_mode_selection,
             dhw_charging_priority,
-            legionella_setpoint,
-            legionella_time,
-            legionella_day,
-            legionella_dwelling_time,
+            legionella_function_setpoint,
+            legionella_function_periodicity,
+            legionella_function_day,
+            legionella_function_time,
+            legionella_function_dwelling_time,
             operating_mode_changeover,
             *time_program_params,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
@@ -964,10 +968,11 @@ class BSBLAN:
             dhw_time_programs,
             eco_mode_selection,
             dhw_charging_priority,
-            legionella_setpoint,
-            legionella_time,
-            legionella_day,
-            legionella_dwelling_time,
+            legionella_function_setpoint,
+            legionella_function_periodicity,
+            legionella_function_day,
+            legionella_function_time,
+            legionella_function_dwelling_time,
             operating_mode_changeover,
         )
         await self._set_hot_water_state(state)
@@ -981,10 +986,11 @@ class BSBLAN:
         dhw_time_programs: DHWTimeSwitchPrograms | None = None,
         eco_mode_selection: str | None = None,
         dhw_charging_priority: str | None = None,
-        legionella_setpoint: float | None = None,
-        legionella_time: str | None = None,
-        legionella_day: str | None = None,
-        legionella_dwelling_time: float | None = None,
+        legionella_function_setpoint: float | None = None,
+        legionella_function_periodicity: str | None = None,
+        legionella_function_day: str | None = None,
+        legionella_function_time: str | None = None,
+        legionella_function_dwelling_time: float | None = None,
         operating_mode_changeover: str | None = None,
     ) -> dict[str, Any]:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches
         """Prepare the hot water state for setting.
@@ -997,10 +1003,12 @@ class BSBLAN:
             dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
             eco_mode_selection (str | None): Eco mode selection.
             dhw_charging_priority (str | None): DHW charging priority.
-            legionella_setpoint (float | None): Legionella function setpoint.
-            legionella_time (str | None): Time for legionella function.
-            legionella_day (str | None): Legionella function day.
-            legionella_dwelling_time (float | None): Legionella dwelling time.
+            legionella_function_setpoint (float | None): Legionella function setpoint.
+            legionella_function_periodicity (str | None): Legionella function
+                periodicity.
+            legionella_function_day (str | None): Legionella function day.
+            legionella_function_time (str | None): Time for legionella function.
+            legionella_function_dwelling_time (float | None): Legionella dwelling time.
             operating_mode_changeover (str | None): Operating mode changeover.
 
         Returns:
@@ -1047,35 +1055,43 @@ class BSBLAN:
                     "Type": "1",
                 },
             )
-        if legionella_setpoint is not None:
+        if legionella_function_setpoint is not None:
             state.update(
                 {
                     "Parameter": "1645",
-                    "Value": str(legionella_setpoint),
+                    "Value": str(legionella_function_setpoint),
                     "Type": "1",
                 },
             )
-        if legionella_time is not None:
+        if legionella_function_periodicity is not None:
             state.update(
                 {
-                    "Parameter": "1644",
-                    "Value": str(legionella_time),
+                    "Parameter": "1641",
+                    "Value": str(legionella_function_periodicity),
                     "Type": "1",
                 },
             )
-        if legionella_day is not None:
+        if legionella_function_day is not None:
             state.update(
                 {
                     "Parameter": "1642",
-                    "Value": str(legionella_day),
+                    "Value": str(legionella_function_day),
                     "Type": "1",
                 },
             )
-        if legionella_dwelling_time is not None:
+        if legionella_function_time is not None:
+            state.update(
+                {
+                    "Parameter": "1644",
+                    "Value": str(legionella_function_time),
+                    "Type": "1",
+                },
+            )
+        if legionella_function_dwelling_time is not None:
             state.update(
                 {
                     "Parameter": "1646",
-                    "Value": str(legionella_dwelling_time),
+                    "Value": str(legionella_function_dwelling_time),
                     "Type": "1",
                 },
             )
