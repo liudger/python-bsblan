@@ -148,6 +148,49 @@ class EntityInfo(DataClassJSONMixin):
 
 
 @dataclass
+class SetHotWaterParam:
+    """Parameters for setting hot water configuration.
+
+    Use this dataclass to pass parameters to set_hot_water().
+    Only one parameter should be set at a time (BSB-LAN API limitation).
+
+    Note:
+        This is for WRITING to the device. For READING hot water data,
+        use HotWaterState, HotWaterConfig, or HotWaterSchedule.
+
+    Attributes:
+        nominal_setpoint: The nominal setpoint temperature (°C).
+        reduced_setpoint: The reduced setpoint temperature (°C).
+        nominal_setpoint_max: The maximum nominal setpoint temperature (°C).
+        operating_mode: The operating mode (e.g., "0"=Off, "1"=On).
+        dhw_time_programs: Time switch programs for DHW.
+        eco_mode_selection: Eco mode selection.
+        dhw_charging_priority: DHW charging priority.
+        legionella_function_setpoint: Legionella function setpoint temperature (°C).
+        legionella_function_periodicity: Legionella function periodicity.
+        legionella_function_day: Day for legionella function.
+        legionella_function_time: Time for legionella function (HH:MM).
+        legionella_function_dwelling_time: Legionella dwelling time (minutes).
+        operating_mode_changeover: Operating mode changeover.
+
+    """
+
+    nominal_setpoint: float | None = None
+    reduced_setpoint: float | None = None
+    nominal_setpoint_max: float | None = None
+    operating_mode: str | None = None
+    dhw_time_programs: DHWTimeSwitchPrograms | None = None
+    eco_mode_selection: str | None = None
+    dhw_charging_priority: str | None = None
+    legionella_function_setpoint: float | None = None
+    legionella_function_periodicity: str | None = None
+    legionella_function_day: str | None = None
+    legionella_function_time: str | None = None
+    legionella_function_dwelling_time: float | None = None
+    operating_mode_changeover: str | None = None
+
+
+@dataclass
 class State(DataClassJSONMixin):
     """Object that holds information about the state of a climate system."""
 
@@ -178,10 +221,15 @@ class Sensor(DataClassJSONMixin):
 
 @dataclass
 class HotWaterState(DataClassJSONMixin):
-    """Essential hot water state information for frequent polling.
+    """Essential hot water state information (READ from device).
 
     This class contains only the most important hot water parameters
     that are typically checked frequently for monitoring purposes.
+
+    Note:
+        This is for READING from the device. For WRITING parameters,
+        use SetHotWaterParam with set_hot_water().
+
     """
 
     operating_mode: EntityInfo | None = None
@@ -193,10 +241,15 @@ class HotWaterState(DataClassJSONMixin):
 
 @dataclass
 class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-attributes
-    """Hot water configuration and advanced settings.
+    """Hot water configuration and advanced settings (READ from device).
 
     This class contains configuration parameters that are typically
     set once and checked less frequently.
+
+    Note:
+        This is for READING from the device. For WRITING parameters,
+        use SetHotWaterParam with set_hot_water().
+
     """
 
     eco_mode_selection: EntityInfo | None = None
@@ -221,10 +274,15 @@ class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-a
 
 @dataclass
 class HotWaterSchedule(DataClassJSONMixin):
-    """Hot water time program schedules.
+    """Hot water time program schedules (READ from device).
 
     This class contains time program settings that are typically
     configured once and rarely changed.
+
+    Note:
+        This is for READING from the device. For WRITING time programs,
+        use SetHotWaterParam with set_hot_water().
+
     """
 
     dhw_time_program_monday: EntityInfo | None = None
