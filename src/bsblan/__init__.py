@@ -11,6 +11,7 @@ from .models import (
     HotWaterState,
     Info,
     Sensor,
+    SetHotWaterParam,
     State,
     StaticState,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "HotWaterState",
     "Info",
     "Sensor",
+    "SetHotWaterParam",
     "State",
     "StaticState",
 ]

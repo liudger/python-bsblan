@@ -53,6 +53,7 @@ from .models import (
     HotWaterState,
     Info,
     Sensor,
+    SetHotWaterParam,
     State,
     StaticState,
 )
@@ -890,6 +891,8 @@ class BSBLAN:
 
     async def set_hot_water(  # noqa: PLR0913
         self,
+        params: SetHotWaterParam | None = None,
+        *,
         nominal_setpoint: float | None = None,
         reduced_setpoint: float | None = None,
         nominal_setpoint_max: float | None = None,
@@ -906,110 +909,99 @@ class BSBLAN:
     ) -> None:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
         """Change the state of the hot water system through BSB-Lan.
 
+        Can be called with a SetHotWaterParam object or individual parameters.
+        Only one parameter should be set at a time (BSB-LAN API limitation).
+
+        Examples:
+            # Using SetHotWaterParam dataclass:
+            params = SetHotWaterParam(nominal_setpoint=55.0)
+            await client.set_hot_water(params)
+
+            # Using keyword arguments:
+            await client.set_hot_water(nominal_setpoint=55.0)
+
         Args:
-            nominal_setpoint (float | None): The nominal setpoint temperature to set.
-            reduced_setpoint (float | None): The reduced setpoint temperature to set.
-            nominal_setpoint_max (float | None): The nominal setpoint max temperature.
-            operating_mode (str | None): The operating mode to set.
-            dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
-            eco_mode_selection (str | None): Eco mode selection.
-            dhw_charging_priority (str | None): DHW charging priority.
-            legionella_function_setpoint (float | None): Legionella function setpoint.
-            legionella_function_periodicity (str | None): Legionella function
-                periodicity.
-            legionella_function_day (str | None): Legionella function day.
-            legionella_function_time (str | None): Time for legionella function.
-            legionella_function_dwelling_time (float | None): Legionella dwelling time.
-            operating_mode_changeover (str | None): Operating mode changeover.
+            params: SetHotWaterParam object containing the parameter to set.
+            nominal_setpoint: The nominal setpoint temperature to set.
+            reduced_setpoint: The reduced setpoint temperature to set.
+            nominal_setpoint_max: The nominal setpoint max temperature.
+            operating_mode: The operating mode to set.
+            dhw_time_programs: Time switch programs.
+            eco_mode_selection: Eco mode selection.
+            dhw_charging_priority: DHW charging priority.
+            legionella_function_setpoint: Legionella function setpoint.
+            legionella_function_periodicity: Legionella function periodicity.
+            legionella_function_day: Legionella function day.
+            legionella_function_time: Time for legionella function.
+            legionella_function_dwelling_time: Legionella dwelling time.
+            operating_mode_changeover: Operating mode changeover.
 
         """
+        # Build SetHotWaterParam from individual parameters if not provided
+        if params is None:
+            params = SetHotWaterParam(
+                nominal_setpoint=nominal_setpoint,
+                reduced_setpoint=reduced_setpoint,
+                nominal_setpoint_max=nominal_setpoint_max,
+                operating_mode=operating_mode,
+                dhw_time_programs=dhw_time_programs,
+                eco_mode_selection=eco_mode_selection,
+                dhw_charging_priority=dhw_charging_priority,
+                legionella_function_setpoint=legionella_function_setpoint,
+                legionella_function_periodicity=legionella_function_periodicity,
+                legionella_function_day=legionella_function_day,
+                legionella_function_time=legionella_function_time,
+                legionella_function_dwelling_time=legionella_function_dwelling_time,
+                operating_mode_changeover=operating_mode_changeover,
+            )
+
         # Validate only one parameter is being set
-        time_program_params = []
-        if dhw_time_programs:
-            if dhw_time_programs.monday:
-                time_program_params.append(dhw_time_programs.monday)
-            if dhw_time_programs.tuesday:
-                time_program_params.append(dhw_time_programs.tuesday)
-            if dhw_time_programs.wednesday:
-                time_program_params.append(dhw_time_programs.wednesday)
-            if dhw_time_programs.thursday:
-                time_program_params.append(dhw_time_programs.thursday)
-            if dhw_time_programs.friday:
-                time_program_params.append(dhw_time_programs.friday)
-            if dhw_time_programs.saturday:
-                time_program_params.append(dhw_time_programs.saturday)
-            if dhw_time_programs.sunday:
-                time_program_params.append(dhw_time_programs.sunday)
-            if dhw_time_programs.standard_values:
-                time_program_params.append(dhw_time_programs.standard_values)
+        time_program_params: list[str] = []
+        if params.dhw_time_programs:
+            programs = params.dhw_time_programs
+            time_program_params.extend(
+                prog
+                for prog in [
+                    programs.monday,
+                    programs.tuesday,
+                    programs.wednesday,
+                    programs.thursday,
+                    programs.friday,
+                    programs.saturday,
+                    programs.sunday,
+                    programs.standard_values,
+                ]
+                if prog
+            )
 
         self._validate_single_parameter(
-            nominal_setpoint,
-            reduced_setpoint,
-            nominal_setpoint_max,
-            operating_mode,
-            eco_mode_selection,
-            dhw_charging_priority,
-            legionella_function_setpoint,
-            legionella_function_periodicity,
-            legionella_function_day,
-            legionella_function_time,
-            legionella_function_dwelling_time,
-            operating_mode_changeover,
+            params.nominal_setpoint,
+            params.reduced_setpoint,
+            params.nominal_setpoint_max,
+            params.operating_mode,
+            params.eco_mode_selection,
+            params.dhw_charging_priority,
+            params.legionella_function_setpoint,
+            params.legionella_function_periodicity,
+            params.legionella_function_day,
+            params.legionella_function_time,
+            params.legionella_function_dwelling_time,
+            params.operating_mode_changeover,
             *time_program_params,
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
-        state = self._prepare_hot_water_state(
-            nominal_setpoint,
-            reduced_setpoint,
-            nominal_setpoint_max,
-            operating_mode,
-            dhw_time_programs,
-            eco_mode_selection,
-            dhw_charging_priority,
-            legionella_function_setpoint,
-            legionella_function_periodicity,
-            legionella_function_day,
-            legionella_function_time,
-            legionella_function_dwelling_time,
-            operating_mode_changeover,
-        )
+        state = self._prepare_hot_water_state(params)
         await self._set_hot_water_state(state)
 
-    def _prepare_hot_water_state(  # noqa: PLR0913, PLR0912
+    def _prepare_hot_water_state(
         self,
-        nominal_setpoint: float | None,
-        reduced_setpoint: float | None,
-        nominal_setpoint_max: float | None,
-        operating_mode: str | None,
-        dhw_time_programs: DHWTimeSwitchPrograms | None = None,
-        eco_mode_selection: str | None = None,
-        dhw_charging_priority: str | None = None,
-        legionella_function_setpoint: float | None = None,
-        legionella_function_periodicity: str | None = None,
-        legionella_function_day: str | None = None,
-        legionella_function_time: str | None = None,
-        legionella_function_dwelling_time: float | None = None,
-        operating_mode_changeover: str | None = None,
-    ) -> dict[str, Any]:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches
+        params: SetHotWaterParam,
+    ) -> dict[str, Any]:
         """Prepare the hot water state for setting.
 
         Args:
-            nominal_setpoint (float | None): The nominal setpoint temperature to set.
-            reduced_setpoint (float | None): The reduced setpoint temperature to set.
-            nominal_setpoint_max (float | None): The nominal setpoint max temperature.
-            operating_mode (str | None): The operating mode to set.
-            dhw_time_programs (DHWTimeSwitchPrograms | None): Time switch programs.
-            eco_mode_selection (str | None): Eco mode selection.
-            dhw_charging_priority (str | None): DHW charging priority.
-            legionella_function_setpoint (float | None): Legionella function setpoint.
-            legionella_function_periodicity (str | None): Legionella function
-                periodicity.
-            legionella_function_day (str | None): Legionella function day.
-            legionella_function_time (str | None): Time for legionella function.
-            legionella_function_dwelling_time (float | None): Legionella dwelling time.
-            operating_mode_changeover (str | None): Operating mode changeover.
+            params: SetHotWaterParam object containing the parameter to set.
 
         Returns:
             dict[str, Any]: The prepared state for the hot water.
@@ -1018,107 +1010,46 @@ class BSBLAN:
             BSBLANError: If no state is provided.
 
         """
-        state: dict[str, Any] = {}
-        if nominal_setpoint is not None:
-            state.update(
-                {"Parameter": "1610", "Value": str(nominal_setpoint), "Type": "1"},
-            )
-        if reduced_setpoint is not None:
-            state.update(
-                {"Parameter": "1612", "Value": str(reduced_setpoint), "Type": "1"},
-            )
-        if nominal_setpoint_max is not None:
-            state.update(
-                {"Parameter": "1614", "Value": str(nominal_setpoint_max), "Type": "1"},
-            )
-        if operating_mode is not None:
-            state.update(
-                {
-                    "Parameter": "1600",
-                    "Value": str(operating_mode),
-                    "Type": "1",
-                },
-            )
-        if eco_mode_selection is not None:
-            state.update(
-                {
-                    "Parameter": "1601",
-                    "Value": str(eco_mode_selection),
-                    "Type": "1",
-                },
-            )
-        if dhw_charging_priority is not None:
-            state.update(
-                {
-                    "Parameter": "1630",
-                    "Value": str(dhw_charging_priority),
-                    "Type": "1",
-                },
-            )
-        if legionella_function_setpoint is not None:
-            state.update(
-                {
-                    "Parameter": "1645",
-                    "Value": str(legionella_function_setpoint),
-                    "Type": "1",
-                },
-            )
-        if legionella_function_periodicity is not None:
-            state.update(
-                {
-                    "Parameter": "1641",
-                    "Value": str(legionella_function_periodicity),
-                    "Type": "1",
-                },
-            )
-        if legionella_function_day is not None:
-            state.update(
-                {
-                    "Parameter": "1642",
-                    "Value": str(legionella_function_day),
-                    "Type": "1",
-                },
-            )
-        if legionella_function_time is not None:
-            state.update(
-                {
-                    "Parameter": "1644",
-                    "Value": str(legionella_function_time),
-                    "Type": "1",
-                },
-            )
-        if legionella_function_dwelling_time is not None:
-            state.update(
-                {
-                    "Parameter": "1646",
-                    "Value": str(legionella_function_dwelling_time),
-                    "Type": "1",
-                },
-            )
-        if operating_mode_changeover is not None:
-            state.update(
-                {
-                    "Parameter": "1680",
-                    "Value": str(operating_mode_changeover),
-                    "Type": "1",
-                },
-            )
+        # Mapping of parameter IDs to SetHotWaterParam attribute names
+        param_mapping: dict[str, str] = {
+            "1610": "nominal_setpoint",
+            "1612": "reduced_setpoint",
+            "1614": "nominal_setpoint_max",
+            "1600": "operating_mode",
+            "1601": "eco_mode_selection",
+            "1630": "dhw_charging_priority",
+            "1645": "legionella_function_setpoint",
+            "1641": "legionella_function_periodicity",
+            "1642": "legionella_function_day",
+            "1644": "legionella_function_time",
+            "1646": "legionella_function_dwelling_time",
+            "1680": "operating_mode_changeover",
+        }
 
-        if dhw_time_programs:
+        state: dict[str, Any] = {}
+
+        # Process all mapped parameters
+        for param_id, attr_name in param_mapping.items():
+            value = getattr(params, attr_name)
+            if value is not None:
+                state.update({"Parameter": param_id, "Value": str(value), "Type": "1"})
+
+        # Process time programs if provided
+        if params.dhw_time_programs:
             time_program_mapping = {
-                "561": dhw_time_programs.monday,
-                "562": dhw_time_programs.tuesday,
-                "563": dhw_time_programs.wednesday,
-                "564": dhw_time_programs.thursday,
-                "565": dhw_time_programs.friday,
-                "566": dhw_time_programs.saturday,
-                "567": dhw_time_programs.sunday,
-                "576": dhw_time_programs.standard_values,
+                "561": params.dhw_time_programs.monday,
+                "562": params.dhw_time_programs.tuesday,
+                "563": params.dhw_time_programs.wednesday,
+                "564": params.dhw_time_programs.thursday,
+                "565": params.dhw_time_programs.friday,
+                "566": params.dhw_time_programs.saturday,
+                "567": params.dhw_time_programs.sunday,
+                "576": params.dhw_time_programs.standard_values,
             }
 
-            for param, value in time_program_mapping.items():
+            for param_id, value in time_program_mapping.items():
                 if value is not None:
-                    state.update({"Parameter": param, "Value": value, "Type": "1"})
+                    state.update({"Parameter": param_id, "Value": value, "Type": "1"})
 
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
