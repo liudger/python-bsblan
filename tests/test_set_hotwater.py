@@ -138,6 +138,18 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
+    # Test setting with SetHotWaterParam dataclass
+    params = SetHotWaterParam(nominal_setpoint=58.0)
+    await mock_bsblan.set_hot_water(params)
+    mock_bsblan._request.assert_awaited_with(
+        base_path="/JS",
+        data={
+            "Parameter": "1610",
+            "Value": "58.0",
+            "Type": "1",
+        },
+    )
+
 
 @pytest.mark.asyncio
 async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
