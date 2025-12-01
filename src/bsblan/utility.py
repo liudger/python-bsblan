@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +11,65 @@ if TYPE_CHECKING:
     from constants import APIConfig
 
 logger = logging.getLogger(__name__)
+
+
+def validate_time_format(
+    time_value: str,
+    min_year: int,
+    max_year: int,
+) -> None:
+    """Validate the BSB-LAN time format.
+
+    Args:
+        time_value: The time value to validate in format DD.MM.YYYY HH:MM:SS.
+        min_year: Minimum valid year.
+        max_year: Maximum valid year.
+
+    Raises:
+        ValueError: If the time format is invalid.
+
+    """
+    # BSB-LAN supports format: DD.MM.YYYY HH:MM:SS (e.g., "13.08.2025 10:25:55")
+    pattern = r"^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})$"
+
+    match = re.match(pattern, time_value)
+    if not match:
+        msg = f"Invalid time format: {time_value}. Expected DD.MM.YYYY HH:MM:SS"
+        raise ValueError(msg)
+
+    day, month, year, hour, minute, second = map(int, match.groups())
+
+    # Validate ranges
+    if not (1 <= day <= 31):
+        msg = f"Invalid day: {day}"
+        raise ValueError(msg)
+    if not (1 <= month <= 12):
+        msg = f"Invalid month: {month}"
+        raise ValueError(msg)
+    if not (min_year <= year <= max_year):
+        msg = f"Invalid year: {year}"
+        raise ValueError(msg)
+    if not (0 <= hour <= 23):
+        msg = f"Invalid hour: {hour}"
+        raise ValueError(msg)
+    if not (0 <= minute <= 59):
+        msg = f"Invalid minute: {minute}"
+        raise ValueError(msg)
+    if not (0 <= second <= 59):
+        msg = f"Invalid second: {second}"
+        raise ValueError(msg)
+
+    # Additional validation for days per month
+    if month in (4, 6, 9, 11) and day > 30:
+        msg = f"Invalid day {day} for month {month}"
+        raise ValueError(msg)
+    if month == 2:
+        # Leap year check
+        is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+        max_day = 29 if is_leap else 28
+        if day > max_day:
+            msg = f"Invalid day {day} for February in year {year}"
+            raise ValueError(msg)
 
 
 @dataclass

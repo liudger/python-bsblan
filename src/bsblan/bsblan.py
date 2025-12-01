@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
@@ -57,7 +56,7 @@ from .models import (
     State,
     StaticState,
 )
-from .utility import APIValidator
+from .utility import APIValidator, validate_time_format
 
 if TYPE_CHECKING:
     from typing import Self
@@ -70,6 +69,9 @@ SectionLiteral = Literal["heating", "staticValues", "device", "sensor", "hot_wat
 HotWaterDataT = TypeVar(
     "HotWaterDataT", HotWaterState, HotWaterConfig, HotWaterSchedule
 )
+
+# TypeVar for section data models
+SectionDataT = TypeVar("SectionDataT", State, Sensor, StaticState, Info)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -144,15 +146,7 @@ class BSBLAN:
 
         # Initialize API data if not already done
         if self._api_data is None:
-            # Copy each section dictionary to avoid modifying the shared constant
-            source_config: APIConfig = API_VERSIONS[self._api_version]
-            self._api_data = cast(
-                "APIConfig",
-                {
-                    section: cast("dict[str, str]", params).copy()
-                    for section, params in source_config.items()
-                },
-            )
+            self._api_data = self._copy_api_config()
 
         # Initialize the API validator
         self._api_validator = APIValidator(self._api_data)
@@ -380,21 +374,32 @@ class BSBLAN:
 
         """
         if self._api_data is None:
-            if self._api_version is None:
-                raise BSBLANError(API_VERSION_ERROR_MSG)
-            # Copy each section dictionary to avoid modifying the shared constant
-            source_config: APIConfig = API_VERSIONS[self._api_version]
-            self._api_data = cast(
-                "APIConfig",
-                {
-                    section: cast("dict[str, str]", params).copy()
-                    for section, params in source_config.items()
-                },
-            )
+            self._api_data = self._copy_api_config()
             logger.debug("API data initialized for version: %s", self._api_version)
         if self._api_data is None:
             raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
         return self._api_data
+
+    def _copy_api_config(self) -> APIConfig:
+        """Create a copy of the API configuration for the current version.
+
+        Returns:
+            APIConfig: A deep copy of the API configuration.
+
+        Raises:
+            BSBLANError: If the API version is not set.
+
+        """
+        if self._api_version is None:
+            raise BSBLANError(API_VERSION_ERROR_MSG)
+        source_config: APIConfig = API_VERSIONS[self._api_version]
+        return cast(
+            "APIConfig",
+            {
+                section: cast("dict[str, str]", params).copy()
+                for section, params in source_config.items()
+            },
+        )
 
     async def _request(
         self,
@@ -554,6 +559,30 @@ class BSBLAN:
         string_params = ",".join(map(str, params))
         return {"string_par": string_params, "list": list(params.values())}
 
+    async def _fetch_section_data(
+        self,
+        section: SectionLiteral,
+        model_class: type[SectionDataT],
+    ) -> SectionDataT:
+        """Fetch data for a specific API section.
+
+        This is a generic helper method that fetches parameters for a given
+        section and returns the appropriate model.
+
+        Args:
+            section: The API section name to fetch data from.
+            model_class: The dataclass type to deserialize the response into.
+
+        Returns:
+            The populated model instance.
+
+        """
+        section_params = self._api_validator.get_section_params(section)
+        params = await self._extract_params_summary(section_params)
+        data = await self._request(params={"Parameter": params["string_par"]})
+        data = dict(zip(params["list"], list(data.values()), strict=True))
+        return model_class.from_dict(data)
+
     async def state(self) -> State:
         """Get the current state from BSBLAN device.
 
@@ -566,12 +595,7 @@ class BSBLAN:
             representation (e.g., "off", "auto", "eco", "heat").
 
         """
-        # Get validated parameters for heating section
-        heating_params = self._api_validator.get_section_params("heating")
-        params = await self._extract_params_summary(heating_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return State.from_dict(data)
+        return await self._fetch_section_data("heating", State)
 
     async def sensor(self) -> Sensor:
         """Get the sensor information from BSBLAN device.
@@ -580,11 +604,7 @@ class BSBLAN:
             Sensor: The sensor information from the BSBLAN device.
 
         """
-        sensor_params = self._api_validator.get_section_params("sensor")
-        params = await self._extract_params_summary(sensor_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return Sensor.from_dict(data)
+        return await self._fetch_section_data("sensor", Sensor)
 
     async def static_values(self) -> StaticState:
         """Get the static information from BSBLAN device.
@@ -593,11 +613,7 @@ class BSBLAN:
             StaticState: The static information from the BSBLAN device.
 
         """
-        static_params = self._api_validator.get_section_params("staticValues")
-        params = await self._extract_params_summary(static_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return StaticState.from_dict(data)
+        return await self._fetch_section_data("staticValues", StaticState)
 
     async def device(self) -> Device:
         """Get BSBLAN device info.
@@ -616,11 +632,7 @@ class BSBLAN:
             Info: The information about the current heating system config.
 
         """
-        api_data = await self._initialize_api_data()
-        params = await self._extract_params_summary(api_data["device"])
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return Info.from_dict(data)
+        return await self._fetch_section_data("device", Info)
 
     async def time(self) -> DeviceTime:
         """Get the current time from the BSB-LAN device.
@@ -679,7 +691,7 @@ class BSBLAN:
         )
 
         state = self._prepare_thermostat_state(target_temperature, hvac_mode)
-        await self._set_thermostat_state(state)
+        await self._set_device_state(state)
 
     def _prepare_thermostat_state(
         self,
@@ -757,53 +769,18 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the time format is invalid.
 
         """
-        # BSB-LAN supports format: DD.MM.YYYY HH:MM:SS (e.g., "13.08.2025 10:25:55")
-        pattern = r"^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})$"
+        try:
+            validate_time_format(time_value, MIN_VALID_YEAR, MAX_VALID_YEAR)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(str(err)) from err
 
-        match = re.match(pattern, time_value)
-        if not match:
-            msg = f"Invalid time format: {time_value}. Expected DD.MM.YYYY HH:MM:SS"
-            raise BSBLANInvalidParameterError(msg)
+    async def _set_device_state(self, state: dict[str, Any]) -> None:
+        """Set device state via BSB-LAN API.
 
-        day, month, year, hour, minute, second = map(int, match.groups())
-
-        # Validate ranges
-        if not (1 <= day <= 31):
-            msg = f"Invalid day: {day}"
-            raise BSBLANInvalidParameterError(msg)
-        if not (1 <= month <= 12):
-            msg = f"Invalid month: {month}"
-            raise BSBLANInvalidParameterError(msg)
-        if not (MIN_VALID_YEAR <= year <= MAX_VALID_YEAR):
-            msg = f"Invalid year: {year}"
-            raise BSBLANInvalidParameterError(msg)
-        if not (0 <= hour <= 23):
-            msg = f"Invalid hour: {hour}"
-            raise BSBLANInvalidParameterError(msg)
-        if not (0 <= minute <= 59):
-            msg = f"Invalid minute: {minute}"
-            raise BSBLANInvalidParameterError(msg)
-        if not (0 <= second <= 59):
-            msg = f"Invalid second: {second}"
-            raise BSBLANInvalidParameterError(msg)
-
-        # Additional validation for days per month
-        if month in [4, 6, 9, 11] and day > 30:
-            msg = f"Invalid day {day} for month {month}"
-            raise BSBLANInvalidParameterError(msg)
-        if month == 2:
-            # Leap year check
-            is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
-            max_day = 29 if is_leap else 28
-            if day > max_day:
-                msg = f"Invalid day {day} for February in year {year}"
-                raise BSBLANInvalidParameterError(msg)
-
-    async def _set_thermostat_state(self, state: dict[str, Any]) -> None:
-        """Set the thermostat state.
+        This is a unified method for setting thermostat and hot water state.
 
         Args:
-            state (dict[str, Any]): The state to set for the thermostat.
+            state (dict[str, Any]): The state to set on the device.
 
         """
         response = await self._request(base_path="/JS", data=state)
@@ -952,7 +929,7 @@ class BSBLAN:
         )
 
         state = self._prepare_hot_water_state(params)
-        await self._set_hot_water_state(state)
+        await self._set_device_state(state)
 
     def _prepare_hot_water_state(
         self,
@@ -988,13 +965,3 @@ class BSBLAN:
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
         return state
-
-    async def _set_hot_water_state(self, state: dict[str, Any]) -> None:
-        """Set the hot water state.
-
-        Args:
-            state (dict[str, Any]): The state to set for the hot water.
-
-        """
-        response = await self._request(base_path="/JS", data=state)
-        logger.debug("Response for setting: %s", response)
