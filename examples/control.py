@@ -26,6 +26,7 @@ from bsblan import (
     HotWaterState,
     Info,
     Sensor,
+    SetHotWaterParam,
     State,
     StaticState,
 )
@@ -316,7 +317,7 @@ async def main() -> None:
         dhw_programs = DHWTimeSwitchPrograms(
             monday="13:00-14:00 ##:##-##:## ##:##-##:##"
         )
-        await bsblan.set_hot_water(dhw_time_programs=dhw_programs)
+        await bsblan.set_hot_water(SetHotWaterParam(dhw_time_programs=dhw_programs))
 
         # Example: Set device time
         print("\nSetting device time to current system time")

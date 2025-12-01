@@ -245,3 +245,32 @@ HOT_WATER_SCHEDULE_PARAMS: Final[set[str]] = {
         "dhw_time_program_standard_values",
     }
 }
+
+# Settable hot water parameters mapping (param_id -> attribute name)
+# Used by set_hot_water to map SetHotWaterParam attributes to BSB-LAN parameter IDs
+SETTABLE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
+    "1610": "nominal_setpoint",
+    "1612": "reduced_setpoint",
+    "1614": "nominal_setpoint_max",
+    "1600": "operating_mode",
+    "1601": "eco_mode_selection",
+    "1630": "dhw_charging_priority",
+    "1645": "legionella_function_setpoint",
+    "1641": "legionella_function_periodicity",
+    "1642": "legionella_function_day",
+    "1644": "legionella_function_time",
+    "1646": "legionella_function_dwelling_time",
+    "1680": "operating_mode_changeover",
+}
+
+# DHW time program parameter mappings
+DHW_TIME_PROGRAM_PARAMS: Final[dict[str, str]] = {
+    "561": "monday",
+    "562": "tuesday",
+    "563": "wednesday",
+    "564": "thursday",
+    "565": "friday",
+    "566": "saturday",
+    "567": "sunday",
+    "576": "standard_values",
+}
