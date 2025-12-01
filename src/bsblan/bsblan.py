@@ -73,7 +73,6 @@ HotWaterDataT = TypeVar(
 # TypeVar for section data models
 SectionDataT = TypeVar("SectionDataT", State, Sensor, StaticState, Info)
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
