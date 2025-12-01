@@ -125,7 +125,7 @@ async def test_change_hvac_mode(
         "POST",
         create_response_handler(expected_data),
     )
-    await mock_bsblan.thermostat(hvac_mode="auto")
+    await mock_bsblan.thermostat(hvac_mode=1)  # 1 = auto
 
 
 @pytest.mark.asyncio
@@ -139,7 +139,7 @@ async def test_invalid_temperature(mock_bsblan: BSBLAN) -> None:
 async def test_invalid_hvac_mode(mock_bsblan: BSBLAN) -> None:
     """Test setting an invalid HVAC mode."""
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.thermostat(hvac_mode="invalid_mode")
+        await mock_bsblan.thermostat(hvac_mode=99)  # Invalid mode value
 
 
 @pytest.mark.asyncio

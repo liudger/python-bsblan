@@ -49,7 +49,7 @@ async def test_state(monkeypatch: Any) -> None:
 
         # HVAC mode assertions
         assert state.hvac_mode is not None
-        assert state.hvac_mode.value == "heat"  # Converted from "3" to "heat"
+        assert state.hvac_mode.value == 3  # Raw integer from device
         assert state.hvac_mode.desc == "Comfort"
         assert state.hvac_mode.unit == ""
 
