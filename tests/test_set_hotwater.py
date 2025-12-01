@@ -22,7 +22,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
     """
     # Test setting nominal_setpoint
     assert isinstance(mock_bsblan._request, AsyncMock)
-    await mock_bsblan.set_hot_water(nominal_setpoint=60.0)
+    await mock_bsblan.set_hot_water(SetHotWaterParam(nominal_setpoint=60.0))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -33,7 +33,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting reduced_setpoint
-    await mock_bsblan.set_hot_water(reduced_setpoint=40.0)
+    await mock_bsblan.set_hot_water(SetHotWaterParam(reduced_setpoint=40.0))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -45,10 +45,12 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
 
     # Test setting multiple parameters (should raise an error)
     with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
-        await mock_bsblan.set_hot_water(nominal_setpoint=60.0, reduced_setpoint=40.0)
+        await mock_bsblan.set_hot_water(
+            SetHotWaterParam(nominal_setpoint=60.0, reduced_setpoint=40.0)
+        )
 
     # Test setting new parameters
-    await mock_bsblan.set_hot_water(eco_mode_selection="1")
+    await mock_bsblan.set_hot_water(SetHotWaterParam(eco_mode_selection="1"))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -58,7 +60,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(dhw_charging_priority="1")
+    await mock_bsblan.set_hot_water(SetHotWaterParam(dhw_charging_priority="1"))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -68,7 +70,9 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_function_dwelling_time=15)
+    await mock_bsblan.set_hot_water(
+        SetHotWaterParam(legionella_function_dwelling_time=15)
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -78,7 +82,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_function_setpoint=60.0)
+    await mock_bsblan.set_hot_water(SetHotWaterParam(legionella_function_setpoint=60.0))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -88,7 +92,9 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_function_periodicity="7")
+    await mock_bsblan.set_hot_water(
+        SetHotWaterParam(legionella_function_periodicity="7")
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -98,7 +104,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_function_time="12:00")
+    await mock_bsblan.set_hot_water(SetHotWaterParam(legionella_function_time="12:00"))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -108,7 +114,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(legionella_function_day="6")
+    await mock_bsblan.set_hot_water(SetHotWaterParam(legionella_function_day="6"))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -118,7 +124,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(nominal_setpoint_max=65.0)
+    await mock_bsblan.set_hot_water(SetHotWaterParam(nominal_setpoint_max=65.0))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
@@ -128,24 +134,12 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
         },
     )
 
-    await mock_bsblan.set_hot_water(operating_mode_changeover="1")
+    await mock_bsblan.set_hot_water(SetHotWaterParam(operating_mode_changeover="1"))
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={
             "Parameter": "1680",
             "Value": "1",
-            "Type": "1",
-        },
-    )
-
-    # Test setting with SetHotWaterParam dataclass
-    params = SetHotWaterParam(nominal_setpoint=58.0)
-    await mock_bsblan.set_hot_water(params)
-    mock_bsblan._request.assert_awaited_with(
-        base_path="/JS",
-        data={
-            "Parameter": "1610",
-            "Value": "58.0",
             "Type": "1",
         },
     )
