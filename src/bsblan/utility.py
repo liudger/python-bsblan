@@ -89,7 +89,6 @@ class APIValidator:
 
         """
         # Check if the section exists in the APIConfig object
-        section_config = getattr(self.api_config, section, None)
         if section not in self.api_config:
             logger.warning("Unknown section '%s' in API configuration", section)
             return

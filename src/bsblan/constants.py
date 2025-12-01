@@ -2,18 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Final, NotRequired, TypedDict
-
-
-# API Config Types
-class APIConfigSection(TypedDict):
-    """Type for API configuration section."""
-
-    heating: NotRequired[dict[str, str]]
-    staticValues: NotRequired[dict[str, str]]
-    device: NotRequired[dict[str, str]]
-    sensor: NotRequired[dict[str, str]]
-    hot_water: NotRequired[dict[str, str]]
+from typing import Final, TypedDict
 
 
 # API Versions
@@ -139,26 +128,10 @@ API_VERSIONS: Final[dict[str, APIConfig]] = {
     "v3": API_V3,
 }
 
-# HVAC Modes
-HVAC_MODE_DICT: Final[dict[int, str]] = {
-    0: "off",
-    1: "auto",
-    2: "eco",
-    3: "heat",
-}
-
-HVAC_MODE_DICT_REVERSE: Final[dict[str, int]] = {
-    "off": 0,
-    "auto": 1,
-    "eco": 2,
-    "heat": 3,
-}
-
 # Valid HVAC mode values for validation
 VALID_HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
 
 # Error Messages
-INVALID_VALUES_ERROR_MSG: Final[str] = "Invalid values provided."
 NO_STATE_ERROR_MSG: Final[str] = "No state provided."
 VERSION_ERROR_MSG: Final[str] = "Version not supported"
 FIRMWARE_VERSION_ERROR_MSG: Final[str] = "Firmware version not available"
@@ -169,22 +142,9 @@ SESSION_NOT_INITIALIZED_ERROR_MSG: Final[str] = "Session not initialized"
 API_DATA_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API data not initialized"
 API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API validator not initialized"
 
-
-# Other Constants
-DEFAULT_PORT: Final[int] = 80
-SCAN_INTERVAL: Final[int] = 12  # seconds
-
 # Time validation constants
 MIN_VALID_YEAR: Final[int] = 1900  # Reasonable minimum year for BSB-LAN devices
 MAX_VALID_YEAR: Final[int] = 2100  # Reasonable maximum year for BSB-LAN devices
-
-# Configuration Keys
-CONF_PASSKEY: Final[str] = "passkey"
-
-# Attributes
-ATTR_TARGET_TEMPERATURE: Final[str] = "target_temperature"
-ATTR_INSIDE_TEMPERATURE: Final[str] = "inside_temperature"
-ATTR_OUTSIDE_TEMPERATURE: Final[str] = "outside_temperature"
 
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
