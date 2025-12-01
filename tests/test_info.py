@@ -3,6 +3,7 @@
 # file deepcode ignore W0212: this is a testfile
 
 from typing import Any
+from unittest.mock import MagicMock
 
 import aiohttp
 import pytest
@@ -33,6 +34,15 @@ async def test_info(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         # set _api_version
         monkeypatch.setattr(bsblan, "_api_version", "v3")
+
+        # Mock _api_validator with device section params
+        mock_validator = MagicMock()
+        mock_validator.get_section_params.return_value = {
+            "6224": "device_identification",
+            "6225": "controller_family",
+            "6226": "controller_variant",
+        }
+        object.__setattr__(bsblan, "_api_validator", mock_validator)
 
         info: Info = await bsblan.info()
         assert info
