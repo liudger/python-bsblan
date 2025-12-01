@@ -4,7 +4,7 @@ This repository contains the `python-bsblan` library, an asynchronous Python cli
 
 ## Project Overview
 
-- **Language**: Python 3.11+
+- **Language**: Python 3.12+
 - **Type**: Async library using `aiohttp`
 - **Purpose**: Communicate with BSB-LAN devices to read/write heating parameters
 - **License**: MIT
@@ -26,8 +26,10 @@ uv run pre-commit run --all-files
 - **Pylint**: Code analysis
 - **Pytest**: Test execution with coverage
 
-### Coverage Requirement
-- Maintain **95%+ test coverage**
+### Coverage Requirements
+- Maintain **95%+ total test coverage**
+- **Patch coverage must be 100%** - all new/modified code must be fully tested
+- GitHub Actions will fail if patch coverage is below 100%
 - Run coverage check: `uv run pytest --cov=src/bsblan --cov-report=term-missing`
 
 ## Project Structure
