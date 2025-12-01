@@ -136,10 +136,44 @@ async def test_invalid_temperature(mock_bsblan: BSBLAN) -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_hvac_mode(mock_bsblan: BSBLAN) -> None:
+@pytest.mark.parametrize(
+    "invalid_mode",
+    [
+        -1,  # Negative value
+        4,  # Just above valid range (0-3)
+        99,  # Far outside valid range
+    ],
+)
+async def test_invalid_hvac_mode(mock_bsblan: BSBLAN, invalid_mode: int) -> None:
     """Test setting an invalid HVAC mode."""
     with pytest.raises(BSBLANInvalidParameterError):
-        await mock_bsblan.thermostat(hvac_mode=99)  # Invalid mode value
+        await mock_bsblan.thermostat(hvac_mode=invalid_mode)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "valid_mode",
+    [
+        0,  # off - lower boundary
+        1,  # auto
+        2,  # reduced
+        3,  # heat - upper boundary
+    ],
+)
+async def test_valid_hvac_mode_boundaries(
+    mock_bsblan: BSBLAN,
+    aresponses: ResponsesMockServer,
+    valid_mode: int,
+) -> None:
+    """Test that all valid HVAC modes (0-3) are accepted."""
+    expected_data = {"Parameter": "700", "Value": str(valid_mode), "Type": "1"}
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan.thermostat(hvac_mode=valid_mode)
 
 
 @pytest.mark.asyncio
