@@ -271,9 +271,9 @@ async def main() -> None:
         print("\nSetting temperature to 18°C")
         await bsblan.thermostat(target_temperature="18")
 
-        # Set HVAC mode
+        # Set HVAC mode (using raw integer: 0=off, 1=auto, 2=eco, 3=heat)
         print("Setting HVAC mode to heat")
-        await bsblan.thermostat(hvac_mode="heat")
+        await bsblan.thermostat(hvac_mode=3)  # 3 = heat
 
         # Get and print sensor information
         sensor: Sensor = await bsblan.sensor()

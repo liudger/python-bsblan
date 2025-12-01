@@ -26,14 +26,13 @@ from .constants import (
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
-    HVAC_MODE_DICT,
-    HVAC_MODE_DICT_REVERSE,
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
     MULTI_PARAMETER_ERROR_MSG,
     NO_STATE_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     TEMPERATURE_RANGE_ERROR_MSG,
+    VALID_HVAC_MODES,
     VERSION_ERROR_MSG,
     APIConfig,
 )
@@ -555,14 +554,17 @@ class BSBLAN:
         Returns:
             State: The current state of the BSBLAN device.
 
+        Note:
+            The hvac_mode.value is returned as a raw integer from the device.
+            Use HVAC_MODE_DICT from bsblan.constants to convert to string
+            representation (e.g., "off", "auto", "eco", "heat").
+
         """
         # Get validated parameters for heating section
         heating_params = self._api_validator.get_section_params("heating")
         params = await self._extract_params_summary(heating_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
-        # we should convert this in homeassistant integration?
-        data["hvac_mode"]["value"] = HVAC_MODE_DICT[int(data["hvac_mode"]["value"])]
         return State.from_dict(data)
 
     async def sensor(self) -> Sensor:
@@ -650,13 +652,16 @@ class BSBLAN:
     async def thermostat(
         self,
         target_temperature: str | None = None,
-        hvac_mode: str | None = None,
+        hvac_mode: int | None = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan.
 
         Args:
             target_temperature (str | None): The target temperature to set.
-            hvac_mode (str | None): The HVAC mode to set.
+            hvac_mode (int | None): The HVAC mode to set as raw integer value.
+                Valid values: 0=off, 1=auto, 2=eco, 3=heat.
+                Use HVAC_MODE_DICT_REVERSE from bsblan.constants to convert
+                string names to integers.
 
         """
         await self._initialize_temperature_range()
@@ -673,13 +678,13 @@ class BSBLAN:
     def _prepare_thermostat_state(
         self,
         target_temperature: str | None,
-        hvac_mode: str | None,
+        hvac_mode: int | None,
     ) -> dict[str, Any]:
         """Prepare the thermostat state for setting.
 
         Args:
             target_temperature (str | None): The target temperature to set.
-            hvac_mode (str | None): The HVAC mode to set.
+            hvac_mode (int | None): The HVAC mode to set as raw integer.
 
         Returns:
             dict[str, Any]: The prepared state for the thermostat.
@@ -696,7 +701,7 @@ class BSBLAN:
             state.update(
                 {
                     "Parameter": "700",
-                    "Value": str(HVAC_MODE_DICT_REVERSE[hvac_mode]),
+                    "Value": str(hvac_mode),
                     "Type": "1",
                 },
             )
@@ -723,18 +728,18 @@ class BSBLAN:
         except ValueError as err:
             raise BSBLANInvalidParameterError(target_temperature) from err
 
-    def _validate_hvac_mode(self, hvac_mode: str) -> None:
+    def _validate_hvac_mode(self, hvac_mode: int) -> None:
         """Validate the HVAC mode.
 
         Args:
-            hvac_mode (str): The HVAC mode to validate.
+            hvac_mode (int): The HVAC mode to validate (0-3).
 
         Raises:
             BSBLANInvalidParameterError: If the HVAC mode is invalid.
 
         """
-        if hvac_mode not in HVAC_MODE_DICT_REVERSE:
-            raise BSBLANInvalidParameterError(hvac_mode)
+        if hvac_mode not in VALID_HVAC_MODES:
+            raise BSBLANInvalidParameterError(str(hvac_mode))
 
     def _validate_time_format(self, time_value: str) -> None:
         """Validate the time format.
@@ -912,29 +917,35 @@ class BSBLAN:
         Can be called with a SetHotWaterParam object or individual parameters.
         Only one parameter should be set at a time (BSB-LAN API limitation).
 
+        .. deprecated::
+            The individual keyword arguments (nominal_setpoint, reduced_setpoint,
+            etc.) are deprecated and will be removed in a future release.
+            Use the `params` argument with a `SetHotWaterParam` object instead.
+
         Examples:
-            # Using SetHotWaterParam dataclass:
+            # Recommended: Using SetHotWaterParam dataclass
             params = SetHotWaterParam(nominal_setpoint=55.0)
             await client.set_hot_water(params)
 
-            # Using keyword arguments:
+            # Deprecated: Using keyword arguments (will be removed in future release)
             await client.set_hot_water(nominal_setpoint=55.0)
 
         Args:
             params: SetHotWaterParam object containing the parameter to set.
-            nominal_setpoint: The nominal setpoint temperature to set.
-            reduced_setpoint: The reduced setpoint temperature to set.
-            nominal_setpoint_max: The nominal setpoint max temperature.
-            operating_mode: The operating mode to set.
-            dhw_time_programs: Time switch programs.
-            eco_mode_selection: Eco mode selection.
-            dhw_charging_priority: DHW charging priority.
-            legionella_function_setpoint: Legionella function setpoint.
-            legionella_function_periodicity: Legionella function periodicity.
-            legionella_function_day: Legionella function day.
-            legionella_function_time: Time for legionella function.
-            legionella_function_dwelling_time: Legionella dwelling time.
-            operating_mode_changeover: Operating mode changeover.
+                This is the recommended way to pass parameters.
+            nominal_setpoint: Deprecated. Use SetHotWaterParam instead.
+            reduced_setpoint: Deprecated. Use SetHotWaterParam instead.
+            nominal_setpoint_max: Deprecated. Use SetHotWaterParam instead.
+            operating_mode: Deprecated. Use SetHotWaterParam instead.
+            dhw_time_programs: Deprecated. Use SetHotWaterParam instead.
+            eco_mode_selection: Deprecated. Use SetHotWaterParam instead.
+            dhw_charging_priority: Deprecated. Use SetHotWaterParam instead.
+            legionella_function_setpoint: Deprecated. Use SetHotWaterParam.
+            legionella_function_periodicity: Deprecated. Use SetHotWaterParam.
+            legionella_function_day: Deprecated. Use SetHotWaterParam.
+            legionella_function_time: Deprecated. Use SetHotWaterParam.
+            legionella_function_dwelling_time: Deprecated. Use SetHotWaterParam.
+            operating_mode_changeover: Deprecated. Use SetHotWaterParam.
 
         """
         # Build SetHotWaterParam from individual parameters if not provided

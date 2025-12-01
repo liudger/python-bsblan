@@ -154,6 +154,9 @@ HVAC_MODE_DICT_REVERSE: Final[dict[str, int]] = {
     "heat": 3,
 }
 
+# Valid HVAC mode values for validation
+VALID_HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
+
 # Error Messages
 INVALID_VALUES_ERROR_MSG: Final[str] = "Invalid values provided."
 NO_STATE_ERROR_MSG: Final[str] = "No state provided."
