@@ -221,10 +221,10 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_hot_water_state(
+async def test_set_device_state(
     mock_bsblan: BSBLAN,
 ) -> None:
-    """Test setting hot water state.
+    """Test setting device state via unified method.
 
     Args:
         mock_bsblan (BSBLAN): The mock BSBLAN instance.
@@ -235,6 +235,6 @@ async def test_set_hot_water_state(
         "Value": "3",
         "Type": "1",
     }
-    await mock_bsblan._set_hot_water_state(state)
+    await mock_bsblan._set_device_state(state)
     assert isinstance(mock_bsblan._request, AsyncMock)  # Type check
     mock_bsblan._request.assert_awaited_with(base_path="/JS", data=state)
