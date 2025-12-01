@@ -6,7 +6,7 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -22,6 +22,7 @@ from .constants import (
     API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
     API_VERSION_ERROR_MSG,
     API_VERSIONS,
+    DHW_TIME_PROGRAM_PARAMS,
     FIRMWARE_VERSION_ERROR_MSG,
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
@@ -31,6 +32,7 @@ from .constants import (
     MULTI_PARAMETER_ERROR_MSG,
     NO_STATE_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
+    SETTABLE_HOT_WATER_PARAMS,
     TEMPERATURE_RANGE_ERROR_MSG,
     VALID_HVAC_MODES,
     VERSION_ERROR_MSG,
@@ -46,7 +48,6 @@ from .exceptions import (
 from .models import (
     Device,
     DeviceTime,
-    DHWTimeSwitchPrograms,
     HotWaterConfig,
     HotWaterSchedule,
     HotWaterState,
@@ -64,6 +65,11 @@ if TYPE_CHECKING:
     from aiohttp.client import ClientSession
 
 SectionLiteral = Literal["heating", "staticValues", "device", "sensor", "hot_water"]
+
+# TypeVar for hot water data models
+HotWaterDataT = TypeVar(
+    "HotWaterDataT", HotWaterState, HotWaterConfig, HotWaterSchedule
+)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -803,6 +809,47 @@ class BSBLAN:
         response = await self._request(base_path="/JS", data=state)
         logger.debug("Response for setting: %s", response)
 
+    async def _fetch_hot_water_data(
+        self,
+        param_filter: set[str],
+        model_class: type[HotWaterDataT],
+        error_msg: str,
+    ) -> HotWaterDataT:
+        """Fetch hot water data for a specific parameter set.
+
+        This is a generic helper method that fetches hot water parameters
+        based on the provided filter and returns the appropriate model.
+
+        Args:
+            param_filter: Set of parameter IDs to fetch.
+            model_class: The dataclass type to deserialize the response into.
+            error_msg: Error message if no parameters are available.
+
+        Returns:
+            The populated model instance.
+
+        Raises:
+            BSBLANError: If no parameters are available for the filter.
+
+        """
+        hotwater_params = (
+            self._hot_water_param_cache
+            or self._api_validator.get_section_params("hot_water")
+        )
+        filtered_params = {
+            param_id: param_name
+            for param_id, param_name in hotwater_params.items()
+            if param_id in param_filter
+        }
+
+        if not filtered_params:
+            raise BSBLANError(error_msg)
+
+        params = await self._extract_params_summary(filtered_params)
+        data = await self._request(params={"Parameter": params["string_par"]})
+        data = dict(zip(params["list"], list(data.values()), strict=True))
+        return model_class.from_dict(data)
+
     async def hot_water_state(self) -> HotWaterState:
         """Get essential hot water state for frequent polling.
 
@@ -814,25 +861,11 @@ class BSBLAN:
             HotWaterState: Essential hot water state information.
 
         """
-        # Use cached parameters or fall back to API validator
-        hotwater_params = (
-            self._hot_water_param_cache
-            or self._api_validator.get_section_params("hot_water")
+        return await self._fetch_hot_water_data(
+            param_filter=HOT_WATER_ESSENTIAL_PARAMS,
+            model_class=HotWaterState,
+            error_msg="No essential hot water parameters available",
         )
-        essential_params = {
-            param_id: param_name
-            for param_id, param_name in hotwater_params.items()
-            if param_id in HOT_WATER_ESSENTIAL_PARAMS
-        }
-
-        if not essential_params:
-            msg = "No essential hot water parameters available"
-            raise BSBLANError(msg)
-
-        params = await self._extract_params_summary(essential_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return HotWaterState.from_dict(data)
 
     async def hot_water_config(self) -> HotWaterConfig:
         """Get hot water configuration and advanced settings.
@@ -844,25 +877,11 @@ class BSBLAN:
             HotWaterConfig: Hot water configuration information.
 
         """
-        # Use cached parameters or fall back to API validator
-        hotwater_params = (
-            self._hot_water_param_cache
-            or self._api_validator.get_section_params("hot_water")
+        return await self._fetch_hot_water_data(
+            param_filter=HOT_WATER_CONFIG_PARAMS,
+            model_class=HotWaterConfig,
+            error_msg="No hot water configuration parameters available",
         )
-        config_params = {
-            param_id: param_name
-            for param_id, param_name in hotwater_params.items()
-            if param_id in HOT_WATER_CONFIG_PARAMS
-        }
-
-        if not config_params:
-            msg = "No hot water configuration parameters available"
-            raise BSBLANError(msg)
-
-        params = await self._extract_params_summary(config_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return HotWaterConfig.from_dict(data)
 
     async def hot_water_schedule(self) -> HotWaterSchedule:
         """Get hot water time program schedules.
@@ -874,98 +893,28 @@ class BSBLAN:
             HotWaterSchedule: Hot water schedule information.
 
         """
-        # Use cached parameters or fall back to API validator
-        hotwater_params = (
-            self._hot_water_param_cache
-            or self._api_validator.get_section_params("hot_water")
+        return await self._fetch_hot_water_data(
+            param_filter=HOT_WATER_SCHEDULE_PARAMS,
+            model_class=HotWaterSchedule,
+            error_msg="No hot water schedule parameters available",
         )
-        schedule_params = {
-            param_id: param_name
-            for param_id, param_name in hotwater_params.items()
-            if param_id in HOT_WATER_SCHEDULE_PARAMS
-        }
 
-        if not schedule_params:
-            msg = "No hot water schedule parameters available"
-            raise BSBLANError(msg)
-
-        params = await self._extract_params_summary(schedule_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
-        return HotWaterSchedule.from_dict(data)
-
-    async def set_hot_water(  # noqa: PLR0913
-        self,
-        params: SetHotWaterParam | None = None,
-        *,
-        nominal_setpoint: float | None = None,
-        reduced_setpoint: float | None = None,
-        nominal_setpoint_max: float | None = None,
-        operating_mode: str | None = None,
-        dhw_time_programs: DHWTimeSwitchPrograms | None = None,
-        eco_mode_selection: str | None = None,
-        dhw_charging_priority: str | None = None,
-        legionella_function_setpoint: float | None = None,
-        legionella_function_periodicity: str | None = None,
-        legionella_function_day: str | None = None,
-        legionella_function_time: str | None = None,
-        legionella_function_dwelling_time: float | None = None,
-        operating_mode_changeover: str | None = None,
-    ) -> None:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
-        Can be called with a SetHotWaterParam object or individual parameters.
         Only one parameter should be set at a time (BSB-LAN API limitation).
 
-        .. deprecated::
-            The individual keyword arguments (nominal_setpoint, reduced_setpoint,
-            etc.) are deprecated and will be removed in a future release.
-            Use the `params` argument with a `SetHotWaterParam` object instead.
-
-        Examples:
-            # Recommended: Using SetHotWaterParam dataclass
+        Example:
             params = SetHotWaterParam(nominal_setpoint=55.0)
             await client.set_hot_water(params)
 
-            # Deprecated: Using keyword arguments (will be removed in future release)
-            await client.set_hot_water(nominal_setpoint=55.0)
-
         Args:
             params: SetHotWaterParam object containing the parameter to set.
-                This is the recommended way to pass parameters.
-            nominal_setpoint: Deprecated. Use SetHotWaterParam instead.
-            reduced_setpoint: Deprecated. Use SetHotWaterParam instead.
-            nominal_setpoint_max: Deprecated. Use SetHotWaterParam instead.
-            operating_mode: Deprecated. Use SetHotWaterParam instead.
-            dhw_time_programs: Deprecated. Use SetHotWaterParam instead.
-            eco_mode_selection: Deprecated. Use SetHotWaterParam instead.
-            dhw_charging_priority: Deprecated. Use SetHotWaterParam instead.
-            legionella_function_setpoint: Deprecated. Use SetHotWaterParam.
-            legionella_function_periodicity: Deprecated. Use SetHotWaterParam.
-            legionella_function_day: Deprecated. Use SetHotWaterParam.
-            legionella_function_time: Deprecated. Use SetHotWaterParam.
-            legionella_function_dwelling_time: Deprecated. Use SetHotWaterParam.
-            operating_mode_changeover: Deprecated. Use SetHotWaterParam.
+
+        Raises:
+            BSBLANError: If multiple parameters are set or no parameter is set.
 
         """
-        # Build SetHotWaterParam from individual parameters if not provided
-        if params is None:
-            params = SetHotWaterParam(
-                nominal_setpoint=nominal_setpoint,
-                reduced_setpoint=reduced_setpoint,
-                nominal_setpoint_max=nominal_setpoint_max,
-                operating_mode=operating_mode,
-                dhw_time_programs=dhw_time_programs,
-                eco_mode_selection=eco_mode_selection,
-                dhw_charging_priority=dhw_charging_priority,
-                legionella_function_setpoint=legionella_function_setpoint,
-                legionella_function_periodicity=legionella_function_periodicity,
-                legionella_function_day=legionella_function_day,
-                legionella_function_time=legionella_function_time,
-                legionella_function_dwelling_time=legionella_function_dwelling_time,
-                operating_mode_changeover=operating_mode_changeover,
-            )
-
         # Validate only one parameter is being set
         time_program_params: list[str] = []
         if params.dhw_time_programs:
@@ -1021,44 +970,18 @@ class BSBLAN:
             BSBLANError: If no state is provided.
 
         """
-        # Mapping of parameter IDs to SetHotWaterParam attribute names
-        param_mapping: dict[str, str] = {
-            "1610": "nominal_setpoint",
-            "1612": "reduced_setpoint",
-            "1614": "nominal_setpoint_max",
-            "1600": "operating_mode",
-            "1601": "eco_mode_selection",
-            "1630": "dhw_charging_priority",
-            "1645": "legionella_function_setpoint",
-            "1641": "legionella_function_periodicity",
-            "1642": "legionella_function_day",
-            "1644": "legionella_function_time",
-            "1646": "legionella_function_dwelling_time",
-            "1680": "operating_mode_changeover",
-        }
-
         state: dict[str, Any] = {}
 
-        # Process all mapped parameters
-        for param_id, attr_name in param_mapping.items():
+        # Process all mapped parameters using constants
+        for param_id, attr_name in SETTABLE_HOT_WATER_PARAMS.items():
             value = getattr(params, attr_name)
             if value is not None:
                 state.update({"Parameter": param_id, "Value": str(value), "Type": "1"})
 
-        # Process time programs if provided
+        # Process time programs if provided using constants
         if params.dhw_time_programs:
-            time_program_mapping = {
-                "561": params.dhw_time_programs.monday,
-                "562": params.dhw_time_programs.tuesday,
-                "563": params.dhw_time_programs.wednesday,
-                "564": params.dhw_time_programs.thursday,
-                "565": params.dhw_time_programs.friday,
-                "566": params.dhw_time_programs.saturday,
-                "567": params.dhw_time_programs.sunday,
-                "576": params.dhw_time_programs.standard_values,
-            }
-
-            for param_id, value in time_program_mapping.items():
+            for param_id, attr_name in DHW_TIME_PROGRAM_PARAMS.items():
+                value = getattr(params.dhw_time_programs, attr_name)
                 if value is not None:
                     state.update({"Parameter": param_id, "Value": value, "Type": "1"})
 
