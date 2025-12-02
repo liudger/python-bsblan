@@ -7,14 +7,14 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import time
 from enum import IntEnum
-from typing import Any
+from typing import Any, Final
 
 from mashumaro.mixins.json import DataClassJSONMixin
 
 from bsblan.constants import TEMPERATURE_UNITS
 
 # Maximum number of time slots per day supported by BSB-LAN
-MAX_TIME_SLOTS_PER_DAY = 3
+MAX_TIME_SLOTS_PER_DAY: Final[int] = 3
 
 
 @dataclass
