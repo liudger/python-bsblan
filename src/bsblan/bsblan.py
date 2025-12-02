@@ -961,15 +961,10 @@ class BSBLAN:
         if not schedule.has_any_schedule():
             raise BSBLANError(NO_SCHEDULE_ERROR_MSG)
 
-        # Map day names to parameter IDs
+        # Invert DHW_TIME_PROGRAM_PARAMS to get day_name -> param_id mapping
+        # Exclude standard_values as it's not a day of the week
         day_param_map = {
-            "monday": "561",
-            "tuesday": "562",
-            "wednesday": "563",
-            "thursday": "564",
-            "friday": "565",
-            "saturday": "566",
-            "sunday": "567",
+            v: k for k, v in DHW_TIME_PROGRAM_PARAMS.items() if v != "standard_values"
         }
 
         for day_name, param_id in day_param_map.items():
