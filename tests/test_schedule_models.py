@@ -162,9 +162,7 @@ class TestDaySchedule:
         bsblan_str = original.to_bsblan_format()
         parsed = DaySchedule.from_bsblan_format(bsblan_str)
         assert len(parsed.slots) == len(original.slots)
-        for orig_slot, parsed_slot in zip(
-            original.slots, parsed.slots, strict=False
-        ):
+        for orig_slot, parsed_slot in zip(original.slots, parsed.slots, strict=False):
             assert orig_slot.start == parsed_slot.start
             assert orig_slot.end == parsed_slot.end
 

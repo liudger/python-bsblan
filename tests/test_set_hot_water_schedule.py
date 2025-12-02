@@ -7,13 +7,16 @@
 from __future__ import annotations
 
 from datetime import time
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 import pytest
 
-from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANError
 from bsblan.models import DaySchedule, DHWSchedule, TimeSlot
+
+if TYPE_CHECKING:
+    from bsblan import BSBLAN
 
 
 @pytest.mark.asyncio
