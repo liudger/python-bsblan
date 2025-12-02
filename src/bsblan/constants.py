@@ -133,6 +133,7 @@ VALID_HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
 
 # Error Messages
 NO_STATE_ERROR_MSG: Final[str] = "No state provided."
+NO_SCHEDULE_ERROR_MSG: Final[str] = "No schedule provided."
 VERSION_ERROR_MSG: Final[str] = "Version not supported"
 FIRMWARE_VERSION_ERROR_MSG: Final[str] = "Firmware version not available"
 TEMPERATURE_RANGE_ERROR_MSG: Final[str] = "Temperature range not initialized"

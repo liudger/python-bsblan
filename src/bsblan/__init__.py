@@ -3,8 +3,10 @@
 from .bsblan import BSBLAN, BSBLANConfig
 from .exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
 from .models import (
+    DaySchedule,
     Device,
     DeviceTime,
+    DHWSchedule,
     DHWTimeSwitchPrograms,
     HotWaterConfig,
     HotWaterSchedule,
@@ -14,6 +16,7 @@ from .models import (
     SetHotWaterParam,
     State,
     StaticState,
+    TimeSlot,
 )
 
 __all__ = [
@@ -22,7 +25,9 @@ __all__ = [
     "BSBLANConfig",
     "BSBLANConnectionError",
     "BSBLANError",
+    "DHWSchedule",
     "DHWTimeSwitchPrograms",
+    "DaySchedule",
     "Device",
     "DeviceTime",
     "HotWaterConfig",
@@ -33,4 +38,5 @@ __all__ = [
     "SetHotWaterParam",
     "State",
     "StaticState",
+    "TimeSlot",
 ]

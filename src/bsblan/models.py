@@ -13,6 +13,172 @@ from mashumaro.mixins.json import DataClassJSONMixin
 
 from bsblan.constants import TEMPERATURE_UNITS
 
+# Maximum number of time slots per day supported by BSB-LAN
+MAX_TIME_SLOTS_PER_DAY = 3
+
+
+@dataclass
+class TimeSlot:
+    """A single time slot with start and end time.
+
+    Attributes:
+        start: Start time of the slot.
+        end: End time of the slot.
+
+    Example:
+        >>> slot = TimeSlot(time(6, 0), time(8, 0))
+        >>> slot.to_bsblan_format()
+        '06:00-08:00'
+
+    """
+
+    start: time
+    end: time
+
+    def __post_init__(self) -> None:
+        """Validate that start is before end."""
+        if self.start >= self.end:
+            msg = f"Start time {self.start} must be before end time {self.end}"
+            raise ValueError(msg)
+
+    def to_bsblan_format(self) -> str:
+        """Convert to BSB-LAN format 'HH:MM-HH:MM'.
+
+        Returns:
+            str: Time slot in BSB-LAN format.
+
+        """
+        return f"{self.start.strftime('%H:%M')}-{self.end.strftime('%H:%M')}"
+
+    @classmethod
+    def from_bsblan_format(cls, value: str) -> TimeSlot:
+        """Parse from BSB-LAN format 'HH:MM-HH:MM'.
+
+        Args:
+            value: Time slot string in format 'HH:MM-HH:MM'.
+
+        Returns:
+            TimeSlot: Parsed time slot.
+
+        Raises:
+            ValueError: If the format is invalid.
+
+        """
+        try:
+            start_str, end_str = value.split("-")
+            start_h, start_m = map(int, start_str.split(":"))
+            end_h, end_m = map(int, end_str.split(":"))
+            return cls(start=time(start_h, start_m), end=time(end_h, end_m))
+        except (ValueError, AttributeError) as e:
+            msg = f"Invalid time slot format: {value}"
+            raise ValueError(msg) from e
+
+
+@dataclass
+class DaySchedule:
+    """Schedule for a single day with up to 3 time slots (BSB-LAN limit).
+
+    Attributes:
+        slots: List of time slots for the day.
+
+    Example:
+        >>> schedule = DaySchedule(slots=[
+        ...     TimeSlot(time(6, 0), time(8, 0)),
+        ...     TimeSlot(time(17, 0), time(21, 0)),
+        ... ])
+        >>> schedule.to_bsblan_format()
+        '06:00-08:00 17:00-21:00'
+
+    """
+
+    slots: list[TimeSlot] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Validate max 3 slots per day (BSB-LAN limitation)."""
+        if len(self.slots) > MAX_TIME_SLOTS_PER_DAY:
+            msg = (
+                f"BSB-LAN supports maximum {MAX_TIME_SLOTS_PER_DAY} time slots per day"
+            )
+            raise ValueError(msg)
+
+    def to_bsblan_format(self) -> str:
+        """Convert to BSB-LAN string format like '06:00-08:00 17:00-21:00'.
+
+        Returns:
+            str: Day schedule in BSB-LAN format, or empty string if no slots.
+
+        """
+        if not self.slots:
+            return ""
+        return " ".join(slot.to_bsblan_format() for slot in self.slots)
+
+    @classmethod
+    def from_bsblan_format(cls, value: str) -> DaySchedule:
+        """Parse from BSB-LAN format like '06:00-08:00 17:00-21:00'.
+
+        Args:
+            value: Day schedule string in BSB-LAN format.
+
+        Returns:
+            DaySchedule: Parsed day schedule.
+
+        """
+        if not value or value == "---":
+            return cls(slots=[])
+        slot_strings = value.split()
+        slots = [TimeSlot.from_bsblan_format(s) for s in slot_strings]
+        return cls(slots=slots)
+
+
+@dataclass
+class DHWSchedule:
+    """Weekly hot water schedule for setting time programs.
+
+    Use this dataclass to set DHW time programs via set_hot_water_schedule().
+    Each day can have up to 3 time slots.
+
+    Example:
+        >>> schedule = DHWSchedule(
+        ...     monday=DaySchedule(slots=[
+        ...         TimeSlot(time(6, 0), time(8, 0)),
+        ...         TimeSlot(time(17, 0), time(21, 0)),
+        ...     ]),
+        ...     tuesday=DaySchedule(slots=[
+        ...         TimeSlot(time(6, 0), time(8, 0)),
+        ...     ])
+        ... )
+        >>> await client.set_hot_water_schedule(schedule)
+
+    """
+
+    monday: DaySchedule | None = None
+    tuesday: DaySchedule | None = None
+    wednesday: DaySchedule | None = None
+    thursday: DaySchedule | None = None
+    friday: DaySchedule | None = None
+    saturday: DaySchedule | None = None
+    sunday: DaySchedule | None = None
+
+    def has_any_schedule(self) -> bool:
+        """Check if any day has a schedule set.
+
+        Returns:
+            bool: True if at least one day has a schedule.
+
+        """
+        return any(
+            day is not None
+            for day in [
+                self.monday,
+                self.tuesday,
+                self.wednesday,
+                self.thursday,
+                self.friday,
+                self.saturday,
+                self.sunday,
+            ]
+        )
+
 
 @dataclass
 class DHWTimeSwitchPrograms:

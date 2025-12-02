@@ -29,6 +29,7 @@ from .constants import (
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
     MULTI_PARAMETER_ERROR_MSG,
+    NO_SCHEDULE_ERROR_MSG,
     NO_STATE_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     SETTABLE_HOT_WATER_PARAMS,
@@ -45,8 +46,10 @@ from .exceptions import (
     BSBLANVersionError,
 )
 from .models import (
+    DaySchedule,
     Device,
     DeviceTime,
+    DHWSchedule,
     HotWaterConfig,
     HotWaterSchedule,
     HotWaterState,
@@ -929,6 +932,55 @@ class BSBLAN:
 
         state = self._prepare_hot_water_state(params)
         await self._set_device_state(state)
+
+    async def set_hot_water_schedule(self, schedule: DHWSchedule) -> None:
+        """Set hot water time program schedules.
+
+        This method allows setting weekly DHW schedules using a type-safe
+        interface with TimeSlot and DaySchedule objects.
+
+        Example:
+            schedule = DHWSchedule(
+                monday=DaySchedule(slots=[
+                    TimeSlot(time(6, 0), time(8, 0)),
+                    TimeSlot(time(17, 0), time(21, 0)),
+                ]),
+                tuesday=DaySchedule(slots=[
+                    TimeSlot(time(6, 0), time(8, 0)),
+                ])
+            )
+            await client.set_hot_water_schedule(schedule)
+
+        Args:
+            schedule: DHWSchedule object containing the weekly schedule.
+
+        Raises:
+            BSBLANError: If no schedule is provided.
+
+        """
+        if not schedule.has_any_schedule():
+            raise BSBLANError(NO_SCHEDULE_ERROR_MSG)
+
+        # Map day names to parameter IDs
+        day_param_map = {
+            "monday": "561",
+            "tuesday": "562",
+            "wednesday": "563",
+            "thursday": "564",
+            "friday": "565",
+            "saturday": "566",
+            "sunday": "567",
+        }
+
+        for day_name, param_id in day_param_map.items():
+            day_schedule: DaySchedule | None = getattr(schedule, day_name)
+            if day_schedule is not None:
+                state = {
+                    "Parameter": param_id,
+                    "Value": day_schedule.to_bsblan_format(),
+                    "Type": "1",
+                }
+                await self._set_device_state(state)
 
     def _prepare_hot_water_state(
         self,
