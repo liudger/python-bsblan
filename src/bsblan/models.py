@@ -381,7 +381,7 @@ class StaticState(DataClassJSONMixin):
 class Sensor(DataClassJSONMixin):
     """Object holds info about object for sensor climate."""
 
-    outside_temperature: EntityInfo
+    outside_temperature: EntityInfo | None = None
     current_temperature: EntityInfo | None = None
 
 
