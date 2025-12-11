@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 import aiohttp
+import backoff
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
@@ -412,6 +413,9 @@ class BSBLAN:
     ) -> dict[str, Any]:
         """Handle a request to a BSBLAN device.
 
+        Uses exponential backoff to retry on transient connection errors.
+        Will not retry on authentication errors (401, 403) or not found (404).
+
         Args:
             method (str): The HTTP method to use for the request.
             base_path (str): The base path for the URL.
@@ -423,8 +427,47 @@ class BSBLAN:
             dict[str, Any]: The JSON response from the BSBLAN device.
 
         Raises:
-            BSBLANConnectionError: If there is a connection error.
+            BSBLANConnectionError: If there is a connection error after retries.
+            BSBLANAuthError: If authentication fails (not retried).
             BSBLANError: If there is an error with the request.
+
+        """
+        try:
+            return await self._request_with_retry(method, base_path, data, params)
+        except TimeoutError as e:
+            raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
+        except aiohttp.ClientError as e:
+            raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
+
+    @backoff.on_exception(
+        backoff.expo,
+        (TimeoutError, aiohttp.ClientError),
+        max_tries=3,
+        max_time=30,
+        giveup=lambda e: isinstance(e, aiohttp.ClientResponseError)
+        and e.status in (401, 403, 404),
+        logger=logger,
+    )
+    async def _request_with_retry(
+        self,
+        method: str,
+        base_path: str,
+        data: dict[str, object] | None,
+        params: Mapping[str, str | int] | str | None,
+    ) -> dict[str, Any]:
+        """Execute HTTP request with retry logic.
+
+        This internal method handles the actual HTTP request and is decorated
+        with backoff for automatic retries on transient failures.
+
+        Args:
+            method: The HTTP method to use.
+            base_path: The base path for the URL.
+            data: The data to send in the request body.
+            params: The query parameters to include.
+
+        Returns:
+            dict[str, Any]: The JSON response from the BSBLAN device.
 
         """
         if self.session is None:
@@ -446,14 +489,10 @@ class BSBLAN:
                     response.raise_for_status()
                     response_data = cast("dict[str, Any]", await response.json())
                     return self._process_response(response_data, base_path)
-        except TimeoutError as e:
-            raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
         except aiohttp.ClientResponseError as e:
             if e.status in (401, 403):
                 raise BSBLANAuthError from e
-            raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
-        except aiohttp.ClientError as e:
-            raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
+            raise
         except (ValueError, UnicodeDecodeError) as e:
             # Handle JSON decode errors and other parsing issues
             error_msg = f"Invalid response format from BSB-LAN device: {e!s}"
