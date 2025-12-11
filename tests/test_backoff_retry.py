@@ -171,6 +171,27 @@ async def test_retry_on_timeout_error(aresponses: ResponsesMockServer) -> None:
 
 
 @pytest.mark.asyncio
+async def test_timeout_error_exhausts_retries(aresponses: ResponsesMockServer) -> None:
+    """Test that TimeoutError is raised after all retries are exhausted."""
+
+    async def always_timeout(_: Any) -> Any:
+        # Always timeout
+        await asyncio.sleep(2)
+        return aresponses.Response(status=200, text="Never reached")
+
+    # Add handlers for all 3 retry attempts
+    aresponses.add("example.com", "/JQ", "POST", always_timeout)
+    aresponses.add("example.com", "/JQ", "POST", always_timeout)
+    aresponses.add("example.com", "/JQ", "POST", always_timeout)
+
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com", request_timeout=1)
+        bsblan = BSBLAN(config, session=session)
+        with pytest.raises(BSBLANConnectionError):
+            await bsblan._request()
+
+
+@pytest.mark.asyncio
 async def test_successful_request_no_retry(aresponses: ResponsesMockServer) -> None:
     """Test that successful requests don't trigger any retries."""
     # Single successful request
