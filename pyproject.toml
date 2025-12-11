@@ -135,7 +135,7 @@ min-similarity-lines = 4  # Minimum lines number of a similarity.
 max-line-length=88
 
 [tool.pytest.ini_options]
-addopts = "--cov"
+addopts = "--cov -n auto"
 asyncio_mode = "auto"
 
 [tool.ruff.lint]
@@ -196,6 +196,7 @@ dev = [
     "pytest>=8.3.5",
     "pytest-asyncio==1.3.0",
     "pytest-cov==7.0.0",
+    "pytest-xdist>=3.8.0",
     "pyupgrade==3.21.2",
     "ruff==0.14.6",
     "safety==3.7.0",
