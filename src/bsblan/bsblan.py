@@ -445,7 +445,7 @@ class BSBLAN:
         max_tries=3,
         max_time=30,
         giveup=lambda e: isinstance(e, aiohttp.ClientResponseError)
-        and e.status in (401, 403, 404),
+        and e.status == 404,
         logger=logger,
     )
     async def _request_with_retry(
