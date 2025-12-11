@@ -362,7 +362,7 @@ class State(DataClassJSONMixin):
 
     hvac_mode: EntityInfo
     target_temperature: EntityInfo
-    hvac_action: EntityInfo
+    hvac_action: EntityInfo | None = None
     hvac_mode_changeover: EntityInfo | None = None
     current_temperature: EntityInfo | None = None
     room1_thermostat_mode: EntityInfo | None = None
