@@ -592,9 +592,8 @@ class BSBLAN:
             State: The current state of the BSBLAN device.
 
         Note:
-            The hvac_mode.value is returned as a raw integer from the device.
-            Use HVAC_MODE_DICT from bsblan.constants to convert to string
-            representation (e.g., "off", "auto", "eco", "heat").
+            The hvac_mode.value is returned as a raw integer from the device:
+            0=off, 1=auto, 2=eco, 3=heat.
 
         """
         return await self._fetch_section_data("heating", State)
@@ -680,8 +679,6 @@ class BSBLAN:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer value.
                 Valid values: 0=off, 1=auto, 2=eco, 3=heat.
-                Use HVAC_MODE_DICT_REVERSE from bsblan.constants to convert
-                string names to integers.
 
         """
         await self._initialize_temperature_range()
