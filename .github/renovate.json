@@ -4,6 +4,7 @@
   "rebaseWhen": "behind-base-branch",
   "dependencyDashboard": true,
   "labels": ["dependencies", "no-stale"],
+  "platformAutomerge": true,
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true
@@ -20,6 +21,7 @@
       "rangeStrategy": "pin"
     },
     {
+      "description": "Automerge minor/patch Python updates (after CI passes)",
       "matchManagers": ["uv"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
@@ -40,9 +42,16 @@
       "rangeStrategy": "pin"
     },
     {
+      "description": "Automerge minor/patch GitHub Actions updates (after CI passes)",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
+    },
+    {
+      "description": "Don't automerge major GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
     }
   ]
 }
