@@ -15,6 +15,10 @@ permissions:
 jobs:
   auto-approve:
     runs-on: ubuntu-latest
-    if: github.actor == 'renovate[bot]'
+    if: >-
+      github.actor == 'renovate[bot]' &&
+      github.actor_id == '29139614' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - uses: hmarr/auto-approve-action@v4
+      # yamllint disable-line rule:line-length
+      - uses: hmarr/auto-approve-action@de8ae18c173c131e182d4adf2c874d8d2308a85b # v4.0.0
