@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
-from collections.abc import Callable, Awaitable
 
 import aiohttp
-from aiohttp.web_request import Request
 import pytest
+from aiohttp.web_request import Request
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
         Awaitable,
         Callable,
     )
+
     from aiohttp.web_request import Request
 
 logger = logging.getLogger(__name__)
