@@ -5,10 +5,8 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from constants import APIConfig
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +74,8 @@ def validate_time_format(
 class APIValidator:
     """Validates and maintains BSB-LAN API configuration."""
 
-    api_config: APIConfig
+    # Flexible type for API data (accepts `APIConfig`, plain dicts, or None)
+    api_config: Any  # intentionally permissive to support tests and dynamic data
     validated_sections: set[str] = field(default_factory=set)
 
     def validate_section(self, section: str, request_data: dict[str, Any]) -> None:
@@ -89,7 +88,7 @@ class APIValidator:
 
         """
         # Check if the section exists in the APIConfig object
-        if section not in self.api_config:
+        if not self.api_config or section not in self.api_config:
             logger.warning("Unknown section '%s' in API configuration", section)
             return
 
@@ -141,7 +140,7 @@ class APIValidator:
 
     def get_section_params(self, section: str) -> Any:
         """Get the parameter mapping for a section."""
-        return self.api_config.get(section, {}).copy()
+        return (self.api_config or {}).get(section, {}).copy()
 
     def is_section_validated(self, section: str) -> bool:
         """Check if a section has been validated."""

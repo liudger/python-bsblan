@@ -8,8 +8,10 @@ from __future__ import annotations
 import json
 import logging
 from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Awaitable
 
 import aiohttp
+from aiohttp.web_request import Request
 import pytest
 from aresponses import Response, ResponsesMockServer
 
@@ -21,7 +23,12 @@ from bsblan.exceptions import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
+    from collections.abc import (
+        AsyncGenerator,
+        Awaitable,
+        Callable,
+    )
+    from aiohttp.web_request import Request
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +66,12 @@ async def mock_aresponses() -> AsyncGenerator[ResponsesMockServer, None]:
         yield server
 
 
-def create_response_handler(expected_data: dict[str, Any]) -> Response:
+def create_response_handler(
+    expected_data: dict[str, Any],
+) -> Callable[[Request], Awaitable[Response]]:
     """Create a response handler that checks the request data."""
 
-    async def response_handler(request: aiohttp.web.Request) -> Response:
+    async def response_handler(request: Request) -> Response:
         """Check the request data."""
         assert request.method == "POST"
         assert request.host == "example.com"
