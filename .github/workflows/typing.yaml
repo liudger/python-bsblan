@@ -16,6 +16,8 @@ jobs:
   ty:
     name: ty
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v6.0.1
