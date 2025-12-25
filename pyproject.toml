@@ -198,7 +198,7 @@ dev = [
     "pytest-cov==7.0.0",
     "pytest-xdist>=3.8.0",
     "pyupgrade==3.21.2",
-    "ruff==0.14.8",
+    "ruff==0.14.10",
     "safety==3.7.0",
     "vulture==2.14",
     "yamllint==1.37.1",
