@@ -188,7 +188,7 @@ dev = [
     "flake8-simplify==0.30.0",
     # hatch is required to support type hinting and proper packaging of the py.typed file.
     "hatch>=1.14.1",
-    "isort==6.1.0",
+    "isort==7.0.0",
     "ty==0.0.8",
     "pre-commit==4.5.1",
     "pre-commit-hooks==6.0.0",
