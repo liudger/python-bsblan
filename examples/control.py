@@ -18,6 +18,13 @@ from typing import Any
 
 from bsblan import (
     BSBLAN,
+    BSBLAN_HVAC_ACTION_COOLING,
+    BSBLAN_HVAC_ACTION_DEFROSTING,
+    BSBLAN_HVAC_ACTION_DRYING,
+    BSBLAN_HVAC_ACTION_FAN,
+    BSBLAN_HVAC_ACTION_HEATING,
+    BSBLAN_HVAC_ACTION_OFF,
+    BSBLAN_HVAC_ACTION_PREHEATING,
     BSBLANConfig,
     Device,
     DeviceTime,
@@ -66,6 +73,44 @@ def print_attributes(title: str, attributes: dict[str, str]) -> None:
         print(f"{label}: {value}")
 
 
+def get_hvac_action_name(status_code: int) -> str:
+    """Map BSB-LAN parameter 8000 status code to a human-readable HVAC action.
+
+    BSB-LAN parameter 8000 ("Status heating circuit 1") returns vendor-specific
+    status codes. This function maps those codes to simplified HVAC action states
+    compatible with Home Assistant and other automation systems.
+
+    Args:
+        status_code: The raw status code from parameter 8000 (hvac_action.value).
+
+    Returns:
+        str: Human-readable HVAC action name. Returns "idle" for unmapped codes.
+
+    Example:
+        >>> state = await bsblan.state()
+        >>> if state.hvac_action is not None:
+        ...     action = get_hvac_action_name(state.hvac_action.value)
+        ...     print(f"Current HVAC action: {action}")
+
+    """
+    # Map status code sets to action names
+    action_mappings: list[tuple[set[int], str]] = [
+        (BSBLAN_HVAC_ACTION_HEATING, "heating"),
+        (BSBLAN_HVAC_ACTION_COOLING, "cooling"),
+        (BSBLAN_HVAC_ACTION_PREHEATING, "preheating"),
+        (BSBLAN_HVAC_ACTION_DEFROSTING, "defrosting"),
+        (BSBLAN_HVAC_ACTION_DRYING, "drying"),
+        (BSBLAN_HVAC_ACTION_FAN, "fan"),
+        (BSBLAN_HVAC_ACTION_OFF, "off"),
+    ]
+
+    for action_set, action_name in action_mappings:
+        if status_code in action_set:
+            return action_name
+
+    return "idle"
+
+
 async def print_state(state: State) -> None:
     """Print the current state of the BSBLan device.
 
@@ -73,8 +118,22 @@ async def print_state(state: State) -> None:
         state (State): The current state of the BSBLan device.
 
     """
+    # Get the HVAC action - both the raw value and mapped action name
+    hvac_action_desc = await get_attribute(state.hvac_action, "desc", "Unknown Action")
+    hvac_action_value = await get_attribute(state.hvac_action, "value", "N/A")
+
+    # Map the raw status code to a simplified action name
+    hvac_action_mapped = "N/A"
+    if hvac_action_value != "N/A":
+        try:
+            hvac_action_mapped = get_hvac_action_name(int(hvac_action_value))
+        except (ValueError, TypeError):
+            hvac_action_mapped = "unknown"
+
     attributes = {
-        "HVAC Action": await get_attribute(state.hvac_action, "desc", "Unknown Action"),
+        "HVAC Action (raw value)": str(hvac_action_value),
+        "HVAC Action (device desc)": hvac_action_desc,
+        "HVAC Action (mapped)": hvac_action_mapped,
         "HVAC Mode": await get_attribute(state.hvac_mode, "desc", "Unknown Mode"),
         "Current Temperature": await get_attribute(
             state.current_temperature, "value", "N/A"
