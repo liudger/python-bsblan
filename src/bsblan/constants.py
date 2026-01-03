@@ -131,6 +131,101 @@ API_VERSIONS: Final[dict[str, APIConfig]] = {
 # Valid HVAC mode values for validation
 VALID_HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
 
+# Parameter 8000 ("Status heating circuit 1") yields many vendor specific status
+# codes. These sets capture the most common codes we need for Home Assistant's
+# simplified HVAC action states. Any unmapped code will fall back to IDLE.
+# Status code definitions from BSB-LAN ENUM8000 (LANG_DE_LEGACY.h / LANG_EN.h)
+BSBLAN_HVAC_ACTION_HEATING: Final[set[int]] = {
+    0x04,  # Manual control active
+    0x11,  # Overrun active
+    0x16,  # Frost protection plant active
+    0x17,  # Frost protection active
+    0x18,  # (Reserved heating state)
+    0x38,  # Overheat protection active
+    0x65,  # Room frost protection active
+    0x67,  # Limited, boiler protection
+    0x68,  # Limited, DHW priority
+    0x69,  # Limited, buffer
+    0x6A,  # Heating operation limited
+    0x72,  # Heating operation comfort
+    0x73,  # Switch-off optimization
+    0x74,  # Heating operation reduced
+    0x75,  # Flow frost protection active
+    0x77,  # Day eco active
+    0x78,  # Setback to reduced
+    0x79,  # Setback to frost protection
+    0x89,  # (Reserved heating state)
+}
+
+BSBLAN_HVAC_ACTION_PREHEATING: Final[set[int]] = {
+    0x6F,  # Switch-on optimization + quick heat-up
+    0x70,  # Switch-on optimization
+    0x71,  # Quick heat-up
+}
+
+BSBLAN_HVAC_ACTION_DRYING: Final[set[int]] = {
+    0x66,  # Screed function active (floor drying)
+}
+
+BSBLAN_HVAC_ACTION_FAN: Final[set[int]] = {
+    0x6B,  # Forced consumption buffer
+    0x6C,  # Forced consumption DHW
+    0x6D,  # Forced consumption generator
+    0x6E,  # Forced consumption
+}
+
+BSBLAN_HVAC_ACTION_COOLING: Final[set[int]] = {
+    0x7F,  # Active cooling mode
+    0x80,  # Passive cooling mode
+    0x81,  # Cooling down evaporator
+    0x84,  # (Cooling related)
+    0x85,  # Dew point monitor active
+    0x86,  # Cooling limit outdoor temp active
+    0x88,  # Cooling mode
+    0x90,  # Cooling operation limited
+    0x91,  # Cooling limit outside temp max active
+    0x94,  # (Reserved cooling state)
+    0x95,  # (Reserved cooling state)
+    0x96,  # Cooling operation comfort
+    0xB1,  # Limit flow min dew point
+    0xB2,  # Limit flow min outdoor temp
+    0xB3,  # Flow limit reached
+    0x8E,  # Recooling via DHW/HC
+    0xC4,  # Limit source temp min cooling
+    0xCF,  # Compressor runtime min active, cooling
+    0xD0,  # Compressor 1 and 2 on, cooling
+    0xD1,  # Compressor 1 on, cooling
+    0xD2,  # Compressor 2 on, cooling
+    0x11D,  # Protection mode cooling
+}
+
+BSBLAN_HVAC_ACTION_OFF: Final[set[int]] = {
+    0x02,  # Fault/error state
+    0x19,  # (Off/standby state)
+    0x76,  # Off
+    0x8C,  # (Off/standby state)
+    0x8A,  # Cooling mode off
+    0x92,  # Cooling operation locked
+    0xA1,  # Heating operation generator off
+    0xA2,  # Heating operation off
+    0xCC,  # Locked, heating mode
+    0xCD,  # Locked, generator
+    0xCE,  # Locked, buffer
+}
+
+BSBLAN_HVAC_ACTION_DEFROSTING: Final[set[int]] = {
+    0x7D,  # Defrost active
+    0x7E,  # Drip-off
+    0x82,  # Pre-heating for defrost
+    0x83,  # (Defrost related)
+    0xCA,  # Frost protection cooling active
+    0xC0,  # Forced defrost compressor
+    0xC1,  # Forced defrost fan
+    0xC2,  # Defrost with compressor
+    0xC3,  # Defrost with fan
+    0x101,  # (Defrost related)
+}
+
 # Error Messages
 NO_STATE_ERROR_MSG: Final[str] = "No state provided."
 NO_SCHEDULE_ERROR_MSG: Final[str] = "No schedule provided."
