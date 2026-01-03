@@ -2,13 +2,9 @@
 
 from .bsblan import BSBLAN, BSBLANConfig
 from .constants import (
-    BSBLAN_HVAC_ACTION_COOLING,
-    BSBLAN_HVAC_ACTION_DEFROSTING,
-    BSBLAN_HVAC_ACTION_DRYING,
-    BSBLAN_HVAC_ACTION_FAN,
-    BSBLAN_HVAC_ACTION_HEATING,
-    BSBLAN_HVAC_ACTION_OFF,
-    BSBLAN_HVAC_ACTION_PREHEATING,
+    HeatingCircuitStatus,
+    HVACActionCategory,
+    get_hvac_action_category,
 )
 from .exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
 from .models import (
@@ -31,13 +27,6 @@ from .models import (
 
 __all__ = [
     "BSBLAN",
-    "BSBLAN_HVAC_ACTION_COOLING",
-    "BSBLAN_HVAC_ACTION_DEFROSTING",
-    "BSBLAN_HVAC_ACTION_DRYING",
-    "BSBLAN_HVAC_ACTION_FAN",
-    "BSBLAN_HVAC_ACTION_HEATING",
-    "BSBLAN_HVAC_ACTION_OFF",
-    "BSBLAN_HVAC_ACTION_PREHEATING",
     "BSBLANAuthError",
     "BSBLANConfig",
     "BSBLANConnectionError",
@@ -48,6 +37,8 @@ __all__ = [
     "Device",
     "DeviceTime",
     "EntityInfo",
+    "HVACActionCategory",
+    "HeatingCircuitStatus",
     "HotWaterConfig",
     "HotWaterSchedule",
     "HotWaterState",
@@ -57,4 +48,5 @@ __all__ = [
     "State",
     "StaticState",
     "TimeSlot",
+    "get_hvac_action_category",
 ]
