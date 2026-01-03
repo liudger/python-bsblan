@@ -16,7 +16,7 @@ Asynchronous Python client for BSBLan.
 
 ## About
 
-This package allows you to control and monitor an BSBLan device
+This package allows you to control and monitor a BSBLan device
 programmatically. It is mainly created to allow third-party programs to automate
 the behavior of [BSBLan][bsblanmodule].
 
@@ -89,9 +89,9 @@ async def main() -> None:
         print("\nSetting temperature to 18°C")
         await bsblan.thermostat(target_temperature="18")
 
-        # Set HVAC mode
+        # Set HVAC mode (using raw integer: 0=off, 1=auto, 2=eco, 3=heat)
         print("Setting HVAC mode to heat")
-        await bsblan.thermostat(hvac_mode="heat")
+        await bsblan.thermostat(hvac_mode=3)
 
         # Get and print sensor information
         sensor: Sensor = await bsblan.sensor()
@@ -179,7 +179,7 @@ check [the contributor's page][contributors].
 
 MIT License
 
-Copyright (c) 2023-2025 WJ van Rootselaar
+Copyright (c) 2023-2026 WJ van Rootselaar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -211,9 +211,7 @@ SOFTWARE.
 [keepchangelog]: http://keepachangelog.com/en/1.0.0/
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg
 [liudger]: https://github.com/liudger
-[maintenance-shield]: https://img.shields.io/maintenance/yes/2025.svg
-[poetry]: https://python-poetry.org
-[poetry-install]: https://python-poetry.org/docs/#installation
+[maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
 [uv]: https://docs.astral.sh/uv/
 [uv-install]: https://docs.astral.sh/uv/getting-started/installation/
 [pre-commit]: https://pre-commit.com/
