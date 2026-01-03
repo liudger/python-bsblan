@@ -8,17 +8,13 @@ from bsblan.constants import (
     API_V1,
     API_V3,
     BASE_HOT_WATER_PARAMS,
-    BSBLAN_HVAC_ACTION_COOLING,
-    BSBLAN_HVAC_ACTION_DEFROSTING,
-    BSBLAN_HVAC_ACTION_DRYING,
-    BSBLAN_HVAC_ACTION_FAN,
-    BSBLAN_HVAC_ACTION_HEATING,
-    BSBLAN_HVAC_ACTION_OFF,
-    BSBLAN_HVAC_ACTION_PREHEATING,
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
+    HeatingCircuitStatus,
+    HVACActionCategory,
     build_api_config,
+    get_hvac_action_category,
 )
 
 
@@ -162,150 +158,110 @@ def test_api_config_structure(version: str) -> None:
 
 
 # ============================================================================
-# HVAC Action Constants Tests (Parameter 8000)
+# HVAC Action Enum Tests
 # ============================================================================
 
 
-class TestHVACActionConstants:
-    """Tests for HVAC action status code constants."""
+class TestHVACActionCategory:
+    """Tests for HVACActionCategory enum."""
 
-    def test_hvac_action_heating_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_HEATING is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_HEATING, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_HEATING)
-
-    def test_hvac_action_cooling_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_COOLING is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_COOLING, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_COOLING)
-
-    def test_hvac_action_preheating_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_PREHEATING is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_PREHEATING, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_PREHEATING)
-
-    def test_hvac_action_drying_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_DRYING is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_DRYING, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_DRYING)
-
-    def test_hvac_action_fan_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_FAN is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_FAN, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_FAN)
-
-    def test_hvac_action_off_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_OFF is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_OFF, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_OFF)
-
-    def test_hvac_action_defrosting_is_set_of_ints(self) -> None:
-        """Test that BSBLAN_HVAC_ACTION_DEFROSTING is a set of integers."""
-        assert isinstance(BSBLAN_HVAC_ACTION_DEFROSTING, set)
-        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_DEFROSTING)
-
-    @pytest.mark.parametrize(
-        ("action_set", "expected_count"),
-        [
-            (BSBLAN_HVAC_ACTION_HEATING, 19),
-            (BSBLAN_HVAC_ACTION_PREHEATING, 3),
-            (BSBLAN_HVAC_ACTION_DRYING, 1),
-            (BSBLAN_HVAC_ACTION_FAN, 4),
-            (BSBLAN_HVAC_ACTION_COOLING, 22),
-            (BSBLAN_HVAC_ACTION_OFF, 11),
-            (BSBLAN_HVAC_ACTION_DEFROSTING, 10),
-        ],
-    )
-    def test_hvac_action_set_sizes(
-        self, action_set: set[int], expected_count: int
-    ) -> None:
-        """Test that HVAC action sets have expected number of status codes."""
-        assert len(action_set) == expected_count
-
-    def test_hvac_action_sets_no_overlap(self) -> None:
-        """Test that HVAC action sets don't have overlapping status codes."""
-        all_sets = [
-            BSBLAN_HVAC_ACTION_HEATING,
-            BSBLAN_HVAC_ACTION_PREHEATING,
-            BSBLAN_HVAC_ACTION_DRYING,
-            BSBLAN_HVAC_ACTION_FAN,
-            BSBLAN_HVAC_ACTION_COOLING,
-            BSBLAN_HVAC_ACTION_OFF,
-            BSBLAN_HVAC_ACTION_DEFROSTING,
-        ]
-
-        # Check each pair for overlap
-        for i, set1 in enumerate(all_sets):
-            for set2 in all_sets[i + 1 :]:
-                overlap = set1 & set2
-                assert not overlap, f"Sets overlap with codes: {overlap}"
-
-    @pytest.mark.parametrize(
-        ("status_code", "expected_set_name"),
-        [
-            # Heating codes
-            (0x04, "HEATING"),  # Manual control active
-            (0x72, "HEATING"),  # Heating operation comfort
-            (0x74, "HEATING"),  # Heating operation reduced
-            # Preheating codes
-            (0x70, "PREHEATING"),  # Switch-on optimization
-            (0x71, "PREHEATING"),  # Quick heat-up
-            # Drying codes
-            (0x66, "DRYING"),  # Screed function active
-            # Fan codes
-            (0x6E, "FAN"),  # Forced consumption
-            # Cooling codes
-            (0x7F, "COOLING"),  # Active cooling mode
-            (0x80, "COOLING"),  # Passive cooling mode
-            (0x88, "COOLING"),  # Cooling mode
-            # Off codes
-            (0x76, "OFF"),  # Off
-            (0xA2, "OFF"),  # Heating operation off
-            # Defrosting codes
-            (0x7D, "DEFROSTING"),  # Defrost active
-            (0x7E, "DEFROSTING"),  # Drip-off
-        ],
-    )
-    def test_specific_status_codes_in_correct_set(
-        self, status_code: int, expected_set_name: str
-    ) -> None:
-        """Test that specific well-known status codes are in the correct set."""
-        set_mapping = {
-            "HEATING": BSBLAN_HVAC_ACTION_HEATING,
-            "PREHEATING": BSBLAN_HVAC_ACTION_PREHEATING,
-            "DRYING": BSBLAN_HVAC_ACTION_DRYING,
-            "FAN": BSBLAN_HVAC_ACTION_FAN,
-            "COOLING": BSBLAN_HVAC_ACTION_COOLING,
-            "OFF": BSBLAN_HVAC_ACTION_OFF,
-            "DEFROSTING": BSBLAN_HVAC_ACTION_DEFROSTING,
+    def test_hvac_action_category_values(self) -> None:
+        """Test that HVACActionCategory has all expected values."""
+        expected_categories = {
+            "IDLE",
+            "HEATING",
+            "COOLING",
+            "PREHEATING",
+            "DRYING",
+            "FAN",
+            "OFF",
+            "DEFROSTING",
         }
-        expected_set = set_mapping[expected_set_name]
-        assert status_code in expected_set, (
-            f"Status code 0x{status_code:02X} should be in {expected_set_name}"
-        )
+        actual_categories = {c.name for c in HVACActionCategory}
+        assert actual_categories == expected_categories
 
-    def test_hvac_action_constants_are_exported(self) -> None:
-        """Test that HVAC action constants are exported from bsblan package."""
-        # Verify they are exported and are the same objects
-        assert (
-            bsblan.BSBLAN_HVAC_ACTION_HEATING
-            is bsblan.constants.BSBLAN_HVAC_ACTION_HEATING
-        )
-        assert (
-            bsblan.BSBLAN_HVAC_ACTION_COOLING
-            is bsblan.constants.BSBLAN_HVAC_ACTION_COOLING
-        )
-        assert (
-            bsblan.BSBLAN_HVAC_ACTION_PREHEATING
-            is bsblan.constants.BSBLAN_HVAC_ACTION_PREHEATING
-        )
-        assert (
-            bsblan.BSBLAN_HVAC_ACTION_DRYING
-            is bsblan.constants.BSBLAN_HVAC_ACTION_DRYING
-        )
-        assert bsblan.BSBLAN_HVAC_ACTION_FAN is bsblan.constants.BSBLAN_HVAC_ACTION_FAN
-        assert bsblan.BSBLAN_HVAC_ACTION_OFF is bsblan.constants.BSBLAN_HVAC_ACTION_OFF
-        assert (
-            bsblan.BSBLAN_HVAC_ACTION_DEFROSTING
-            is bsblan.constants.BSBLAN_HVAC_ACTION_DEFROSTING
-        )
+    def test_hvac_action_category_idle_is_zero(self) -> None:
+        """Test that IDLE is the default category (value 0)."""
+        assert HVACActionCategory.IDLE == 0
+
+
+class TestHeatingCircuitStatus:
+    """Tests for HeatingCircuitStatus enum."""
+
+    def test_heating_circuit_status_is_intenum(self) -> None:
+        """Test that HeatingCircuitStatus is an IntEnum."""
+        assert issubclass(HeatingCircuitStatus, int)
+
+    @pytest.mark.parametrize(
+        ("status", "expected_category"),
+        [
+            (HeatingCircuitStatus.HEATING_COMFORT, HVACActionCategory.HEATING),
+            (HeatingCircuitStatus.HEATING_REDUCED, HVACActionCategory.HEATING),
+            (HeatingCircuitStatus.MANUAL_CONTROL, HVACActionCategory.HEATING),
+            (HeatingCircuitStatus.COOLING_ACTIVE, HVACActionCategory.COOLING),
+            (HeatingCircuitStatus.COOLING_PASSIVE, HVACActionCategory.COOLING),
+            (HeatingCircuitStatus.QUICK_HEATUP, HVACActionCategory.PREHEATING),
+            (HeatingCircuitStatus.SWITCHON_OPTIMIZATION, HVACActionCategory.PREHEATING),
+            (HeatingCircuitStatus.SCREED_FUNCTION, HVACActionCategory.DRYING),
+            (HeatingCircuitStatus.FORCED_CONSUMPTION, HVACActionCategory.FAN),
+            (HeatingCircuitStatus.OFF, HVACActionCategory.OFF),
+            (HeatingCircuitStatus.HEATING_OFF, HVACActionCategory.OFF),
+            (HeatingCircuitStatus.DEFROST, HVACActionCategory.DEFROSTING),
+            (HeatingCircuitStatus.DRIP_OFF, HVACActionCategory.DEFROSTING),
+        ],
+    )
+    def test_status_category_property(
+        self, status: HeatingCircuitStatus, expected_category: HVACActionCategory
+    ) -> None:
+        """Test that status codes return correct category via property."""
+        assert status.category == expected_category
+
+    def test_from_value_known_code(self) -> None:
+        """Test from_value returns correct enum for known codes."""
+        status = HeatingCircuitStatus.from_value(0x72)
+        assert status == HeatingCircuitStatus.HEATING_COMFORT
+
+    def test_from_value_unknown_code(self) -> None:
+        """Test from_value returns None for unknown codes."""
+        status = HeatingCircuitStatus.from_value(0xFFFF)
+        assert status is None
+
+    def test_status_value_matches_hex(self) -> None:
+        """Test that enum values match expected hex values."""
+        assert HeatingCircuitStatus.HEATING_COMFORT.value == 0x72
+        assert HeatingCircuitStatus.OFF.value == 0x76
+        assert HeatingCircuitStatus.COOLING_ACTIVE.value == 0x7F
+        assert HeatingCircuitStatus.DEFROST.value == 0x7D
+
+
+class TestGetHvacActionCategory:
+    """Tests for get_hvac_action_category function."""
+
+    @pytest.mark.parametrize(
+        ("status_code", "expected_category"),
+        [
+            (0x72, HVACActionCategory.HEATING),
+            (0x7F, HVACActionCategory.COOLING),
+            (0x71, HVACActionCategory.PREHEATING),
+            (0x66, HVACActionCategory.DRYING),
+            (0x6E, HVACActionCategory.FAN),
+            (0x76, HVACActionCategory.OFF),
+            (0x7D, HVACActionCategory.DEFROSTING),
+        ],
+    )
+    def test_known_status_codes(
+        self, status_code: int, expected_category: HVACActionCategory
+    ) -> None:
+        """Test that known status codes return correct category."""
+        assert get_hvac_action_category(status_code) == expected_category
+
+    def test_unknown_status_code_returns_idle(self) -> None:
+        """Test that unknown status codes return IDLE."""
+        assert get_hvac_action_category(0xFFFF) == HVACActionCategory.IDLE
+        assert get_hvac_action_category(9999) == HVACActionCategory.IDLE
+
+    def test_enums_are_exported_from_package(self) -> None:
+        """Test that enum classes are exported from bsblan package."""
+        assert bsblan.HeatingCircuitStatus is HeatingCircuitStatus
+        assert bsblan.HVACActionCategory is HVACActionCategory
+        assert bsblan.get_hvac_action_category is get_hvac_action_category
