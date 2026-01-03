@@ -185,7 +185,7 @@ dev = [
     "coverage==7.13.1",
     "darglint==1.8.1",
     "flake8==7.3.0",
-    "flake8-simplify==0.22.0",
+    "flake8-simplify==0.30.0",
     # hatch is required to support type hinting and proper packaging of the py.typed file.
     "hatch>=1.14.1",
     "isort==6.1.0",
