@@ -18,16 +18,10 @@ from typing import Any
 
 from bsblan import (
     BSBLAN,
-    BSBLAN_HVAC_ACTION_COOLING,
-    BSBLAN_HVAC_ACTION_DEFROSTING,
-    BSBLAN_HVAC_ACTION_DRYING,
-    BSBLAN_HVAC_ACTION_FAN,
-    BSBLAN_HVAC_ACTION_HEATING,
-    BSBLAN_HVAC_ACTION_OFF,
-    BSBLAN_HVAC_ACTION_PREHEATING,
     BSBLANConfig,
     Device,
     DeviceTime,
+    HeatingCircuitStatus,
     HotWaterConfig,
     HotWaterSchedule,
     HotWaterState,
@@ -36,6 +30,7 @@ from bsblan import (
     SetHotWaterParam,
     State,
     StaticState,
+    get_hvac_action_category,
 )
 from bsblan.models import DHWTimeSwitchPrograms
 
@@ -93,22 +88,9 @@ def get_hvac_action_name(status_code: int) -> str:
         ...     print(f"Current HVAC action: {action}")
 
     """
-    # Map status code sets to action names
-    action_mappings: list[tuple[set[int], str]] = [
-        (BSBLAN_HVAC_ACTION_HEATING, "heating"),
-        (BSBLAN_HVAC_ACTION_COOLING, "cooling"),
-        (BSBLAN_HVAC_ACTION_PREHEATING, "preheating"),
-        (BSBLAN_HVAC_ACTION_DEFROSTING, "defrosting"),
-        (BSBLAN_HVAC_ACTION_DRYING, "drying"),
-        (BSBLAN_HVAC_ACTION_FAN, "fan"),
-        (BSBLAN_HVAC_ACTION_OFF, "off"),
-    ]
-
-    for action_set, action_name in action_mappings:
-        if status_code in action_set:
-            return action_name
-
-    return "idle"
+    # Use the new enum-based approach
+    category = get_hvac_action_category(status_code)
+    return category.name.lower()
 
 
 async def print_state(state: State) -> None:
@@ -122,18 +104,25 @@ async def print_state(state: State) -> None:
     hvac_action_desc = await get_attribute(state.hvac_action, "desc", "Unknown Action")
     hvac_action_value = await get_attribute(state.hvac_action, "value", "N/A")
 
-    # Map the raw status code to a simplified action name
+    # Map the raw status code to a simplified action name using the new enum approach
     hvac_action_mapped = "N/A"
+    status_name = "N/A"
     if hvac_action_value != "N/A":
         try:
-            hvac_action_mapped = get_hvac_action_name(int(hvac_action_value))
+            status_code = int(hvac_action_value)
+            # Get the category (heating, cooling, etc.)
+            hvac_action_mapped = get_hvac_action_name(status_code)
+            # Get the specific status name from the enum (if known)
+            status = HeatingCircuitStatus.from_value(status_code)
+            status_name = status.name if status else "UNKNOWN"
         except (ValueError, TypeError):
             hvac_action_mapped = "unknown"
 
     attributes = {
         "HVAC Action (raw value)": str(hvac_action_value),
         "HVAC Action (device desc)": hvac_action_desc,
-        "HVAC Action (mapped)": hvac_action_mapped,
+        "HVAC Action (status name)": status_name,
+        "HVAC Action (category)": hvac_action_mapped,
         "HVAC Mode": await get_attribute(state.hvac_mode, "desc", "Unknown Mode"),
         "Current Temperature": await get_attribute(
             state.current_temperature, "value", "N/A"
