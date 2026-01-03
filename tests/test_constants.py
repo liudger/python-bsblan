@@ -2,10 +2,19 @@
 
 import pytest
 
+import bsblan
+import bsblan.constants
 from bsblan.constants import (
     API_V1,
     API_V3,
     BASE_HOT_WATER_PARAMS,
+    BSBLAN_HVAC_ACTION_COOLING,
+    BSBLAN_HVAC_ACTION_DEFROSTING,
+    BSBLAN_HVAC_ACTION_DRYING,
+    BSBLAN_HVAC_ACTION_FAN,
+    BSBLAN_HVAC_ACTION_HEATING,
+    BSBLAN_HVAC_ACTION_OFF,
+    BSBLAN_HVAC_ACTION_PREHEATING,
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
@@ -150,3 +159,153 @@ def test_api_config_structure(version: str) -> None:
         for key, value in section.items():
             assert isinstance(key, str), f"Key {key} in {section_name} not string"
             assert isinstance(value, str), f"Value {value} in {section_name} not string"
+
+
+# ============================================================================
+# HVAC Action Constants Tests (Parameter 8000)
+# ============================================================================
+
+
+class TestHVACActionConstants:
+    """Tests for HVAC action status code constants."""
+
+    def test_hvac_action_heating_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_HEATING is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_HEATING, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_HEATING)
+
+    def test_hvac_action_cooling_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_COOLING is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_COOLING, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_COOLING)
+
+    def test_hvac_action_preheating_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_PREHEATING is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_PREHEATING, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_PREHEATING)
+
+    def test_hvac_action_drying_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_DRYING is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_DRYING, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_DRYING)
+
+    def test_hvac_action_fan_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_FAN is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_FAN, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_FAN)
+
+    def test_hvac_action_off_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_OFF is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_OFF, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_OFF)
+
+    def test_hvac_action_defrosting_is_set_of_ints(self) -> None:
+        """Test that BSBLAN_HVAC_ACTION_DEFROSTING is a set of integers."""
+        assert isinstance(BSBLAN_HVAC_ACTION_DEFROSTING, set)
+        assert all(isinstance(code, int) for code in BSBLAN_HVAC_ACTION_DEFROSTING)
+
+    @pytest.mark.parametrize(
+        ("action_set", "expected_count"),
+        [
+            (BSBLAN_HVAC_ACTION_HEATING, 19),
+            (BSBLAN_HVAC_ACTION_PREHEATING, 3),
+            (BSBLAN_HVAC_ACTION_DRYING, 1),
+            (BSBLAN_HVAC_ACTION_FAN, 4),
+            (BSBLAN_HVAC_ACTION_COOLING, 22),
+            (BSBLAN_HVAC_ACTION_OFF, 11),
+            (BSBLAN_HVAC_ACTION_DEFROSTING, 10),
+        ],
+    )
+    def test_hvac_action_set_sizes(
+        self, action_set: set[int], expected_count: int
+    ) -> None:
+        """Test that HVAC action sets have expected number of status codes."""
+        assert len(action_set) == expected_count
+
+    def test_hvac_action_sets_no_overlap(self) -> None:
+        """Test that HVAC action sets don't have overlapping status codes."""
+        all_sets = [
+            BSBLAN_HVAC_ACTION_HEATING,
+            BSBLAN_HVAC_ACTION_PREHEATING,
+            BSBLAN_HVAC_ACTION_DRYING,
+            BSBLAN_HVAC_ACTION_FAN,
+            BSBLAN_HVAC_ACTION_COOLING,
+            BSBLAN_HVAC_ACTION_OFF,
+            BSBLAN_HVAC_ACTION_DEFROSTING,
+        ]
+
+        # Check each pair for overlap
+        for i, set1 in enumerate(all_sets):
+            for set2 in all_sets[i + 1 :]:
+                overlap = set1 & set2
+                assert not overlap, f"Sets overlap with codes: {overlap}"
+
+    @pytest.mark.parametrize(
+        ("status_code", "expected_set_name"),
+        [
+            # Heating codes
+            (0x04, "HEATING"),  # Manual control active
+            (0x72, "HEATING"),  # Heating operation comfort
+            (0x74, "HEATING"),  # Heating operation reduced
+            # Preheating codes
+            (0x70, "PREHEATING"),  # Switch-on optimization
+            (0x71, "PREHEATING"),  # Quick heat-up
+            # Drying codes
+            (0x66, "DRYING"),  # Screed function active
+            # Fan codes
+            (0x6E, "FAN"),  # Forced consumption
+            # Cooling codes
+            (0x7F, "COOLING"),  # Active cooling mode
+            (0x80, "COOLING"),  # Passive cooling mode
+            (0x88, "COOLING"),  # Cooling mode
+            # Off codes
+            (0x76, "OFF"),  # Off
+            (0xA2, "OFF"),  # Heating operation off
+            # Defrosting codes
+            (0x7D, "DEFROSTING"),  # Defrost active
+            (0x7E, "DEFROSTING"),  # Drip-off
+        ],
+    )
+    def test_specific_status_codes_in_correct_set(
+        self, status_code: int, expected_set_name: str
+    ) -> None:
+        """Test that specific well-known status codes are in the correct set."""
+        set_mapping = {
+            "HEATING": BSBLAN_HVAC_ACTION_HEATING,
+            "PREHEATING": BSBLAN_HVAC_ACTION_PREHEATING,
+            "DRYING": BSBLAN_HVAC_ACTION_DRYING,
+            "FAN": BSBLAN_HVAC_ACTION_FAN,
+            "COOLING": BSBLAN_HVAC_ACTION_COOLING,
+            "OFF": BSBLAN_HVAC_ACTION_OFF,
+            "DEFROSTING": BSBLAN_HVAC_ACTION_DEFROSTING,
+        }
+        expected_set = set_mapping[expected_set_name]
+        assert status_code in expected_set, (
+            f"Status code 0x{status_code:02X} should be in {expected_set_name}"
+        )
+
+    def test_hvac_action_constants_are_exported(self) -> None:
+        """Test that HVAC action constants are exported from bsblan package."""
+        # Verify they are exported and are the same objects
+        assert (
+            bsblan.BSBLAN_HVAC_ACTION_HEATING
+            is bsblan.constants.BSBLAN_HVAC_ACTION_HEATING
+        )
+        assert (
+            bsblan.BSBLAN_HVAC_ACTION_COOLING
+            is bsblan.constants.BSBLAN_HVAC_ACTION_COOLING
+        )
+        assert (
+            bsblan.BSBLAN_HVAC_ACTION_PREHEATING
+            is bsblan.constants.BSBLAN_HVAC_ACTION_PREHEATING
+        )
+        assert (
+            bsblan.BSBLAN_HVAC_ACTION_DRYING
+            is bsblan.constants.BSBLAN_HVAC_ACTION_DRYING
+        )
+        assert bsblan.BSBLAN_HVAC_ACTION_FAN is bsblan.constants.BSBLAN_HVAC_ACTION_FAN
+        assert bsblan.BSBLAN_HVAC_ACTION_OFF is bsblan.constants.BSBLAN_HVAC_ACTION_OFF
+        assert (
+            bsblan.BSBLAN_HVAC_ACTION_DEFROSTING
+            is bsblan.constants.BSBLAN_HVAC_ACTION_DEFROSTING
+        )
