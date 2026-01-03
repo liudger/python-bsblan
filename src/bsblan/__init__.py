@@ -1,6 +1,15 @@
 """Asynchronous Python client for BSBLAN."""
 
 from .bsblan import BSBLAN, BSBLANConfig
+from .constants import (
+    BSBLAN_HVAC_ACTION_COOLING,
+    BSBLAN_HVAC_ACTION_DEFROSTING,
+    BSBLAN_HVAC_ACTION_DRYING,
+    BSBLAN_HVAC_ACTION_FAN,
+    BSBLAN_HVAC_ACTION_HEATING,
+    BSBLAN_HVAC_ACTION_OFF,
+    BSBLAN_HVAC_ACTION_PREHEATING,
+)
 from .exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
 from .models import (
     DaySchedule,
@@ -22,6 +31,13 @@ from .models import (
 
 __all__ = [
     "BSBLAN",
+    "BSBLAN_HVAC_ACTION_COOLING",
+    "BSBLAN_HVAC_ACTION_DEFROSTING",
+    "BSBLAN_HVAC_ACTION_DRYING",
+    "BSBLAN_HVAC_ACTION_FAN",
+    "BSBLAN_HVAC_ACTION_HEATING",
+    "BSBLAN_HVAC_ACTION_OFF",
+    "BSBLAN_HVAC_ACTION_PREHEATING",
     "BSBLANAuthError",
     "BSBLANConfig",
     "BSBLANConnectionError",
