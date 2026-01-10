@@ -77,13 +77,20 @@ class APIValidator:
     api_config: Any  # intentionally permissive to support tests and dynamic data
     validated_sections: set[str] = field(default_factory=set)
 
-    def validate_section(self, section: str, request_data: dict[str, Any]) -> None:
+    def validate_section(
+        self,
+        section: str,
+        request_data: dict[str, Any],
+        include: list[str] | None = None,
+    ) -> None:
         """Validate and update a section of API config based on actual device support.
 
         Args:
             section: The section of the API config to validate
                 (e.g., 'heating', 'hot_water')
             request_data: Response data from the device for validation
+            include: Optional list of parameter names to validate. If None,
+                validates all parameters for the section.
 
         """
         # Check if the section exists in the APIConfig object
@@ -99,8 +106,12 @@ class APIValidator:
         section_config = self.api_config[section]
         params_to_remove = []
 
-        # Check each parameter in the section
+        # Check each parameter in the section (filtered by include if specified)
         for param_id, param_name in section_config.items():
+            # Skip params not in include list (if include is specified)
+            if include is not None and param_name not in include:
+                continue
+
             if param_id not in request_data:
                 logger.info(
                     "Parameter %s (%s) not found in device response",
