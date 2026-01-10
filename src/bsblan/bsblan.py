@@ -109,6 +109,8 @@ class BSBLAN:
     _api_validator: APIValidator = field(init=False)
     _temperature_unit: str = "°C"
     _hot_water_param_cache: dict[str, str] = field(default_factory=dict)
+    # Track which hot water param groups have been validated
+    _validated_hot_water_groups: set[str] = field(default_factory=set)
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -134,16 +136,145 @@ class BSBLAN:
             await self.session.close()
 
     async def initialize(self) -> None:
-        """Initialize the BSBLAN client."""
+        """Initialize the BSBLAN client.
+
+        This performs minimal initialization for fast startup.
+        Section validation is deferred until actually needed (lazy loading).
+        """
         if not self._initialized:
             await self._fetch_firmware_version()
-            await self._initialize_api_validator()
-            await self._initialize_temperature_range()
-            await self._initialize_api_data()
+            await self._setup_api_validator()
             self._initialized = True
 
+    async def _setup_api_validator(self) -> None:
+        """Set up the API validator without validating sections.
+
+        This creates the validator infrastructure but defers actual
+        section validation until the data is needed (lazy loading).
+        """
+        if self._api_version is None:
+            raise BSBLANError(API_VERSION_ERROR_MSG)
+
+        # Initialize API data if not already done
+        if self._api_data is None:
+            self._api_data = self._copy_api_config()
+
+        # Initialize the API validator (but don't validate sections yet)
+        self._api_validator = APIValidator(self._api_data)
+
+    async def _ensure_section_validated(self, section: SectionLiteral) -> None:
+        """Ensure a section is validated before use (lazy loading).
+
+        This method validates a section on-demand when it's first accessed.
+        Subsequent calls for the same section are no-ops.
+
+        Args:
+            section: The section name to validate
+
+        """
+        if not self._api_validator:
+            raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
+
+        # Skip if already validated
+        if self._api_validator.is_section_validated(section):
+            return
+
+        logger.debug("Lazy loading section: %s", section)
+        response_data = await self._validate_api_section(section)
+
+        # Extract temperature unit from heating section validation
+        # (parameter 710 - target_temperature is always in heating section)
+        if section == "heating" and response_data:
+            self._extract_temperature_unit_from_response(response_data)
+
+    async def _ensure_hot_water_group_validated(
+        self, group_name: str, param_filter: set[str]
+    ) -> None:
+        """Validate only a specific hot water parameter group (lazy loading).
+
+        This enables more granular lazy loading for hot water - instead of
+        validating all 29 hot water parameters at once, we only validate
+        the specific group needed (essential: 5, config: 16, schedule: 8).
+
+        Args:
+            group_name: Name of the group (essential, config, schedule)
+            param_filter: Set of parameter IDs for this group
+
+        """
+        # Skip if this group was already validated (check first to avoid errors)
+        if group_name in self._validated_hot_water_groups:
+            return
+
+        if not self._api_validator:
+            raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
+
+        if not self._api_data:
+            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+
+        logger.debug("Lazy loading hot water group: %s", group_name)
+
+        # Get the base hot water params from API config
+        section_data = self._api_data.get("hot_water", {})
+
+        # Filter to only the params in this group
+        group_params = {
+            param_id: param_name
+            for param_id, param_name in section_data.items()
+            if param_id in param_filter
+        }
+
+        if not group_params:
+            logger.debug("No parameters to validate for group %s", group_name)
+            self._validated_hot_water_groups.add(group_name)
+            return
+
+        # Request only these specific parameters from the device
+        params = await self._extract_params_summary(group_params)
+        response_data = await self._request(params={"Parameter": params["string_par"]})
+
+        # Validate and filter out unsupported params
+        params_to_remove = []
+        for param_id, param_name in group_params.items():
+            if param_id not in response_data:
+                logger.info(
+                    "Hot water param %s (%s) not found in response",
+                    param_id,
+                    param_name,
+                )
+                params_to_remove.append(param_id)
+                continue
+
+            param_data = response_data[param_id]
+            if not param_data or param_data.get("value") in (None, "---"):
+                logger.info(
+                    "Hot water param %s (%s) returned invalid value: %s",
+                    param_id,
+                    param_name,
+                    param_data.get("value") if param_data else None,
+                )
+                params_to_remove.append(param_id)
+
+        # Update the cache with validated params for this group
+        for param_id, param_name in group_params.items():
+            if param_id not in params_to_remove:
+                self._hot_water_param_cache[param_id] = param_name
+
+        # Mark this group as validated
+        self._validated_hot_water_groups.add(group_name)
+        logger.debug(
+            "Validated hot water group '%s': %d params, removed %d unsupported",
+            group_name,
+            len(group_params),
+            len(params_to_remove),
+        )
+
     async def _initialize_api_validator(self) -> None:
-        """Initialize and validate API data against device capabilities."""
+        """Initialize and validate API data against device capabilities.
+
+        DEPRECATED: This method validates all sections upfront.
+        Use _setup_api_validator() + _ensure_section_validated() for lazy loading.
+        This method is kept for backwards compatibility.
+        """
         if self._api_version is None:
             raise BSBLANError(API_VERSION_ERROR_MSG)
 
@@ -154,7 +285,7 @@ class BSBLAN:
         # Initialize the API validator
         self._api_validator = APIValidator(self._api_data)
 
-        # Perform initial validation of each section
+        # Perform initial validation of each section (eager loading)
         sections: list[SectionLiteral] = [
             "heating",
             "sensor",
@@ -317,14 +448,17 @@ class BSBLAN:
             raise BSBLANVersionError(VERSION_ERROR_MSG)
 
     async def _initialize_temperature_range(self) -> None:
-        """Initialize the temperature range from static values.
+        """Initialize the temperature range from static values (lazy loaded).
 
-        Note: Temperature unit is extracted during API validator initialization
-        from the heating section response (parameter 710), so no extra API call
-        is needed here.
+        This method is called on-demand when temperature range is needed.
+        It uses lazy loading through static_values() which will validate
+        the staticValues section if not already done.
+
+        Note: Temperature unit is extracted during heating section validation
+        from the response (parameter 710), so no extra API call is needed here.
         """
         if not self._temperature_range_initialized:
-            # Try to get temperature range from static values
+            # Try to get temperature range from static values (lazy loaded)
             try:
                 static_values = await self.static_values()
                 if static_values.min_temp is not None:
@@ -607,7 +741,8 @@ class BSBLAN:
         """Fetch data for a specific API section.
 
         This is a generic helper method that fetches parameters for a given
-        section and returns the appropriate model.
+        section and returns the appropriate model. It uses lazy loading to
+        validate the section on first access.
 
         Args:
             section: The API section name to fetch data from.
@@ -617,6 +752,9 @@ class BSBLAN:
             The populated model instance.
 
         """
+        # Lazy load: validate section on first access
+        await self._ensure_section_validated(section)
+
         section_params = self._api_validator.get_section_params(section)
         params = await self._extract_params_summary(section_params)
         data = await self._request(params={"Parameter": params["string_par"]})
@@ -727,10 +865,10 @@ class BSBLAN:
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
-        state = self._prepare_thermostat_state(target_temperature, hvac_mode)
+        state = await self._prepare_thermostat_state(target_temperature, hvac_mode)
         await self._set_device_state(state)
 
-    def _prepare_thermostat_state(
+    async def _prepare_thermostat_state(
         self,
         target_temperature: str | None,
         hvac_mode: int | None,
@@ -747,7 +885,7 @@ class BSBLAN:
         """
         state: dict[str, Any] = {}
         if target_temperature is not None:
-            self._validate_target_temperature(target_temperature)
+            await self._validate_target_temperature(target_temperature)
             state.update(
                 {"Parameter": "710", "Value": target_temperature, "Type": "1"},
             )
@@ -762,17 +900,24 @@ class BSBLAN:
             )
         return state
 
-    def _validate_target_temperature(self, target_temperature: str) -> None:
+    async def _validate_target_temperature(self, target_temperature: str) -> None:
         """Validate the target temperature.
+
+        This method lazy-loads the temperature range if not already initialized.
 
         Args:
             target_temperature (str): The target temperature to validate.
 
         Raises:
-            BSBLANError: If the temperature range is not initialized.
+            BSBLANError: If the temperature range cannot be initialized.
             BSBLANInvalidParameterError: If the target temperature is invalid.
 
         """
+        # Lazy load temperature range if needed
+        if self._min_temp is None or self._max_temp is None:
+            await self._initialize_temperature_range()
+
+        # After initialization attempt, check if we have the range
         if self._min_temp is None or self._max_temp is None:
             raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
 
@@ -828,16 +973,19 @@ class BSBLAN:
         param_filter: set[str],
         model_class: type[HotWaterDataT],
         error_msg: str,
+        group_name: str,
     ) -> HotWaterDataT:
         """Fetch hot water data for a specific parameter set.
 
         This is a generic helper method that fetches hot water parameters
         based on the provided filter and returns the appropriate model.
+        It uses granular lazy loading to validate only the specific param group.
 
         Args:
             param_filter: Set of parameter IDs to fetch.
             model_class: The dataclass type to deserialize the response into.
             error_msg: Error message if no parameters are available.
+            group_name: Name of the param group for lazy validation tracking.
 
         Returns:
             The populated model instance.
@@ -846,13 +994,13 @@ class BSBLAN:
             BSBLANError: If no parameters are available for the filter.
 
         """
-        hotwater_params = (
-            self._hot_water_param_cache
-            or self._api_validator.get_section_params("hot_water")
-        )
+        # Granular lazy load: validate only this param group on first access
+        await self._ensure_hot_water_group_validated(group_name, param_filter)
+
+        # Use cached validated params
         filtered_params = {
             param_id: param_name
-            for param_id, param_name in hotwater_params.items()
+            for param_id, param_name in self._hot_water_param_cache.items()
             if param_id in param_filter
         }
 
@@ -871,6 +1019,9 @@ class BSBLAN:
         that are typically checked frequently for monitoring purposes.
         This reduces API calls and improves performance for regular polling.
 
+        Uses granular lazy loading - only validates the 5 essential params,
+        not all 29 hot water parameters.
+
         Returns:
             HotWaterState: Essential hot water state information.
 
@@ -879,6 +1030,7 @@ class BSBLAN:
             param_filter=HOT_WATER_ESSENTIAL_PARAMS,
             model_class=HotWaterState,
             error_msg="No essential hot water parameters available",
+            group_name="essential",
         )
 
     async def hot_water_config(self) -> HotWaterConfig:
@@ -886,6 +1038,8 @@ class BSBLAN:
 
         This method returns configuration parameters that are typically
         set once and checked less frequently.
+
+        Uses granular lazy loading - only validates the 16 config params.
 
         Returns:
             HotWaterConfig: Hot water configuration information.
@@ -895,6 +1049,7 @@ class BSBLAN:
             param_filter=HOT_WATER_CONFIG_PARAMS,
             model_class=HotWaterConfig,
             error_msg="No hot water configuration parameters available",
+            group_name="config",
         )
 
     async def hot_water_schedule(self) -> HotWaterSchedule:
@@ -902,6 +1057,8 @@ class BSBLAN:
 
         This method returns time program settings that are typically
         configured once and rarely changed.
+
+        Uses granular lazy loading - only validates the 8 schedule params.
 
         Returns:
             HotWaterSchedule: Hot water schedule information.
@@ -911,6 +1068,7 @@ class BSBLAN:
             param_filter=HOT_WATER_SCHEDULE_PARAMS,
             model_class=HotWaterSchedule,
             error_msg="No hot water schedule parameters available",
+            group_name="schedule",
         )
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
