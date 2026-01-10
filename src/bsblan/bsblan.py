@@ -111,6 +111,9 @@ class BSBLAN:
     _hot_water_param_cache: dict[str, str] = field(default_factory=dict)
     # Track which hot water param groups have been validated
     _validated_hot_water_groups: set[str] = field(default_factory=set)
+    # Locks to prevent concurrent validation of the same section/group
+    _section_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
+    _hot_water_group_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -168,6 +171,9 @@ class BSBLAN:
         This method validates a section on-demand when it's first accessed.
         Subsequent calls for the same section are no-ops.
 
+        Uses a per-section lock to prevent concurrent validation of the same
+        section, which could cause duplicate network requests.
+
         Args:
             section: The section name to validate
 
@@ -175,17 +181,26 @@ class BSBLAN:
         if not self._api_validator:
             raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
 
-        # Skip if already validated
+        # Fast path: skip if already validated (no lock needed)
         if self._api_validator.is_section_validated(section):
             return
 
-        logger.debug("Lazy loading section: %s", section)
-        response_data = await self._validate_api_section(section)
+        # Get or create lock for this section
+        if section not in self._section_locks:
+            self._section_locks[section] = asyncio.Lock()
 
-        # Extract temperature unit from heating section validation
-        # (parameter 710 - target_temperature is always in heating section)
-        if section == "heating" and response_data:
-            self._extract_temperature_unit_from_response(response_data)
+        async with self._section_locks[section]:
+            # Double-check after acquiring lock (another task may have validated)
+            if self._api_validator.is_section_validated(section):
+                return
+
+            logger.debug("Lazy loading section: %s", section)
+            response_data = await self._validate_api_section(section)
+
+            # Extract temperature unit from heating section validation
+            # (parameter 710 - target_temperature is always in heating section)
+            if section == "heating" and response_data:
+                self._extract_temperature_unit_from_response(response_data)
 
     async def _ensure_hot_water_group_validated(
         self, group_name: str, param_filter: set[str]
@@ -196,12 +211,15 @@ class BSBLAN:
         validating all 29 hot water parameters at once, we only validate
         the specific group needed (essential: 5, config: 16, schedule: 8).
 
+        Uses a per-group lock to prevent concurrent validation of the same
+        group, which could cause duplicate network requests.
+
         Args:
             group_name: Name of the group (essential, config, schedule)
             param_filter: Set of parameter IDs for this group
 
         """
-        # Skip if this group was already validated (check first to avoid errors)
+        # Fast path: skip if already validated (no lock needed)
         if group_name in self._validated_hot_water_groups:
             return
 
@@ -211,62 +229,73 @@ class BSBLAN:
         if not self._api_data:
             raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
 
-        logger.debug("Lazy loading hot water group: %s", group_name)
+        # Get or create lock for this group
+        if group_name not in self._hot_water_group_locks:
+            self._hot_water_group_locks[group_name] = asyncio.Lock()
 
-        # Get the base hot water params from API config
-        section_data = self._api_data.get("hot_water", {})
+        async with self._hot_water_group_locks[group_name]:
+            # Double-check after acquiring lock (another task may have validated)
+            if group_name in self._validated_hot_water_groups:
+                return
 
-        # Filter to only the params in this group
-        group_params = {
-            param_id: param_name
-            for param_id, param_name in section_data.items()
-            if param_id in param_filter
-        }
+            logger.debug("Lazy loading hot water group: %s", group_name)
 
-        if not group_params:
-            logger.debug("No parameters to validate for group %s", group_name)
+            # Get the base hot water params from API config
+            section_data = self._api_data.get("hot_water", {})
+
+            # Filter to only the params in this group
+            group_params = {
+                param_id: param_name
+                for param_id, param_name in section_data.items()
+                if param_id in param_filter
+            }
+
+            if not group_params:
+                logger.debug("No parameters to validate for group %s", group_name)
+                self._validated_hot_water_groups.add(group_name)
+                return
+
+            # Request only these specific parameters from the device
+            params = await self._extract_params_summary(group_params)
+            response_data = await self._request(
+                params={"Parameter": params["string_par"]}
+            )
+
+            # Validate and filter out unsupported params
+            params_to_remove = []
+            for param_id, param_name in group_params.items():
+                if param_id not in response_data:
+                    logger.info(
+                        "Hot water param %s (%s) not found in response",
+                        param_id,
+                        param_name,
+                    )
+                    params_to_remove.append(param_id)
+                    continue
+
+                param_data = response_data[param_id]
+                if not param_data or param_data.get("value") in (None, "---"):
+                    logger.info(
+                        "Hot water param %s (%s) returned invalid value: %s",
+                        param_id,
+                        param_name,
+                        param_data.get("value") if param_data else None,
+                    )
+                    params_to_remove.append(param_id)
+
+            # Update the cache with validated params for this group
+            for param_id, param_name in group_params.items():
+                if param_id not in params_to_remove:
+                    self._hot_water_param_cache[param_id] = param_name
+
+            # Mark this group as validated
             self._validated_hot_water_groups.add(group_name)
-            return
-
-        # Request only these specific parameters from the device
-        params = await self._extract_params_summary(group_params)
-        response_data = await self._request(params={"Parameter": params["string_par"]})
-
-        # Validate and filter out unsupported params
-        params_to_remove = []
-        for param_id, param_name in group_params.items():
-            if param_id not in response_data:
-                logger.info(
-                    "Hot water param %s (%s) not found in response",
-                    param_id,
-                    param_name,
-                )
-                params_to_remove.append(param_id)
-                continue
-
-            param_data = response_data[param_id]
-            if not param_data or param_data.get("value") in (None, "---"):
-                logger.info(
-                    "Hot water param %s (%s) returned invalid value: %s",
-                    param_id,
-                    param_name,
-                    param_data.get("value") if param_data else None,
-                )
-                params_to_remove.append(param_id)
-
-        # Update the cache with validated params for this group
-        for param_id, param_name in group_params.items():
-            if param_id not in params_to_remove:
-                self._hot_water_param_cache[param_id] = param_name
-
-        # Mark this group as validated
-        self._validated_hot_water_groups.add(group_name)
-        logger.debug(
-            "Validated hot water group '%s': %d params, removed %d unsupported",
-            group_name,
-            len(group_params),
-            len(params_to_remove),
-        )
+            logger.debug(
+                "Validated hot water group '%s': %d params, removed %d unsupported",
+                group_name,
+                len(group_params),
+                len(params_to_remove),
+            )
 
     async def _initialize_api_validator(self) -> None:
         """Initialize and validate API data against device capabilities.
