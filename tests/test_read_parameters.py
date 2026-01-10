@@ -11,7 +11,10 @@ from bsblan.constants import API_V3
 
 
 @pytest.mark.asyncio
-async def test_read_parameters_by_id(mock_bsblan: BSBLAN) -> None:
+async def test_read_parameters_by_id(
+    mock_bsblan: BSBLAN,
+    monkeypatch: Any,
+) -> None:
     """Test reading specific parameters by their IDs."""
     # Arrange: mock response with parameter data
     mock_response = {
@@ -30,7 +33,8 @@ async def test_read_parameters_by_id(mock_bsblan: BSBLAN) -> None:
             "dataType": 1,
         },
     }
-    mock_bsblan._request = AsyncMock(return_value=mock_response)
+    request_mock = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr(mock_bsblan, "_request", request_mock)
 
     # Act
     result = await mock_bsblan.read_parameters(["8740", "8000"])
@@ -41,9 +45,7 @@ async def test_read_parameters_by_id(mock_bsblan: BSBLAN) -> None:
     assert "8000" in result
     assert result["8740"].value == 21.5  # Converted to float
     assert result["8000"].value == 114  # ENUM type, converted to int
-    mock_bsblan._request.assert_awaited_once_with(
-        params={"Parameter": "8740,8000"}
-    )
+    request_mock.assert_awaited_once_with(params={"Parameter": "8740,8000"})
 
 
 @pytest.mark.asyncio
@@ -58,7 +60,10 @@ async def test_read_parameters_empty_list() -> None:
 
 
 @pytest.mark.asyncio
-async def test_read_parameters_filters_missing(mock_bsblan: BSBLAN) -> None:
+async def test_read_parameters_filters_missing(
+    mock_bsblan: BSBLAN,
+    monkeypatch: Any,
+) -> None:
     """Test that missing parameters are filtered from result."""
     # Arrange: response only has one of the requested parameters
     mock_response = {
@@ -70,7 +75,7 @@ async def test_read_parameters_filters_missing(mock_bsblan: BSBLAN) -> None:
             "dataType": 0,
         },
     }
-    mock_bsblan._request = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr(mock_bsblan, "_request", AsyncMock(return_value=mock_response))
 
     # Act
     result = await mock_bsblan.read_parameters(["8740", "9999"])
@@ -82,7 +87,10 @@ async def test_read_parameters_filters_missing(mock_bsblan: BSBLAN) -> None:
 
 
 @pytest.mark.asyncio
-async def test_read_parameters_filters_invalid_data(mock_bsblan: BSBLAN) -> None:
+async def test_read_parameters_filters_invalid_data(
+    mock_bsblan: BSBLAN,
+    monkeypatch: Any,
+) -> None:
     """Test that parameters with invalid data are filtered."""
     # Arrange: response with invalid data
     mock_response = {
@@ -95,7 +103,7 @@ async def test_read_parameters_filters_invalid_data(mock_bsblan: BSBLAN) -> None
         },
         "8000": None,  # Invalid data
     }
-    mock_bsblan._request = AsyncMock(return_value=mock_response)
+    monkeypatch.setattr(mock_bsblan, "_request", AsyncMock(return_value=mock_response))
 
     # Act
     result = await mock_bsblan.read_parameters(["8740", "8000"])
@@ -159,11 +167,13 @@ async def test_get_parameter_ids(monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         # Act
-        result = bsblan.get_parameter_ids([
-            "current_temperature",
-            "hvac_mode",
-            "nonexistent_param",
-        ])
+        result = bsblan.get_parameter_ids(
+            [
+                "current_temperature",
+                "hvac_mode",
+                "nonexistent_param",
+            ]
+        )
 
         # Assert: only found parameters returned
         assert len(result) == 2
@@ -200,10 +210,12 @@ async def test_read_parameters_by_name(monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_request", AsyncMock(return_value=mock_response))
 
         # Act
-        result = await bsblan.read_parameters_by_name([
-            "current_temperature",
-            "hvac_mode",
-        ])
+        result = await bsblan.read_parameters_by_name(
+            [
+                "current_temperature",
+                "hvac_mode",
+            ]
+        )
 
         # Assert
         assert len(result) == 2
