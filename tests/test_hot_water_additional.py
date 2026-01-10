@@ -376,3 +376,132 @@ async def test_populate_hot_water_cache_no_validator() -> None:
 
     # Cache should still be empty
     assert len(bsblan._hot_water_param_cache) == 0
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_no_validator() -> None:
+    """Test _ensure_hot_water_group_validated raises error without validator."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        # No validator set
+        bsblan._api_validator = None  # type: ignore[assignment]
+
+        with pytest.raises(BSBLANError, match="API validator not initialized"):
+            await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_no_api_data() -> None:
+    """Test _ensure_hot_water_group_validated raises error without api_data."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        # Set validator but no api_data
+        bsblan._api_validator = MagicMock()
+        bsblan._api_data = None
+
+        with pytest.raises(BSBLANError, match="API data not initialized"):
+            await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_no_validator() -> None:
+    """Test _ensure_section_validated raises error without validator."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        # No validator set
+        bsblan._api_validator = None  # type: ignore[assignment]
+
+        with pytest.raises(BSBLANError, match="API validator not initialized"):
+            await bsblan._ensure_section_validated("heating")
+
+
+@pytest.mark.asyncio
+async def test_setup_api_validator_no_api_version() -> None:
+    """Test _setup_api_validator raises error without API version."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        # No API version set
+        bsblan._api_version = None
+
+        with pytest.raises(BSBLANError, match="API version not set"):
+            await bsblan._setup_api_validator()
+
+
+@pytest.mark.asyncio
+async def test_granular_validation_filters_missing_params(
+    monkeypatch: Any,
+) -> None:
+    """Test granular validation filters out missing parameters from response."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+
+        api_validator = APIValidator(API_V3)
+        bsblan._api_validator = api_validator
+
+        # Mock response that's missing param "1610"
+        mock_response = {
+            "1600": {"name": "Operating mode", "value": 1, "unit": "", "desc": "On"},
+            # "1610" is missing from response
+        }
+
+        request_mock = AsyncMock(return_value=mock_response)
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        # Run validation - should filter out missing param
+        await bsblan._ensure_hot_water_group_validated("test_missing", {"1600", "1610"})
+
+        # Only "1600" should be in cache (1610 was missing)
+        assert "1600" in bsblan._hot_water_param_cache
+        assert "1610" not in bsblan._hot_water_param_cache
+        assert "test_missing" in bsblan._validated_hot_water_groups
+
+
+@pytest.mark.asyncio
+async def test_granular_validation_filters_invalid_params(
+    monkeypatch: Any,
+) -> None:
+    """Test granular validation filters out invalid parameter values."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+
+        api_validator = APIValidator(API_V3)
+        bsblan._api_validator = api_validator
+
+        # Mock response with invalid values
+        mock_response = {
+            "1600": {"name": "Operating mode", "value": 1, "unit": "", "desc": "On"},
+            "1610": {"name": "Setpoint", "value": "---", "unit": "°C", "desc": "---"},
+            "1620": {"name": "Release", "value": None, "unit": "", "desc": ""},
+        }
+
+        request_mock = AsyncMock(return_value=mock_response)
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        # Run validation - should filter out invalid params
+        await bsblan._ensure_hot_water_group_validated(
+            "test_invalid", {"1600", "1610", "1620"}
+        )
+
+        # Only "1600" should be in cache (others had invalid values)
+        assert "1600" in bsblan._hot_water_param_cache
+        assert "1610" not in bsblan._hot_water_param_cache  # value was "---"
+        assert "1620" not in bsblan._hot_water_param_cache  # value was None
+        assert "test_invalid" in bsblan._validated_hot_water_groups
