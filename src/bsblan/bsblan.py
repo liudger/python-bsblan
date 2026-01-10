@@ -213,7 +213,10 @@ class BSBLAN:
                 self._extract_temperature_unit_from_response(response_data)
 
     async def _ensure_hot_water_group_validated(
-        self, group_name: str, param_filter: set[str]
+        self,
+        group_name: str,
+        param_filter: set[str],
+        include: list[str] | None = None,
     ) -> None:
         """Validate only a specific hot water parameter group (lazy loading).
 
@@ -227,6 +230,8 @@ class BSBLAN:
         Args:
             group_name: Name of the group (essential, config, schedule)
             param_filter: Set of parameter IDs for this group
+            include: Optional list of parameter names to include in validation.
+                If provided, only these parameters will be validated.
 
         """
         # Fast path: skip if already validated (no lock needed)
@@ -259,6 +264,14 @@ class BSBLAN:
                 for param_id, param_name in section_data.items()
                 if param_id in param_filter
             }
+
+            # Apply include filter if specified - only validate requested params
+            if include is not None:
+                group_params = {
+                    param_id: name
+                    for param_id, name in group_params.items()
+                    if name in include
+                }
 
             if not group_params:
                 logger.debug("No parameters to validate for group %s", group_name)
@@ -1105,7 +1118,8 @@ class BSBLAN:
 
         """
         # Granular lazy load: validate only this param group on first access
-        await self._ensure_hot_water_group_validated(group_name, param_filter)
+        # Pass include filter so we only validate requested params
+        await self._ensure_hot_water_group_validated(group_name, param_filter, include)
 
         # Use cached validated params
         filtered_params = {
