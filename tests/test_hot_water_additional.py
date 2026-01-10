@@ -571,3 +571,138 @@ async def test_ensure_hot_water_group_concurrent_double_check() -> None:
 
         # Only one request should have been made
         assert request_count == 1
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_with_include_filter() -> None:
+    """Test that include filter limits which params are validated."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        # Set up api_data with multiple params in the config group
+        bsblan._api_data = {  # type: ignore[assignment]
+            "hot_water": {
+                "1640": "legionella_function",
+                "1645": "legionella_function_setpoint",
+                "1648": "legionella_circulation_temp_diff",
+            }
+        }
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        requested_params: list[str] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            if params:
+                requested_params.append(params.get("Parameter", ""))
+            # Return valid data for all requested params
+            return {
+                "1640": {"value": "1", "unit": ""},
+                "1645": {"value": "60", "unit": "°C"},
+            }
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        # Validate with include filter - only request 2 of 3 params
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640", "1645", "1648"},
+            include=["legionella_function", "legionella_function_setpoint"],
+        )
+
+        # Verify only filtered params were requested (not 1648)
+        assert len(requested_params) == 1
+        assert "1648" not in requested_params[0]
+        assert "1640" in requested_params[0]
+        assert "1645" in requested_params[0]
+
+        # Cache should only contain the validated params
+        assert "1640" in bsblan._hot_water_param_cache
+        assert "1645" in bsblan._hot_water_param_cache
+        assert "1648" not in bsblan._hot_water_param_cache
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
+    """Test that include filter with no matching params marks group validated."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {  # type: ignore[assignment]
+            "hot_water": {
+                "1640": "legionella_function",
+            }
+        }
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        request_count = 0
+
+        async def mock_request(**_kwargs: Any) -> dict[str, Any]:
+            nonlocal request_count
+            request_count += 1
+            return {}
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        # Include filter with a param name that doesn't exist in the group
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640"},
+            include=["nonexistent_param"],
+        )
+
+        # No request should be made since no params match
+        assert request_count == 0
+        # Group should still be marked as validated
+        assert "config" in bsblan._validated_hot_water_groups
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_without_include() -> None:
+    """Test that without include filter all group params are validated."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {  # type: ignore[assignment]
+            "hot_water": {
+                "1640": "legionella_function",
+                "1645": "legionella_function_setpoint",
+                "1648": "legionella_circulation_temp_diff",
+            }
+        }
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        requested_params: list[str] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            if params:
+                requested_params.append(params.get("Parameter", ""))
+            return {
+                "1640": {"value": "1", "unit": ""},
+                "1645": {"value": "60", "unit": "°C"},
+                "1648": {"value": "5", "unit": "K"},
+            }
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        # Validate without include filter - all params should be requested
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640", "1645", "1648"},
+        )
+
+        # All 3 params should be in the request
+        assert len(requested_params) == 1
+        assert "1640" in requested_params[0]
+        assert "1645" in requested_params[0]
+        assert "1648" in requested_params[0]
+
+        # All params should be cached
+        assert "1640" in bsblan._hot_water_param_cache
+        assert "1645" in bsblan._hot_water_param_cache
+        assert "1648" in bsblan._hot_water_param_cache
