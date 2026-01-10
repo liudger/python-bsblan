@@ -22,10 +22,10 @@ async def test_feature_name(mock_bsblan: BSBLAN) -> None:
     """Test description."""
     # Arrange
     expected_value = "expected"
-    
+
     # Act
     result = await mock_bsblan.some_method()
-    
+
     # Assert
     assert result == expected_value
 ```
@@ -103,11 +103,11 @@ When testing hot water methods, mark param groups as validated to skip network c
 async def test_hot_water_no_params_error(monkeypatch: Any) -> None:
     """Test error when no parameters available."""
     bsblan = BSBLAN(config, session=session)
-    
+
     # Set empty cache and mark group as validated
     bsblan.set_hot_water_cache({})
     bsblan._validated_hot_water_groups.add("essential")  # Skip validation
-    
+
     with pytest.raises(BSBLANError, match="No essential hot water"):
         await bsblan.hot_water_state()
 ```
