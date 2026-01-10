@@ -405,6 +405,9 @@ NO_PARAMETER_NAMES_ERROR_MSG: Final[str] = "No parameter names provided"
 PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG: Final[str] = (
     "Could not resolve any parameter names"
 )
+INVALID_INCLUDE_PARAMS_ERROR_MSG: Final[str] = (
+    "None of the requested parameters are valid for this section"
+)
 
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}

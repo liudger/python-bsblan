@@ -27,6 +27,7 @@ from .constants import (
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
+    INVALID_INCLUDE_PARAMS_ERROR_MSG,
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
     MULTI_PARAMETER_ERROR_MSG,
@@ -770,6 +771,7 @@ class BSBLAN:
         self,
         section: SectionLiteral,
         model_class: type[SectionDataT],
+        include: list[str] | None = None,
     ) -> SectionDataT:
         """Fetch data for a specific API section.
 
@@ -780,22 +782,46 @@ class BSBLAN:
         Args:
             section: The API section name to fetch data from.
             model_class: The dataclass type to deserialize the response into.
+            include: Optional list of parameter names to fetch. If None,
+                fetches all parameters for the section.
 
         Returns:
             The populated model instance.
+
+        Raises:
+            BSBLANError: If include is specified but none of the parameters
+                are valid for this section.
 
         """
         # Lazy load: validate section on first access
         await self._ensure_section_validated(section)
 
         section_params = self._api_validator.get_section_params(section)
+
+        # Filter parameters if include list is specified
+        if include is not None:
+            section_params = {
+                param_id: name
+                for param_id, name in section_params.items()
+                if name in include
+            }
+            if not section_params:
+                raise BSBLANError(INVALID_INCLUDE_PARAMS_ERROR_MSG)
+
         params = await self._extract_params_summary(section_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return model_class.from_dict(data)
 
-    async def state(self) -> State:
+    async def state(self, include: list[str] | None = None) -> State:
         """Get the current state from BSBLAN device.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all state parameters. Valid names include:
+                hvac_mode, target_temperature, hvac_action,
+                hvac_mode_changeover, current_temperature,
+                room1_thermostat_mode, room1_temp_setpoint_boost.
 
         Returns:
             State: The current state of the BSBLAN device.
@@ -804,26 +830,48 @@ class BSBLAN:
             The hvac_mode.value is returned as a raw integer from the device:
             0=off, 1=auto, 2=eco, 3=heat.
 
-        """
-        return await self._fetch_section_data("heating", State)
+        Example:
+            # Fetch only hvac_mode and current_temperature
+            state = await client.state(include=["hvac_mode", "current_temperature"])
 
-    async def sensor(self) -> Sensor:
+        """
+        return await self._fetch_section_data("heating", State, include)
+
+    async def sensor(self, include: list[str] | None = None) -> Sensor:
         """Get the sensor information from BSBLAN device.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all sensor parameters. Valid names include:
+                outside_temperature, current_temperature.
 
         Returns:
             Sensor: The sensor information from the BSBLAN device.
 
-        """
-        return await self._fetch_section_data("sensor", Sensor)
+        Example:
+            # Fetch only outside_temperature
+            sensor = await client.sensor(include=["outside_temperature"])
 
-    async def static_values(self) -> StaticState:
+        """
+        return await self._fetch_section_data("sensor", Sensor, include)
+
+    async def static_values(self, include: list[str] | None = None) -> StaticState:
         """Get the static information from BSBLAN device.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all static parameters. Valid names include:
+                min_temp, max_temp.
 
         Returns:
             StaticState: The static information from the BSBLAN device.
 
+        Example:
+            # Fetch only min_temp
+            static = await client.static_values(include=["min_temp"])
+
         """
-        return await self._fetch_section_data("staticValues", StaticState)
+        return await self._fetch_section_data("staticValues", StaticState, include)
 
     async def device(self) -> Device:
         """Get BSBLAN device info.
@@ -835,14 +883,23 @@ class BSBLAN:
         device_info = await self._request(base_path="/JI")
         return Device.from_dict(device_info)
 
-    async def info(self) -> Info:
+    async def info(self, include: list[str] | None = None) -> Info:
         """Get information about the current heating system config.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all info parameters. Valid names include:
+                device_identification, controller_family, controller_variant.
 
         Returns:
             Info: The information about the current heating system config.
 
+        Example:
+            # Fetch only device_identification
+            info = await client.info(include=["device_identification"])
+
         """
-        return await self._fetch_section_data("device", Info)
+        return await self._fetch_section_data("device", Info, include)
 
     async def time(self) -> DeviceTime:
         """Get the current time from the BSB-LAN device.
@@ -1007,6 +1064,7 @@ class BSBLAN:
         model_class: type[HotWaterDataT],
         error_msg: str,
         group_name: str,
+        include: list[str] | None = None,
     ) -> HotWaterDataT:
         """Fetch hot water data for a specific parameter set.
 
@@ -1019,6 +1077,8 @@ class BSBLAN:
             model_class: The dataclass type to deserialize the response into.
             error_msg: Error message if no parameters are available.
             group_name: Name of the param group for lazy validation tracking.
+            include: Optional list of parameter names to fetch. If None,
+                fetches all parameters in the group.
 
         Returns:
             The populated model instance.
@@ -1037,6 +1097,16 @@ class BSBLAN:
             if param_id in param_filter
         }
 
+        # Apply include filter if specified
+        if include is not None:
+            filtered_params = {
+                param_id: name
+                for param_id, name in filtered_params.items()
+                if name in include
+            }
+            if not filtered_params:
+                raise BSBLANError(INVALID_INCLUDE_PARAMS_ERROR_MSG)
+
         if not filtered_params:
             raise BSBLANError(error_msg)
 
@@ -1045,7 +1115,7 @@ class BSBLAN:
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return model_class.from_dict(data)
 
-    async def hot_water_state(self) -> HotWaterState:
+    async def hot_water_state(self, include: list[str] | None = None) -> HotWaterState:
         """Get essential hot water state for frequent polling.
 
         This method returns only the most important hot water parameters
@@ -1055,8 +1125,20 @@ class BSBLAN:
         Uses granular lazy loading - only validates the 5 essential params,
         not all 29 hot water parameters.
 
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all essential hot water parameters. Valid names include:
+                operating_mode, nominal_setpoint, release,
+                dhw_actual_value_top_temperature, state_dhw_pump.
+
         Returns:
             HotWaterState: Essential hot water state information.
+
+        Example:
+            # Fetch only operating_mode and nominal_setpoint
+            state = await client.hot_water_state(
+                include=["operating_mode", "nominal_setpoint"]
+            )
 
         """
         return await self._fetch_hot_water_data(
@@ -1064,9 +1146,12 @@ class BSBLAN:
             model_class=HotWaterState,
             error_msg="No essential hot water parameters available",
             group_name="essential",
+            include=include,
         )
 
-    async def hot_water_config(self) -> HotWaterConfig:
+    async def hot_water_config(
+        self, include: list[str] | None = None
+    ) -> HotWaterConfig:
         """Get hot water configuration and advanced settings.
 
         This method returns configuration parameters that are typically
@@ -1074,8 +1159,26 @@ class BSBLAN:
 
         Uses granular lazy loading - only validates the 16 config params.
 
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all config hot water parameters. Valid names include:
+                eco_mode_selection, nominal_setpoint_max, reduced_setpoint,
+                dhw_charging_priority, operating_mode_changeover,
+                legionella_function, legionella_function_setpoint,
+                legionella_function_periodicity, legionella_function_day,
+                legionella_function_time, legionella_function_dwelling_time,
+                legionella_circulation_pump, legionella_circulation_temp_diff,
+                dhw_circulation_pump_release, dhw_circulation_pump_cycling,
+                dhw_circulation_setpoint.
+
         Returns:
             HotWaterConfig: Hot water configuration information.
+
+        Example:
+            # Fetch only legionella settings
+            config = await client.hot_water_config(
+                include=["legionella_function", "legionella_function_setpoint"]
+            )
 
         """
         return await self._fetch_hot_water_data(
@@ -1083,9 +1186,12 @@ class BSBLAN:
             model_class=HotWaterConfig,
             error_msg="No hot water configuration parameters available",
             group_name="config",
+            include=include,
         )
 
-    async def hot_water_schedule(self) -> HotWaterSchedule:
+    async def hot_water_schedule(
+        self, include: list[str] | None = None
+    ) -> HotWaterSchedule:
         """Get hot water time program schedules.
 
         This method returns time program settings that are typically
@@ -1093,8 +1199,22 @@ class BSBLAN:
 
         Uses granular lazy loading - only validates the 8 schedule params.
 
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all schedule parameters. Valid names include:
+                dhw_time_program_monday, dhw_time_program_tuesday,
+                dhw_time_program_wednesday, dhw_time_program_thursday,
+                dhw_time_program_friday, dhw_time_program_saturday,
+                dhw_time_program_sunday, dhw_time_program_standard_values.
+
         Returns:
             HotWaterSchedule: Hot water schedule information.
+
+        Example:
+            # Fetch only Monday's schedule
+            schedule = await client.hot_water_schedule(
+                include=["dhw_time_program_monday"]
+            )
 
         """
         return await self._fetch_hot_water_data(
@@ -1102,6 +1222,7 @@ class BSBLAN:
             model_class=HotWaterSchedule,
             error_msg="No hot water schedule parameters available",
             group_name="schedule",
+            include=include,
         )
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
