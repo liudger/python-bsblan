@@ -358,7 +358,7 @@ async def test_validate_api_section_hot_water_cache() -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
-        bsblan._api_data = {  # type: ignore[assignment]
+        bsblan._api_data = {
             "heating": {},
             "sensor": {},
             "staticValues": {},
