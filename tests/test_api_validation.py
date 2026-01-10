@@ -163,7 +163,10 @@ async def test_validate_api_section_validation_error(
         bsblan._api_validator = APIValidator(bsblan._api_data)
 
         def mock_validate(
-            _self: APIValidator, _section: str, _response: dict[str, Any]
+            _self: APIValidator,
+            _section: str,
+            _response: dict[str, Any],
+            _include: list[str] | None = None,
         ) -> NoReturn:
             error_message = "Validation error"
             raise BSBLANError(error_message)
@@ -296,7 +299,9 @@ async def test_ensure_section_validated_double_check_after_lock() -> None:
         # Track validation calls
         validation_count = 0
 
-        async def mock_validate(section: str) -> dict[str, Any]:
+        async def mock_validate(
+            section: str, _include: list[str] | None = None
+        ) -> dict[str, Any]:
             nonlocal validation_count
             validation_count += 1
             # Mark section as validated
@@ -329,7 +334,9 @@ async def test_ensure_section_validated_concurrent_double_check() -> None:
         validation_count = 0
         validation_started = asyncio.Event()
 
-        async def slow_validate(section: str) -> dict[str, Any]:
+        async def slow_validate(
+            section: str, _include: list[str] | None = None
+        ) -> dict[str, Any]:
             nonlocal validation_count
             validation_count += 1
             validation_started.set()
@@ -392,7 +399,9 @@ async def test_ensure_section_validated_heating_extracts_temp_unit() -> None:
         bsblan._api_validator = APIValidator(bsblan._api_data)
 
         # Mock _validate_api_section to return response with temp unit
-        async def mock_validate(section: str) -> dict[str, Any]:
+        async def mock_validate(
+            section: str, _include: list[str] | None = None
+        ) -> dict[str, Any]:
             bsblan._api_validator.validated_sections.add(section)
             if section == "heating":
                 return {"710": {"value": "20.0", "unit": "°F"}}

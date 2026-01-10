@@ -164,6 +164,86 @@ async def test_section_method_with_invalid_params(
         request_mock.assert_not_awaited()
 
 
+# ========== Tests for _validate_api_section with include parameter ==========
+
+
+@pytest.mark.asyncio
+async def test_validate_api_section_with_include_filter(monkeypatch: Any) -> None:
+    """Test _validate_api_section filters params when include is specified."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+
+        # Set up API data with multiple params
+        api_data = {
+            "heating": {
+                "700": "hvac_mode",
+                "710": "target_temperature",
+                "8740": "current_temperature",
+            },
+            "sensor": {},
+            "staticValues": {},
+            "device": {},
+            "hot_water": {},
+        }
+        bsblan._api_data = api_data  # type: ignore[assignment]
+
+        api_validator = APIValidator(api_data)
+        bsblan._api_validator = api_validator
+
+        # Mock request to return only the filtered param
+        request_mock = AsyncMock(
+            return_value={"700": {"value": "1", "unit": "", "desc": "Auto"}}
+        )
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        # Validate with include filter - should only request hvac_mode
+        result = await bsblan._validate_api_section("heating", include=["hvac_mode"])
+
+        # Verify only filtered param was requested
+        request_mock.assert_awaited_once()
+        call_args = request_mock.call_args
+        assert call_args.kwargs["params"]["Parameter"] == "700"
+
+        # Result should contain the response data
+        assert result is not None
+        assert "700" in result
+
+
+@pytest.mark.asyncio
+async def test_validate_section_skips_params_not_in_include() -> None:
+    """Test validate_section skips params not in include list."""
+    # Set up API config with multiple params
+    api_config = {
+        "heating": {
+            "700": "hvac_mode",
+            "710": "target_temperature",
+            "8740": "current_temperature",
+        },
+    }
+
+    api_validator = APIValidator(api_config)
+
+    # Mock request data with only one param (simulating filtered response)
+    request_data = {"700": {"value": "1", "unit": "", "desc": "Auto"}}
+
+    # Validate with include filter - should skip params not in include
+    api_validator.validate_section("heating", request_data, include=["hvac_mode"])
+
+    # Section should be validated
+    assert api_validator.is_section_validated("heating")
+
+    # hvac_mode (700) should still be in config since it was valid
+    # Other params should NOT be removed since they weren't in include
+    assert "700" in api_validator.api_config["heating"]
+    # 710 and 8740 were not validated (skipped), so they remain
+    assert "710" in api_validator.api_config["heating"]
+    assert "8740" in api_validator.api_config["heating"]
+
+
 # ========== Additional state() specific tests ==========
 
 
