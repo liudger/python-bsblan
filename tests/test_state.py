@@ -32,7 +32,7 @@ async def test_state(monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
-        api_validator.validated_sections.add("state")
+        api_validator.validated_sections.add("heating")
         bsblan._api_validator = api_validator
 
         request_mock: AsyncMock = AsyncMock(

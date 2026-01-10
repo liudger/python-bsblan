@@ -176,28 +176,18 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
 
         # Save original methods
         original_fetch_firmware = bsblan._fetch_firmware_version
-        original_initialize_validator = bsblan._initialize_api_validator
-        original_initialize_temp_range = bsblan._initialize_temperature_range
-        original_initialize_api_data = bsblan._initialize_api_data
+        original_setup_validator = bsblan._setup_api_validator
 
         try:
             # Replace with async mock functions
             async def mock_fetch_firmware() -> None:
                 pass
 
-            async def mock_initialize_validator() -> None:
-                pass
-
-            async def mock_initialize_temp_range() -> None:
-                pass
-
-            async def mock_initialize_api_data() -> None:
+            async def mock_setup_validator() -> None:
                 pass
 
             bsblan._fetch_firmware_version = mock_fetch_firmware  # type: ignore[method-assign]
-            bsblan._initialize_api_validator = mock_initialize_validator  # type: ignore[method-assign]
-            bsblan._initialize_temperature_range = mock_initialize_temp_range  # type: ignore[method-assign]
-            bsblan._initialize_api_data = mock_initialize_api_data  # type: ignore[method-assign, assignment]
+            bsblan._setup_api_validator = mock_setup_validator  # type: ignore[method-assign]
 
             await bsblan.initialize()
 
@@ -206,9 +196,7 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
         finally:
             # Restore original methods
             bsblan._fetch_firmware_version = original_fetch_firmware  # type: ignore[method-assign]
-            bsblan._initialize_api_validator = original_initialize_validator  # type: ignore[method-assign]
-            bsblan._initialize_temperature_range = original_initialize_temp_range  # type: ignore[method-assign]
-            bsblan._initialize_api_data = original_initialize_api_data  # type: ignore[method-assign]
+            bsblan._setup_api_validator = original_setup_validator  # type: ignore[method-assign]
 
 
 @pytest.mark.asyncio
