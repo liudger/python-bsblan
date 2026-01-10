@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 
 # file deepcode ignore W0212: this is a testfile
@@ -245,3 +246,191 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
         # This should raise BSBLANError and reset validation
         with pytest.raises(BSBLANError, match="Test error"):
             await client._validate_api_section("heating")
+
+
+@pytest.mark.asyncio
+async def test_setup_api_validator_api_data_already_exists() -> None:
+    """Test _setup_api_validator when _api_data already exists."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+
+        # Pre-set api_data
+        existing_data = {"heating": {"700": "operating_mode"}}
+        bsblan._api_data = existing_data  # type: ignore[assignment]
+
+        await bsblan._setup_api_validator()
+
+        # _api_data should remain unchanged (not overwritten)
+        assert bsblan._api_data is existing_data
+        assert bsblan._api_validator is not None
+
+
+@pytest.mark.asyncio
+async def test_setup_api_validator_initializes_api_data() -> None:
+    """Test _setup_api_validator initializes _api_data when None."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+
+        # Ensure _api_data is None
+        bsblan._api_data = None
+
+        await bsblan._setup_api_validator()
+
+        # _api_data should be initialized from API config
+        assert bsblan._api_data is not None
+        assert "heating" in bsblan._api_data
+        assert bsblan._api_validator is not None
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_double_check_after_lock() -> None:
+    """Test double-check locking in _ensure_section_validated."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        # Track validation calls
+        validation_count = 0
+
+        async def mock_validate(section: str) -> dict[str, Any]:
+            nonlocal validation_count
+            validation_count += 1
+            # Mark section as validated
+            bsblan._api_validator.validated_sections.add(section)
+            return {}
+
+        bsblan._validate_api_section = mock_validate  # type: ignore[method-assign]
+
+        # Create the lock first
+        bsblan._section_locks["heating"] = asyncio.Lock()
+
+        # First call validates
+        await bsblan._ensure_section_validated("heating")
+        assert validation_count == 1
+
+        # Second call should skip (fast path - no lock needed)
+        await bsblan._ensure_section_validated("heating")
+        assert validation_count == 1  # Still 1, not called again
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_concurrent_double_check() -> None:
+    """Test that concurrent calls don't duplicate validation."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        validation_count = 0
+        validation_started = asyncio.Event()
+
+        async def slow_validate(section: str) -> dict[str, Any]:
+            nonlocal validation_count
+            validation_count += 1
+            validation_started.set()
+            # Simulate slow validation
+            await asyncio.sleep(0.1)
+            bsblan._api_validator.validated_sections.add(section)
+            return {}
+
+        bsblan._validate_api_section = slow_validate  # type: ignore[method-assign]
+
+        # Start two concurrent validations
+        task1 = asyncio.create_task(bsblan._ensure_section_validated("heating"))
+        # Wait for first validation to start
+        await validation_started.wait()
+        task2 = asyncio.create_task(bsblan._ensure_section_validated("heating"))
+
+        await asyncio.gather(task1, task2)
+
+        # Only one validation should have occurred due to double-check locking
+        assert validation_count == 1
+
+
+@pytest.mark.asyncio
+async def test_validate_api_section_hot_water_cache() -> None:
+    """Test that hot_water section validation populates the cache."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {  # type: ignore[assignment]
+            "heating": {},
+            "sensor": {},
+            "staticValues": {},
+            "device": {},
+            "hot_water": {"1600": "operating_mode", "1610": "nominal_setpoint"},
+        }
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        # Mock the request
+        bsblan._request = AsyncMock(  # type: ignore[method-assign]
+            return_value={
+                "1600": {"value": "1", "unit": ""},
+                "1610": {"value": "55", "unit": "°C"},
+            }
+        )
+
+        # Validate hot_water section
+        await bsblan._validate_api_section("hot_water")
+
+        # Cache should be populated
+        assert len(bsblan._hot_water_param_cache) > 0
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_heating_extracts_temp_unit() -> None:
+    """Test that heating section validation extracts temperature unit."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {"heating": {"710": "target_temperature"}}  # type: ignore[assignment]
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        # Mock _validate_api_section to return response with temp unit
+        async def mock_validate(section: str) -> dict[str, Any]:
+            bsblan._api_validator.validated_sections.add(section)
+            if section == "heating":
+                return {"710": {"value": "20.0", "unit": "°F"}}
+            return {}
+
+        bsblan._validate_api_section = mock_validate  # type: ignore[method-assign]
+
+        await bsblan._ensure_section_validated("heating")
+
+        # Temperature unit should be extracted from heating response
+        assert bsblan._temperature_unit == "°F"
+
+
+@pytest.mark.asyncio
+async def test_setup_api_validator_skips_api_data_init_when_exists() -> None:
+    """Test that _setup_api_validator doesn't override existing _api_data."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+
+        # Pre-set custom api_data
+        custom_data: dict[str, Any] = {"heating": {"custom": "value"}}
+        bsblan._api_data = custom_data  # type: ignore[assignment]
+
+        # Track if _copy_api_config is called
+        copy_called = False
+        original_copy = bsblan._copy_api_config
+
+        def mock_copy() -> Any:
+            nonlocal copy_called
+            copy_called = True
+            return original_copy()
+
+        bsblan._copy_api_config = mock_copy  # type: ignore[method-assign]
+
+        await bsblan._setup_api_validator()
+
+        # _copy_api_config should NOT be called since _api_data exists
+        assert not copy_called
+        # Original data should be preserved
+        assert bsblan._api_data is custom_data
