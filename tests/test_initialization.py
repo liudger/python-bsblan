@@ -141,7 +141,7 @@ async def test_context_manager(aresponses: ResponsesMockServer) -> None:
             assert bsblan._close_session is True
     finally:
         # Restore the original method
-        BSBLAN.initialize = original_initialize  # type: ignore[method-assign]
+        BSBLAN.initialize = original_initialize
 
 
 @pytest.mark.asyncio

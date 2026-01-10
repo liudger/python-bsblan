@@ -26,7 +26,6 @@ import pstats
 import sys
 import time
 from contextlib import asynccontextmanager
-from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -293,12 +292,9 @@ def run_cprofile_mode(config: BSBLANConfig, output: str | None) -> None:
     print("cProfile Results (top 30 by cumulative time):")
     print("=" * 60)
 
-    # Print stats
-    stream = StringIO()
+    # Print stats to stdout
     stats.sort_stats("cumulative")
-    stats.stream = stream
     stats.print_stats(30)
-    print(stream.getvalue())
 
     if output:
         stats.dump_stats(output)
