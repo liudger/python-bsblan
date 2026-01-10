@@ -202,4 +202,5 @@ dev = [
     "safety==3.7.0",
     "vulture==2.14",
     "yamllint==1.37.1",
+    "zeroconf>=0.148.0",
 ]
