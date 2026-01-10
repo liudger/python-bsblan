@@ -107,6 +107,8 @@ async def profile_detailed(
 
     This profiles the NEW lazy loading approach where sections are
     validated on-demand when first accessed.
+
+    Note: Caller is responsible for closing client.session on success.
     """
     stats = TimingStats()
 
@@ -114,6 +116,7 @@ async def profile_detailed(
         session = aiohttp.ClientSession()
 
     client = BSBLAN(config=config, session=session)
+    success = False
 
     try:
         # Profile lazy loading initialization (minimal upfront work)
@@ -136,11 +139,12 @@ async def profile_detailed(
         async with stats.measure("6. First hot_water_state() (triggers hot_water)"):
             await client.hot_water_state()
 
-    except BSBLANError:
-        await session.close()
-        raise
+        success = True
+        return client, stats
 
-    return client, stats
+    finally:
+        if not success:
+            await session.close()
 
 
 async def profile_hot_water_granular(config: BSBLANConfig) -> TimingStats:
