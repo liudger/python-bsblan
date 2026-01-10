@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -505,3 +506,68 @@ async def test_granular_validation_filters_invalid_params(
         assert "1610" not in bsblan._hot_water_param_cache  # value was "---"
         assert "1620" not in bsblan._hot_water_param_cache  # value was None
         assert "test_invalid" in bsblan._validated_hot_water_groups
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_double_check_after_lock() -> None:
+    """Test double-check locking in _ensure_hot_water_group_validated."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        # Mock the request
+        bsblan._request = AsyncMock(  # type: ignore[method-assign]
+            return_value={"1600": {"value": "1", "unit": ""}}
+        )
+
+        # Create the lock first
+        bsblan._hot_water_group_locks["essential"] = asyncio.Lock()
+
+        # First call validates
+        await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+        assert "essential" in bsblan._validated_hot_water_groups
+
+        # Second call should hit the fast path (before lock)
+        bsblan._request.reset_mock()  # type: ignore[attr-defined]
+        await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+        bsblan._request.assert_not_awaited()  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_concurrent_double_check() -> None:
+    """Test that concurrent hot water group validation doesn't duplicate."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_version = "v3"
+        bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        request_count = 0
+        request_started = asyncio.Event()
+
+        async def slow_request(
+            params: Any = None,  # noqa: ARG001
+        ) -> dict[str, Any]:
+            nonlocal request_count
+            request_count += 1
+            request_started.set()
+            await asyncio.sleep(0.1)
+            return {"1600": {"value": "1", "unit": ""}}
+
+        bsblan._request = slow_request  # type: ignore[method-assign]
+
+        # Start two concurrent validations
+        task1 = asyncio.create_task(
+            bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+        )
+        await request_started.wait()
+        task2 = asyncio.create_task(
+            bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+        )
+
+        await asyncio.gather(task1, task2)
+
+        # Only one request should have been made
+        assert request_count == 1

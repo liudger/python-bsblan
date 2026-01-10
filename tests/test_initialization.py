@@ -5,6 +5,7 @@
 
 import json
 from typing import Any
+from unittest.mock import MagicMock
 
 import aiohttp
 import pytest
@@ -233,3 +234,54 @@ async def test_initialize_api_validator() -> None:
         assert bsblan._api_validator is not None
         # Verify temperature unit was extracted from heating section
         assert bsblan._temperature_unit == "°C"
+
+
+@pytest.mark.asyncio
+async def test_initialize_already_initialized() -> None:
+    """Test that initialize() is a no-op when already initialized."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+
+        # Mark as already initialized
+        bsblan._initialized = True
+
+        # Track if _fetch_firmware_version is called
+        fetch_called = False
+
+        async def mock_fetch() -> None:
+            nonlocal fetch_called
+            fetch_called = True
+
+        bsblan._fetch_firmware_version = mock_fetch  # type: ignore[method-assign]
+
+        # Should not call _fetch_firmware_version since already initialized
+        await bsblan.initialize()
+
+        assert not fetch_called
+        assert bsblan._initialized is True
+
+
+@pytest.mark.asyncio
+async def test_fetch_firmware_version_already_set() -> None:
+    """Test that _fetch_firmware_version skips when version already set."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+
+        # Pre-set firmware version
+        bsblan._firmware_version = "3.0.0"
+
+        # Track if device() is called
+        device_called = False
+
+        async def mock_device() -> Any:
+            nonlocal device_called
+            device_called = True
+            return MagicMock(version="3.0.0")
+
+        bsblan.device = mock_device  # type: ignore[method-assign]
+
+        # Should not call device() since version already set
+        await bsblan._fetch_firmware_version()
+
+        assert not device_called
+        assert bsblan._firmware_version == "3.0.0"
