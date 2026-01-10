@@ -119,3 +119,17 @@ For full integration tests with mocked responses:
 bsblan._validated_hot_water_groups.add("config")
 bsblan.set_hot_water_cache({"1601": "eco_mode_selection", ...})
 ```
+
+## Testing Concurrent Access
+
+The library uses asyncio locks for race condition prevention. When testing:
+
+- Locks are created per-section/group automatically
+- Access `_section_locks` and `_hot_water_group_locks` dicts if needed
+- The double-checked locking pattern prevents duplicate validations
+
+```python
+# Locks are stored in these dictionaries:
+bsblan._section_locks  # {"heating": Lock(), "sensor": Lock(), ...}
+bsblan._hot_water_group_locks  # {"essential": Lock(), ...}
+```

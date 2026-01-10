@@ -163,6 +163,7 @@ The library uses lazy loading for optimal performance:
 - **Initialization**: Only fetches firmware version (fast startup)
 - **Section validation**: Deferred until section is first accessed
 - **Hot water granular loading**: Each method validates only its param group
+- **Race condition prevention**: Per-section/group asyncio locks
 
 ```python
 # Initialize() is fast - only fetches firmware
@@ -176,6 +177,19 @@ await client.hot_water_state()    # 5 essential params only
 await client.hot_water_config()   # 16 config params only
 await client.hot_water_schedule() # 8 schedule params only
 ```
+
+### Concurrency & Locking
+The library uses asyncio locks to prevent race conditions during lazy loading:
+- `_section_locks`: Per-section locks (heating, sensor, etc.)
+- `_hot_water_group_locks`: Per-group locks (essential, config, schedule)
+
+Double-checked locking pattern:
+1. Fast path: Check if validated (no lock)
+2. Acquire lock for specific section/group
+3. Double-check after acquiring lock
+4. Perform validation inside the lock
+
+This prevents duplicate network requests when concurrent calls access the same section before validation completes.
 
 ### Error Handling
 - Use `BSBLANError` for general errors

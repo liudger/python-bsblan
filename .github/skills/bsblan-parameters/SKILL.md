@@ -86,6 +86,15 @@ HOT_WATER_ESSENTIAL_PARAMS: Final[set[str]] = {"1600", "1610", ...}
 HOT_WATER_CONFIG_PARAMS: Final[set[str]] = {"1601", "1614", ...}
 ```
 
+## Concurrency Safety
+
+The library uses asyncio locks to prevent race conditions:
+
+- `_section_locks`: Per-section locks for lazy loading
+- `_hot_water_group_locks`: Per-group locks for hot water validation
+
+When adding new sections or groups, the lock is created automatically on first access.
+
 ## Validation
 
 Always run after changes:
