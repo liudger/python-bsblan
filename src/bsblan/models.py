@@ -358,10 +358,14 @@ class SetHotWaterParam:
 
 @dataclass
 class State(DataClassJSONMixin):
-    """Object that holds information about the state of a climate system."""
+    """Object that holds information about the state of a climate system.
 
-    hvac_mode: EntityInfo
-    target_temperature: EntityInfo
+    All fields are optional to support partial fetching via the include parameter.
+    When using state() without include, all required parameters will be populated.
+    """
+
+    hvac_mode: EntityInfo | None = None
+    target_temperature: EntityInfo | None = None
     hvac_action: EntityInfo | None = None
     hvac_mode_changeover: EntityInfo | None = None
     current_temperature: EntityInfo | None = None
@@ -480,8 +484,11 @@ class Device(DataClassJSONMixin):
 
 @dataclass
 class Info(DataClassJSONMixin):
-    """Object holding the heatingSystem info."""
+    """Object holding the heatingSystem info.
 
-    device_identification: EntityInfo
-    controller_family: EntityInfo
-    controller_variant: EntityInfo
+    All fields are optional to support partial fetching via the include parameter.
+    """
+
+    device_identification: EntityInfo | None = None
+    controller_family: EntityInfo | None = None
+    controller_variant: EntityInfo | None = None
