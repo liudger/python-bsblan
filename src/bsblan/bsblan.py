@@ -171,7 +171,9 @@ class BSBLAN:
         # Initialize the API validator (but don't validate sections yet)
         self._api_validator = APIValidator(self._api_data)
 
-    async def _ensure_section_validated(self, section: SectionLiteral) -> None:
+    async def _ensure_section_validated(
+        self, section: SectionLiteral, include: list[str] | None = None
+    ) -> None:
         """Ensure a section is validated before use (lazy loading).
 
         This method validates a section on-demand when it's first accessed.
@@ -182,6 +184,8 @@ class BSBLAN:
 
         Args:
             section: The section name to validate
+            include: Optional list of parameter names to validate. If None,
+                validates all parameters for the section.
 
         """
         if not self._api_validator:
@@ -201,7 +205,7 @@ class BSBLAN:
                 return
 
             logger.debug("Lazy loading section: %s", section)
-            response_data = await self._validate_api_section(section)
+            response_data = await self._validate_api_section(section, include)
 
             # Extract temperature unit from heating section validation
             # (parameter 710 - target_temperature is always in heating section)
@@ -337,12 +341,14 @@ class BSBLAN:
                 self._extract_temperature_unit_from_response(response_data)
 
     async def _validate_api_section(
-        self, section: SectionLiteral
+        self, section: SectionLiteral, include: list[str] | None = None
     ) -> dict[str, Any] | None:
         """Validate a specific section of the API configuration.
 
         Args:
             section: The section name to validate
+            include: Optional list of parameter names to validate. If None,
+                validates all parameters for the section.
 
         Returns:
             dict[str, Any] | None: The response data from the device, or None if
@@ -371,6 +377,14 @@ class BSBLAN:
             error_msg = f"Section '{section}' not found in API data"
             raise BSBLANError(error_msg) from err
 
+        # Filter to only included params if specified
+        if include is not None:
+            section_data = {
+                param_id: name
+                for param_id, name in section_data.items()
+                if name in include
+            }
+
         try:
             # Request data from device for validation
             params = await self._extract_params_summary(section_data)
@@ -379,7 +393,7 @@ class BSBLAN:
             )
 
             # Validate the section against actual device response
-            api_validator.validate_section(section, response_data)
+            api_validator.validate_section(section, response_data, include)
             # Update API data with validated configuration
             if self._api_data:
                 self._api_data[section] = api_validator.get_section_params(section)
@@ -794,8 +808,8 @@ class BSBLAN:
                 are valid for this section.
 
         """
-        # Lazy load: validate section on first access
-        await self._ensure_section_validated(section)
+        # Lazy load: validate section on first access (only for included params)
+        await self._ensure_section_validated(section, include)
 
         section_params = self._api_validator.get_section_params(section)
 
