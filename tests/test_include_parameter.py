@@ -15,6 +15,7 @@ import pytest
 from bsblan import BSBLAN, BSBLANConfig, Sensor, State, StaticState
 from bsblan.constants import (
     API_V3,
+    EMPTY_INCLUDE_LIST_ERROR_MSG,
     INVALID_INCLUDE_PARAMS_ERROR_MSG,
 )
 from bsblan.exceptions import BSBLANError
@@ -128,6 +129,32 @@ async def test_state_with_include_invalid_params(monkeypatch: Any) -> None:
             await bsblan.state(include=["nonexistent_param"])
 
         assert str(exc_info.value) == INVALID_INCLUDE_PARAMS_ERROR_MSG
+        request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_state_with_empty_include_list(monkeypatch: Any) -> None:
+    """Test state() with empty include list raises specific error."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+
+        api_validator = APIValidator(API_V3)
+        api_validator.validated_sections.add("heating")
+        bsblan._api_validator = api_validator
+
+        request_mock: AsyncMock = AsyncMock()
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        # Execute test with empty include list
+        with pytest.raises(BSBLANError) as exc_info:
+            await bsblan.state(include=[])
+
+        assert str(exc_info.value) == EMPTY_INCLUDE_LIST_ERROR_MSG
         request_mock.assert_not_awaited()
 
 
@@ -347,6 +374,36 @@ async def test_hot_water_state_with_include_invalid(monkeypatch: Any) -> None:
             await bsblan.hot_water_state(include=["nonexistent_param"])
 
         assert str(exc_info.value) == INVALID_INCLUDE_PARAMS_ERROR_MSG
+        request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_hot_water_state_with_empty_include_list(monkeypatch: Any) -> None:
+    """Test hot_water_state() with empty include list raises specific error."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+
+        # Setup hot water param cache and validation
+        param_cache = {
+            "1600": "operating_mode",
+            "1610": "nominal_setpoint",
+        }
+        monkeypatch.setattr(bsblan, "_hot_water_param_cache", param_cache)
+        bsblan._validated_hot_water_groups.add("essential")
+
+        request_mock: AsyncMock = AsyncMock()
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        # Execute test with empty include list
+        with pytest.raises(BSBLANError) as exc_info:
+            await bsblan.hot_water_state(include=[])
+
+        assert str(exc_info.value) == EMPTY_INCLUDE_LIST_ERROR_MSG
         request_mock.assert_not_awaited()
 
 

@@ -23,6 +23,7 @@ from .constants import (
     API_VERSION_ERROR_MSG,
     API_VERSIONS,
     DHW_TIME_PROGRAM_PARAMS,
+    EMPTY_INCLUDE_LIST_ERROR_MSG,
     FIRMWARE_VERSION_ERROR_MSG,
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
@@ -800,6 +801,8 @@ class BSBLAN:
 
         # Filter parameters if include list is specified
         if include is not None:
+            if not include:
+                raise BSBLANError(EMPTY_INCLUDE_LIST_ERROR_MSG)
             section_params = {
                 param_id: name
                 for param_id, name in section_params.items()
@@ -1099,6 +1102,8 @@ class BSBLAN:
 
         # Apply include filter if specified
         if include is not None:
+            if not include:
+                raise BSBLANError(EMPTY_INCLUDE_LIST_ERROR_MSG)
             filtered_params = {
                 param_id: name
                 for param_id, name in filtered_params.items()
