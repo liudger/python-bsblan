@@ -408,6 +408,9 @@ PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG: Final[str] = (
 INVALID_INCLUDE_PARAMS_ERROR_MSG: Final[str] = (
     "None of the requested parameters are valid for this section"
 )
+EMPTY_INCLUDE_LIST_ERROR_MSG: Final[str] = (
+    "Empty include list provided. Use None to fetch all parameters."
+)
 
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
