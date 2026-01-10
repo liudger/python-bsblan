@@ -1386,11 +1386,10 @@ class BSBLAN:
         id_results = await self.read_parameters(param_ids)
 
         # Convert back to name-keyed dictionary
+        # id_to_name maps param_id -> param_name for requested params only
         id_to_name = {v: k for k, v in name_to_id.items()}
-        result: dict[str, EntityInfo] = {}
-        for param_id, entity_info in id_results.items():
-            param_name = id_to_name.get(param_id)
-            if param_name:
-                result[param_name] = entity_info
-
-        return result
+        return {
+            id_to_name[param_id]: entity_info
+            for param_id, entity_info in id_results.items()
+            if param_id in id_to_name
+        }
