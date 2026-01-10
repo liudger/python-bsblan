@@ -64,6 +64,9 @@ async def test_hot_water_state(
         }
         bsblan.set_hot_water_cache(hot_water_cache)
 
+        # Mark essential group as validated to skip validation logic
+        bsblan._validated_hot_water_groups.add("essential")
+
         # Mock the request response to only return requested parameters
         fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
 

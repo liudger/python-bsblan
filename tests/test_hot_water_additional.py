@@ -47,6 +47,9 @@ async def test_hot_water_config(
         }
         bsblan.set_hot_water_cache(hot_water_cache)
 
+        # Mark config group as validated to skip validation logic
+        bsblan._validated_hot_water_groups.add("config")
+
         # Mock the request response
         fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
 
@@ -96,6 +99,9 @@ async def test_hot_water_config_no_params_error(
         # Set empty cache - no config parameters available
         bsblan.set_hot_water_cache({})
 
+        # Mark config group as already validated (so it skips validation)
+        bsblan._validated_hot_water_groups.add("config")
+
         with pytest.raises(
             BSBLANError,
             match="No hot water configuration parameters available",
@@ -132,6 +138,9 @@ async def test_hot_water_schedule(
             "576": "dhw_time_program_standard_values",
         }
         bsblan.set_hot_water_cache(hot_water_cache)
+
+        # Mark schedule group as validated to skip validation logic
+        bsblan._validated_hot_water_groups.add("schedule")
 
         # Create mock fixture data for schedule parameters
         schedule_fixture_data = {
@@ -239,6 +248,9 @@ async def test_hot_water_schedule_no_params_error(
         # Set empty cache - no schedule parameters available
         bsblan.set_hot_water_cache({})
 
+        # Mark schedule group as already validated (so it skips validation)
+        bsblan._validated_hot_water_groups.add("schedule")
+
         with pytest.raises(
             BSBLANError,
             match="No hot water schedule parameters available",
@@ -266,11 +278,88 @@ async def test_hot_water_state_no_params_error(
         # Set empty cache - no essential parameters available
         bsblan.set_hot_water_cache({})
 
+        # Mark essential group as already validated (so it skips validation)
+        bsblan._validated_hot_water_groups.add("essential")
+
         with pytest.raises(
             BSBLANError,
             match="No essential hot water parameters available",
         ):
             await bsblan.hot_water_state()
+
+
+@pytest.mark.asyncio
+async def test_granular_hot_water_validation(
+    monkeypatch: Any,
+) -> None:
+    """Test granular hot water parameter group validation."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+
+        api_validator = APIValidator(API_V3)
+        bsblan._api_validator = api_validator
+
+        # Mock the request to return valid hot water params
+        fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
+
+        def mock_request(**kwargs: Any) -> dict[str, Any]:
+            param_string = kwargs.get("params", {}).get("Parameter", "")
+            if param_string:
+                requested_param_ids = param_string.split(",")
+                result: dict[str, Any] = {
+                    param_id: fixture_data[param_id]
+                    for param_id in requested_param_ids
+                    if param_id in fixture_data
+                }
+                return result
+            return fixture_data
+
+        request_mock = AsyncMock(side_effect=mock_request)
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        # Initially no groups validated
+        assert len(bsblan._validated_hot_water_groups) == 0
+
+        # Call hot_water_state - should validate essential group only
+        await bsblan.hot_water_state()
+
+        # Essential group should be validated
+        assert "essential" in bsblan._validated_hot_water_groups
+        assert "config" not in bsblan._validated_hot_water_groups
+        assert "schedule" not in bsblan._validated_hot_water_groups
+
+        # Cache should have essential params only
+        assert len(bsblan._hot_water_param_cache) > 0
+
+
+@pytest.mark.asyncio
+async def test_granular_validation_empty_params(
+    monkeypatch: Any,
+) -> None:
+    """Test granular validation when no params match filter."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        # Empty hot_water section in API data
+        api_data = {**API_V3, "hot_water": {}}
+        monkeypatch.setattr(bsblan, "_api_data", api_data)
+
+        api_validator = APIValidator(api_data)
+        bsblan._api_validator = api_validator
+
+        # Validation should complete without error even with empty params
+        await bsblan._ensure_hot_water_group_validated("essential", {"1600", "1610"})
+
+        # Group should be marked as validated
+        assert "essential" in bsblan._validated_hot_water_groups
 
 
 @pytest.mark.asyncio
