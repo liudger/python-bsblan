@@ -12,7 +12,6 @@ This three-tier approach reduces API calls by 79% for regular monitoring.
 from __future__ import annotations
 
 import asyncio
-import os
 from datetime import datetime
 from typing import Any
 
@@ -33,6 +32,7 @@ from bsblan import (
     get_hvac_action_category,
 )
 from bsblan.models import DHWTimeSwitchPrograms
+from discovery import get_bsblan_host, get_config_from_env
 
 
 async def get_attribute(
@@ -302,12 +302,19 @@ async def print_hot_water_schedule(hot_water_schedule: HotWaterSchedule) -> None
 
 async def main() -> None:
     """Show example on controlling your BSBLan device."""
+    # Get host from environment variable or mDNS discovery
+    host, port = await get_bsblan_host()
+
+    # Get credentials from environment
+    env_config = get_config_from_env()
+
     # Create a configuration object
     config = BSBLANConfig(
-        host="10.0.2.60",
-        passkey=None,
-        username=os.getenv("BSBLAN_USER"),  # Compliant
-        password=os.getenv("BSBLAN_PASS"),  # Compliant
+        host=host,
+        port=port,
+        passkey=env_config.get("passkey"),  # type: ignore[arg-type]
+        username=env_config.get("username"),  # type: ignore[arg-type]
+        password=env_config.get("password"),  # type: ignore[arg-type]
     )
 
     # Initialize BSBLAN with the configuration object
