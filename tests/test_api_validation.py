@@ -182,7 +182,7 @@ async def test_validate_api_section_validation_error(
 
             assert not bsblan._api_validator.is_section_validated("device")
         finally:
-            APIValidator.validate_section = original_validate  # type: ignore[method-assign]
+            APIValidator.validate_section = original_validate
 
 
 @pytest.mark.asyncio
