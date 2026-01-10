@@ -78,17 +78,6 @@ class BSBLANDiscovery:
         if self._aiozc:
             await self._aiozc.async_close()
 
-    def _on_service_state_change(
-        self,
-        zeroconf: Zeroconf,
-        service_type: str,
-        name: str,
-        state_change: ServiceStateChange,
-    ) -> None:
-        """Handle service state changes (callback for browser)."""
-        # Mark args as intentionally unused (required by zeroconf API)
-        _ = zeroconf, service_type, name, state_change
-
     async def discover(self) -> list[DiscoveredDevice]:
         """Discover BSB-LAN devices on the network.
 
