@@ -399,6 +399,13 @@ API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API validator not initial
 MIN_VALID_YEAR: Final[int] = 1900  # Reasonable minimum year for BSB-LAN devices
 MAX_VALID_YEAR: Final[int] = 2100  # Reasonable maximum year for BSB-LAN devices
 
+# Error messages for low-level parameter access
+NO_PARAMETER_IDS_ERROR_MSG: Final[str] = "No parameter IDs provided"
+NO_PARAMETER_NAMES_ERROR_MSG: Final[str] = "No parameter names provided"
+PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG: Final[str] = (
+    "Could not resolve any parameter names"
+)
+
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
 

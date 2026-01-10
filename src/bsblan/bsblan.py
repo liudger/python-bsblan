@@ -30,8 +30,11 @@ from .constants import (
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
     MULTI_PARAMETER_ERROR_MSG,
+    NO_PARAMETER_IDS_ERROR_MSG,
+    NO_PARAMETER_NAMES_ERROR_MSG,
     NO_SCHEDULE_ERROR_MSG,
     NO_STATE_ERROR_MSG,
+    PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     SETTABLE_HOT_WATER_PARAMS,
     TEMPERATURE_RANGE_ERROR_MSG,
@@ -51,6 +54,7 @@ from .models import (
     Device,
     DeviceTime,
     DHWSchedule,
+    EntityInfo,
     HotWaterConfig,
     HotWaterSchedule,
     HotWaterState,
@@ -1233,3 +1237,160 @@ class BSBLAN:
         if not state:
             raise BSBLANError(NO_STATE_ERROR_MSG)
         return state
+
+    # -------------------------------------------------------------------------
+    # Low-level parameter access methods
+    # -------------------------------------------------------------------------
+
+    async def read_parameters(
+        self,
+        parameter_ids: list[str],
+    ) -> dict[str, EntityInfo]:
+        """Read specific parameters by their BSB-LAN parameter IDs.
+
+        This low-level method allows fetching only the specific parameters
+        needed, reducing network load compared to fetching entire dataclasses.
+
+        Example:
+            # Fetch only current temperature and HVAC action
+            params = await client.read_parameters(["8740", "8000"])
+            current_temp = params["8740"].value
+            hvac_action = params["8000"].value
+
+        Args:
+            parameter_ids: List of BSB-LAN parameter IDs to fetch
+                (e.g., ["700", "710"]).
+
+        Returns:
+            dict[str, EntityInfo]: Dictionary mapping parameter IDs to
+                EntityInfo objects.
+
+        Raises:
+            BSBLANError: If no parameter IDs are provided or request fails.
+
+        """
+        if not parameter_ids:
+            raise BSBLANError(NO_PARAMETER_IDS_ERROR_MSG)
+
+        # Request the parameters from the device
+        params_string = ",".join(parameter_ids)
+        response_data = await self._request(params={"Parameter": params_string})
+
+        # Convert response to EntityInfo objects
+        result: dict[str, EntityInfo] = {}
+        for param_id in parameter_ids:
+            if param_id in response_data:
+                param_data = response_data[param_id]
+                if param_data and isinstance(param_data, dict):
+                    result[param_id] = EntityInfo.from_dict(param_data)
+
+        return result
+
+    def get_parameter_id(self, parameter_name: str) -> str | None:
+        """Look up the parameter ID for a given parameter name.
+
+        This method searches through all known parameter mappings to find
+        the ID for a given parameter name.
+
+        Example:
+            param_id = client.get_parameter_id("current_temperature")
+            # Returns "8740"
+
+        Args:
+            parameter_name: The parameter name (e.g., "current_temperature").
+
+        Returns:
+            str | None: The parameter ID if found, None otherwise.
+
+        """
+        if not self._api_data:
+            return None
+
+        # Search through all sections for the parameter name
+        for section_params in self._api_data.values():
+            section_dict = cast("dict[str, str]", section_params)
+            for param_id, param_name in section_dict.items():
+                if param_name == parameter_name:
+                    return param_id
+
+        return None
+
+    def get_parameter_ids(self, parameter_names: list[str]) -> dict[str, str]:
+        """Look up parameter IDs for multiple parameter names.
+
+        Example:
+            ids = client.get_parameter_ids(["current_temperature", "hvac_mode"])
+            # Returns {"current_temperature": "8740", "hvac_mode": "700"}
+
+        Args:
+            parameter_names: List of parameter names to look up.
+
+        Returns:
+            dict[str, str]: Dictionary mapping parameter names to their IDs.
+                Only includes parameters that were found.
+
+        """
+        result: dict[str, str] = {}
+        for name in parameter_names:
+            param_id = self.get_parameter_id(name)
+            if param_id is not None:
+                result[name] = param_id
+        return result
+
+    async def read_parameters_by_name(
+        self,
+        parameter_names: list[str],
+    ) -> dict[str, EntityInfo]:
+        """Read specific parameters by their names.
+
+        This is a convenience method that looks up parameter IDs by name
+        and fetches the parameters in a single request.
+
+        Example:
+            # Fetch only current temperature and HVAC action by name
+            params = await client.read_parameters_by_name([
+                "current_temperature",
+                "hvac_action"
+            ])
+            current_temp = params["current_temperature"].value
+
+        Args:
+            parameter_names: List of parameter names to fetch
+                (e.g., ["current_temperature", "hvac_mode"]).
+
+        Returns:
+            dict[str, EntityInfo]: Dictionary mapping parameter names to EntityInfo
+                objects. Only includes parameters that were found and had valid data.
+
+        Raises:
+            BSBLANError: If no parameter names are provided, no IDs could be resolved,
+                or the client is not initialized.
+
+        """
+        if not parameter_names:
+            raise BSBLANError(NO_PARAMETER_NAMES_ERROR_MSG)
+
+        if not self._api_data:
+            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+
+        # Resolve names to IDs
+        name_to_id = self.get_parameter_ids(parameter_names)
+
+        if not name_to_id:
+            unknown_params = ", ".join(parameter_names)
+            msg = f"{PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG}: {unknown_params}"
+            raise BSBLANError(msg)
+
+        # Fetch parameters by ID
+        param_ids = list(name_to_id.values())
+        id_results = await self.read_parameters(param_ids)
+
+        # Convert back to name-keyed dictionary
+        id_to_name = {v: k for k, v in name_to_id.items()}
+        result: dict[str, EntityInfo] = {}
+        for param_id, entity_info in id_results.items():
+            param_name = id_to_name.get(param_id)
+            if param_name:
+                result[param_name] = entity_info
+
+        return result
