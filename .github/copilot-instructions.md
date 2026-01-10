@@ -111,6 +111,21 @@ Parameters are organized into polling categories based on how frequently they ch
 - Device identification
 - Min/max temperature limits
 
+## Hot Water Parameter Groups
+
+Hot water parameters are split into groups for granular lazy loading:
+
+| Group | Params | Method | Use Case |
+|-------|--------|--------|----------|
+| essential | 5 | `hot_water_state()` | Frequent polling |
+| config | 16 | `hot_water_config()` | Advanced settings |
+| schedule | 8 | `hot_water_schedule()` | Time programs |
+
+Defined in `constants.py`:
+- `HOT_WATER_ESSENTIAL_PARAMS` - operating_mode, nominal_setpoint, etc.
+- `HOT_WATER_CONFIG_PARAMS` - legionella settings, eco mode, etc.
+- `HOT_WATER_SCHEDULE_PARAMS` - daily time programs
+
 ## Data Models
 
 ### Model Pattern
@@ -141,6 +156,25 @@ Each parameter returns a `ParameterValue` with:
 async with BSBLAN(host="192.168.1.100") as client:
     state = await client.state()
     await client.set_hot_water(nominal_setpoint=55.0)
+```
+
+### Lazy Loading Architecture
+The library uses lazy loading for optimal performance:
+- **Initialization**: Only fetches firmware version (fast startup)
+- **Section validation**: Deferred until section is first accessed
+- **Hot water granular loading**: Each method validates only its param group
+
+```python
+# Initialize() is fast - only fetches firmware
+await client.initialize()  # ~0.02s
+
+# Section validated on first access
+await client.state()  # Validates heating section on first call
+
+# Hot water methods validate only their param groups:
+await client.hot_water_state()    # 5 essential params only
+await client.hot_water_config()   # 16 config params only
+await client.hot_water_schedule() # 8 schedule params only
 ```
 
 ### Error Handling
