@@ -83,20 +83,20 @@ class TimingStats:
         total = sum(self.timings.values())
 
         # Sort by duration, longest first
-        sorted_timings = sorted(
-            self.timings.items(), key=lambda x: x[1], reverse=True
-        )
+        sorted_timings = sorted(self.timings.items(), key=lambda x: x[1], reverse=True)
 
         for name, duration in sorted_timings:
             pct = (duration / total * 100) if total > 0 else 0
             bar = "█" * int(pct / 2)
             lines.append(f"{name:40} {duration:8.3f}s ({pct:5.1f}%) {bar}")
 
-        lines.extend([
-            "-" * 60,
-            f"{'TOTAL':40} {total:8.3f}s",
-            "=" * 60,
-        ])
+        lines.extend(
+            [
+                "-" * 60,
+                f"{'TOTAL':40} {total:8.3f}s",
+                "=" * 60,
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -252,7 +252,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--host",
-        help="BSBLAN device IP (uses BSBLAN_HOST env or mDNS discovery if not set)"
+        help="BSBLAN device IP (uses BSBLAN_HOST env or mDNS discovery if not set)",
     )
     parser.add_argument("--port", type=int, default=80, help="BSBLAN device port")
     parser.add_argument("--username", help="Username for authentication")
@@ -265,16 +265,20 @@ def parse_args() -> argparse.Namespace:
         "--output", help="Save cProfile stats to file (use with --cprofile)"
     )
     parser.add_argument(
-        "--sections", action="store_true",
-        help="Profile each section validation individually"
+        "--sections",
+        action="store_true",
+        help="Profile each section validation individually",
     )
     parser.add_argument(
-        "--hot-water", action="store_true",
-        help="Profile granular hot water parameter loading"
+        "--hot-water",
+        action="store_true",
+        help="Profile granular hot water parameter loading",
     )
     parser.add_argument(
-        "--repeat", type=int, default=1,
-        help="Number of times to repeat profiling (for averaging)"
+        "--repeat",
+        type=int,
+        default=1,
+        help="Number of times to repeat profiling (for averaging)",
     )
     return parser.parse_args()
 

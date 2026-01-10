@@ -132,9 +132,7 @@ class BSBLANDiscovery:
 
             if info.addresses:
                 # Get IP addresses
-                addresses = [
-                    ".".join(str(b) for b in addr) for addr in info.addresses
-                ]
+                addresses = [".".join(str(b) for b in addr) for addr in info.addresses]
 
                 device = DiscoveredDevice(
                     name=service_name.replace(f".{BSBLAN_SERVICE_TYPE}", ""),
