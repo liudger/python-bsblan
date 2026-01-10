@@ -96,9 +96,7 @@ async def test_state_with_include_multiple_params(monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         # Execute test with multiple parameters
-        state: State = await bsblan.state(
-            include=["hvac_mode", "current_temperature"]
-        )
+        state: State = await bsblan.state(include=["hvac_mode", "current_temperature"])
 
         # Verify both parameters were fetched
         assert state.hvac_mode is not None
@@ -311,9 +309,7 @@ async def test_hot_water_state_with_include(monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         # Execute test with single parameter
-        state: HotWaterState = await bsblan.hot_water_state(
-            include=["operating_mode"]
-        )
+        state: HotWaterState = await bsblan.hot_water_state(include=["operating_mode"])
 
         # Verify only operating_mode was requested
         request_mock.assert_awaited_once()
