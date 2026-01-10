@@ -46,6 +46,9 @@ async def test_info(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
 
         info: Info = await bsblan.info()
         assert info
+        assert info.controller_family is not None
+        assert info.controller_variant is not None
+        assert info.device_identification is not None
         assert info.controller_family.value == 211
         assert info.controller_variant.value == 127
         assert info.device_identification.value == "RVS21.831F/127"

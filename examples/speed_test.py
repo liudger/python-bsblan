@@ -232,18 +232,36 @@ async def run_all_benchmarks(bsblan: BSBLAN) -> list[BenchmarkResult]:
 
     # Define basic tests
     basic_tests = [
-        ("Test 1: 3 parallel calls (device + info + static_values)",
-         "3 parallel calls", lambda: bench_3_parallel_calls(bsblan)),
-        ("Test 2: 2 parallel calls (device + read_parameters)",
-         "2 parallel calls", lambda: bench_2_parallel_calls(bsblan)),
-        ("Test 3: Single read_parameters call",
-         "1 read_parameters", lambda: bench_1_read_params(bsblan)),
-        ("Test 4: static_values with include filter (min_temp only)",
-         "static_values (filtered)", lambda: bench_static_values_filtered(bsblan)),
-        ("Test 5: info with include filter (device_identification only)",
-         "info (filtered)", lambda: bench_info_filtered(bsblan)),
-        ("Test 6: static_values without filter (all params)",
-         "static_values (all)", lambda: bench_static_values_only(bsblan)),
+        (
+            "Test 1: 3 parallel calls (device + info + static_values)",
+            "3 parallel calls",
+            lambda: bench_3_parallel_calls(bsblan),
+        ),
+        (
+            "Test 2: 2 parallel calls (device + read_parameters)",
+            "2 parallel calls",
+            lambda: bench_2_parallel_calls(bsblan),
+        ),
+        (
+            "Test 3: Single read_parameters call",
+            "1 read_parameters",
+            lambda: bench_1_read_params(bsblan),
+        ),
+        (
+            "Test 4: static_values with include filter (min_temp only)",
+            "static_values (filtered)",
+            lambda: bench_static_values_filtered(bsblan),
+        ),
+        (
+            "Test 5: info with include filter (device_identification only)",
+            "info (filtered)",
+            lambda: bench_info_filtered(bsblan),
+        ),
+        (
+            "Test 6: static_values without filter (all params)",
+            "static_values (all)",
+            lambda: bench_static_values_only(bsblan),
+        ),
     ]
 
     for desc, name, bench_fn in basic_tests:
@@ -257,21 +275,31 @@ async def run_all_benchmarks(bsblan: BSBLAN) -> list[BenchmarkResult]:
     print("=" * 60)
 
     scalability_tests = [
-        (f"Test 7: Single call with {len(LARGE_PARAM_SET)} params",
-         f"1 call ({len(LARGE_PARAM_SET)} params)",
-         lambda: bench_large_params_single_call(bsblan)),
-        (f"Test 8: 4 parallel calls ({len(LARGE_PARAM_SET)} params split)",
-         f"4 calls ({len(LARGE_PARAM_SET)} params)",
-         lambda: bench_large_params_4_parallel_calls(bsblan)),
-        (f"Test 9: Single call with {len(XLARGE_PARAM_SET)} params",
-         f"1 call ({len(XLARGE_PARAM_SET)} params)",
-         lambda: bench_xlarge_params_single_call(bsblan)),
-        (f"Test 10: 2 parallel calls ({len(XLARGE_PARAM_SET)} params split)",
-         f"2 calls ({len(XLARGE_PARAM_SET)} params)",
-         lambda: bench_xlarge_params_2_parallel_calls(bsblan)),
-        (f"Test 11: 4 parallel calls ({len(XLARGE_PARAM_SET)} params split)",
-         f"4 calls ({len(XLARGE_PARAM_SET)} params)",
-         lambda: bench_xlarge_params_4_parallel_calls(bsblan)),
+        (
+            f"Test 7: Single call with {len(LARGE_PARAM_SET)} params",
+            f"1 call ({len(LARGE_PARAM_SET)} params)",
+            lambda: bench_large_params_single_call(bsblan),
+        ),
+        (
+            f"Test 8: 4 parallel calls ({len(LARGE_PARAM_SET)} params split)",
+            f"4 calls ({len(LARGE_PARAM_SET)} params)",
+            lambda: bench_large_params_4_parallel_calls(bsblan),
+        ),
+        (
+            f"Test 9: Single call with {len(XLARGE_PARAM_SET)} params",
+            f"1 call ({len(XLARGE_PARAM_SET)} params)",
+            lambda: bench_xlarge_params_single_call(bsblan),
+        ),
+        (
+            f"Test 10: 2 parallel calls ({len(XLARGE_PARAM_SET)} params split)",
+            f"2 calls ({len(XLARGE_PARAM_SET)} params)",
+            lambda: bench_xlarge_params_2_parallel_calls(bsblan),
+        ),
+        (
+            f"Test 11: 4 parallel calls ({len(XLARGE_PARAM_SET)} params split)",
+            f"4 calls ({len(XLARGE_PARAM_SET)} params)",
+            lambda: bench_xlarge_params_4_parallel_calls(bsblan),
+        ),
     ]
 
     for desc, name, bench_fn in scalability_tests:
@@ -326,13 +354,17 @@ async def main() -> None:
 
     print(f"\nConnecting to: {host}:{port}")
 
-    # Build config
+    # Build config - cast values to str for type safety
+    passkey = env_config.get("passkey")
+    username = env_config.get("username")
+    password = env_config.get("password")
+
     config = BSBLANConfig(
         host=host,
         port=port,
-        passkey=env_config.get("passkey") or None,
-        username=env_config.get("username") or None,
-        password=env_config.get("password") or None,
+        passkey=str(passkey) if passkey else None,
+        username=str(username) if username else None,
+        password=str(password) if password else None,
     )
 
     async with BSBLAN(config) as bsblan:
