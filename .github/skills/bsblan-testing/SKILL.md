@@ -44,13 +44,46 @@ Load fixtures using the `load_fixture` helper from `conftest.py`.
 ## Coverage Requirements
 
 - **Total coverage**: 95%+ required
-- **Patch coverage**: 100% required (all new/modified code must be tested)
+- **Patch coverage**: 100% required (all new/modified code must be fully tested)
 
-Check coverage:
+### Check Coverage
 
 ```bash
+# Full coverage report
 uv run pytest --cov=src/bsblan --cov-report=term-missing
+
+# Coverage for specific test file (useful during development)
+uv run pytest tests/test_your_file.py --cov=src/bsblan --cov-report=term-missing --cov-fail-under=0
+
+# HTML report for detailed analysis
+uv run pytest --cov=src/bsblan --cov-report=html
+# Then open htmlcov/index.html in browser
 ```
+
+### Verify New Code is Covered
+
+After adding new methods, always verify coverage:
+
+1. Run tests with `--cov-report=term-missing`
+2. Check the "Missing" column shows no line numbers for your new code
+3. Look for uncovered branches (shown as `line->branch` like `382->386`)
+
+Example output showing good coverage:
+
+```text
+src/bsblan/bsblan.py     426      0    170      2    99%   382->386, 1393->1391
+```
+
+The `382->386` notation means line 382's branch to line 386 isn't covered (an edge case).
+
+### GitHub Actions Coverage
+
+CI enforces:
+
+- Total coverage ≥ 95%
+- Patch coverage = 100% (Codecov checks new/modified lines)
+
+If CI fails with coverage issues, check the Codecov report in the PR for uncovered lines.
 
 ## Running Tests
 
