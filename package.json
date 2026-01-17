@@ -9,7 +9,7 @@
   "author": "WJL van Rootselaar <liudgervr@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "prettier": "3.7.4"
+    "prettier": "3.8.0"
   },
   "dependencies": {
     "url-parse": "1.5.10"
