@@ -28,7 +28,7 @@ jobs:
           enable-cache: true
       - name: 🏗 Set up Python ${{ matrix.python }}
         id: python
-        uses: actions/setup-python@v6.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python }}
       - name: 🏗 Install dependencies
@@ -58,7 +58,7 @@ jobs:
           enable-cache: true
       - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
-        uses: actions/setup-python@v6.1.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
       - name: 🏗 Install dependencies
