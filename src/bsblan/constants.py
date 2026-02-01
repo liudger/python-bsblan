@@ -402,6 +402,8 @@ MAX_VALID_YEAR: Final[int] = 2100  # Reasonable maximum year for BSB-LAN devices
 # Error messages for low-level parameter access
 NO_PARAMETER_IDS_ERROR_MSG: Final[str] = "No parameter IDs provided"
 NO_PARAMETER_NAMES_ERROR_MSG: Final[str] = "No parameter names provided"
+PARAMETER_ID_EMPTY_ERROR_MSG: Final[str] = "Parameter ID cannot be empty"
+PARAMETER_NAME_EMPTY_ERROR_MSG: Final[str] = "Parameter name cannot be empty"
 PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG: Final[str] = (
     "Could not resolve any parameter names"
 )

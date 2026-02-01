@@ -36,6 +36,8 @@ from .constants import (
     NO_PARAMETER_NAMES_ERROR_MSG,
     NO_SCHEDULE_ERROR_MSG,
     NO_STATE_ERROR_MSG,
+    PARAMETER_ID_EMPTY_ERROR_MSG,
+    PARAMETER_NAME_EMPTY_ERROR_MSG,
     PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     SETTABLE_HOT_WATER_PARAMS,
@@ -1547,3 +1549,80 @@ class BSBLAN:
             for param_id, entity_info in id_results.items()
             if param_id in id_to_name
         }
+
+    async def read_parameter(
+        self,
+        parameter_id: str,
+    ) -> EntityInfo | None:
+        """Read a single parameter by its BSB-LAN parameter ID.
+
+        This is a convenience method for reading a single custom parameter.
+        Returns the parameter data as an EntityInfo object with correct type
+        and format, or None if the parameter is not found or invalid.
+
+        Example:
+            # Fetch only current temperature
+            temp = await client.read_parameter("8740")
+            if temp:
+                print(f"Temperature: {temp.value} {temp.unit}")
+
+        Args:
+            parameter_id: The BSB-LAN parameter ID to fetch (e.g., "700").
+
+        Returns:
+            EntityInfo | None: The parameter data as EntityInfo object,
+                or None if not found or invalid.
+
+        Raises:
+            BSBLANError: If parameter_id is empty or request fails.
+
+        """
+        if not parameter_id:
+            raise BSBLANError(PARAMETER_ID_EMPTY_ERROR_MSG)
+
+        result = await self.read_parameters([parameter_id])
+        return result.get(parameter_id)
+
+    async def read_parameter_by_name(
+        self,
+        parameter_name: str,
+    ) -> EntityInfo | None:
+        """Read a single parameter by its name.
+
+        This is a convenience method for reading a single custom parameter
+        by its name. Returns the parameter data as an EntityInfo object with
+        correct type and format, or None if the parameter is not found or invalid.
+
+        Example:
+            # Fetch only current temperature by name
+            temp = await client.read_parameter_by_name("current_temperature")
+            if temp:
+                print(f"Temperature: {temp.value} {temp.unit}")
+
+        Args:
+            parameter_name: The parameter name to fetch
+                (e.g., "current_temperature").
+
+        Returns:
+            EntityInfo | None: The parameter data as EntityInfo object,
+                or None if not found or invalid.
+
+        Raises:
+            BSBLANError: If parameter_name is empty, the client is not initialized,
+                or the parameter name cannot be resolved.
+
+        """
+        if not parameter_name:
+            raise BSBLANError(PARAMETER_NAME_EMPTY_ERROR_MSG)
+
+        if not self._api_data:
+            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+
+        # Resolve name to ID
+        param_id = self.get_parameter_id(parameter_name)
+
+        if param_id is None:
+            msg = f"{PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG}: {parameter_name}"
+            raise BSBLANError(msg)
+
+        return await self.read_parameter(param_id)
