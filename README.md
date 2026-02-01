@@ -111,6 +111,40 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+### Reading Custom Parameters
+
+You can also read individual parameters directly by their ID or name for more flexibility:
+
+```python
+import asyncio
+from bsblan import BSBLAN, BSBLANConfig
+
+async def main():
+    config = BSBLANConfig(host="10.0.2.60")
+    
+    async with BSBLAN(config) as bsblan:
+        await bsblan.initialize()
+        
+        # Read a single parameter by ID
+        temp = await bsblan.read_parameter("8740")
+        if temp:
+            print(f"Temperature: {temp.value} {temp.unit}")
+        
+        # Read a single parameter by name
+        hvac_mode = await bsblan.read_parameter_by_name("hvac_mode")
+        if hvac_mode:
+            print(f"HVAC Mode: {hvac_mode.desc}")
+
+asyncio.run(main())
+```
+
+This is useful when you want to:
+- Fetch only specific parameters you need
+- Work with custom or non-standard parameters
+- Build custom sensor implementations
+
+See `examples/custom_parameters.py` for more detailed examples.
+
 ## Changelog & Releases
 
 This repository keeps a change log using [GitHub's releases][releases]
