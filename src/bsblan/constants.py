@@ -416,8 +416,8 @@ EMPTY_INCLUDE_LIST_ERROR_MSG: Final[str] = (
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
 
 # HA-compatible device class mapping from BSB-LAN units
-# Maps unit strings (including HTML-encoded variants) to HA SensorDeviceClass values
-# See: https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
+# Maps unit strings (incl. HTML-encoded variants)
+# to HA SensorDeviceClass values
 UNIT_DEVICE_CLASS_MAP: Final[dict[str, str]] = {
     # Temperature
     "°C": "temperature",
@@ -457,7 +457,6 @@ UNIT_DEVICE_CLASS_MAP: Final[dict[str, str]] = {
 
 # HA-compatible state class mapping from BSB-LAN units
 # Maps unit strings to HA SensorStateClass values
-# See: https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
 UNIT_STATE_CLASS_MAP: Final[dict[str, str]] = {
     # Energy counters are always total_increasing
     "kWh": "total_increasing",
