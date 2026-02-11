@@ -482,6 +482,9 @@ UNIT_STATE_CLASS_MAP: Final[dict[str, str]] = {
     "l/min": "measurement",
     "l/h": "measurement",
     "%": "measurement",
+    "h": "measurement",
+    "min": "measurement",
+    "s": "measurement",
 }
 
 # Hot Water Parameter Groups

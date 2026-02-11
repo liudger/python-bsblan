@@ -324,32 +324,39 @@ class EntityInfo(DataClassJSONMixin):
     def suggested_device_class(self) -> str | None:
         """Suggest HA SensorDeviceClass based on unit and data type.
 
-        This maps BSB-LAN units to Home Assistant sensor device classes,
-        enabling automatic entity configuration in HA integrations.
+        Only PLAIN_NUMBER data types are considered sensor-like values.
+        Returns None for ENUM, TIME, WEEKDAY, STRING, and other
+        non-numeric types even if they carry a unit.
 
         Returns:
             str | None: The suggested HA device class (e.g., "temperature",
-                "energy", "power"), or None if no mapping exists.
+                "energy", "power"), or None if no mapping exists or the
+                data type is not numeric.
 
         """
+        if self.data_type != DataType.PLAIN_NUMBER:
+            return None
         return UNIT_DEVICE_CLASS_MAP.get(self.unit)
 
     @property
     def suggested_state_class(self) -> str | None:
-        """Suggest HA SensorStateClass based on unit.
+        """Suggest HA SensorStateClass based on unit and data type.
 
-        This maps BSB-LAN units to Home Assistant sensor state classes,
-        which determine how the data is tracked (measurement vs
-        total_increasing).
+        Only PLAIN_NUMBER data types are considered sensor-like values.
+        Returns None for ENUM, TIME, WEEKDAY, STRING, and other
+        non-numeric types even if they carry a unit.
 
         Energy counters (kWh, MWh, Wh) are mapped to "total_increasing",
         while other numeric measurements use "measurement".
 
         Returns:
             str | None: The suggested HA state class (e.g., "measurement",
-                "total_increasing"), or None if no mapping exists.
+                "total_increasing"), or None if the data type is not
+                numeric or no mapping exists.
 
         """
+        if self.data_type != DataType.PLAIN_NUMBER:
+            return None
         return UNIT_STATE_CLASS_MAP.get(self.unit)
 
 
