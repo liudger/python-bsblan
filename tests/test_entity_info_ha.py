@@ -54,10 +54,15 @@ def test_suggested_device_class(unit: str, expected: str) -> None:
         ("", DataType.ENUM),
         ("bbl", DataType.PLAIN_NUMBER),
         ("unknown", DataType.PLAIN_NUMBER),
+        ("°C", DataType.ENUM),
+        ("kWh", DataType.ENUM),
+        ("°C", DataType.TIME),
+        ("°C", DataType.WEEKDAY),
+        ("°C", DataType.STRING),
     ],
 )
 def test_suggested_device_class_none(unit: str, data_type: int) -> None:
-    """Test suggested_device_class returns None for unmapped units."""
+    """Test suggested_device_class returns None for unmapped or non-numeric types."""
     entity = EntityInfo(
         name="Test",
         value="42",
@@ -90,6 +95,9 @@ def test_suggested_device_class_none(unit: str, data_type: int) -> None:
         ("Hz", "measurement"),
         ("l/min", "measurement"),
         ("%", "measurement"),
+        ("h", "measurement"),
+        ("min", "measurement"),
+        ("s", "measurement"),
     ],
 )
 def test_suggested_state_class(unit: str, expected: str) -> None:
@@ -109,10 +117,14 @@ def test_suggested_state_class(unit: str, expected: str) -> None:
     [
         ("", DataType.ENUM),
         ("bbl", DataType.PLAIN_NUMBER),
+        ("kWh", DataType.ENUM),
+        ("°C", DataType.TIME),
+        ("°C", DataType.WEEKDAY),
+        ("°C", DataType.STRING),
     ],
 )
 def test_suggested_state_class_none(unit: str, data_type: int) -> None:
-    """Test suggested_state_class returns None for unmapped units."""
+    """Test suggested_state_class returns None for unmapped or non-numeric types."""
     entity = EntityInfo(
         name="Test",
         value="42",
