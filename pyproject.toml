@@ -177,7 +177,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "aresponses==3.0.0",
-    "bandit==1.9.2",
+    "bandit==1.9.3",
     "black==26.1.0",
     "blacken-docs==1.20.0",
     "codespell==2.4.1",
