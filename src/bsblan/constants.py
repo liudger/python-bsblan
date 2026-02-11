@@ -415,6 +415,75 @@ EMPTY_INCLUDE_LIST_ERROR_MSG: Final[str] = (
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
 
+# HA-compatible device class mapping from BSB-LAN units
+# Maps unit strings (including HTML-encoded variants) to HA SensorDeviceClass values
+# See: https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes
+UNIT_DEVICE_CLASS_MAP: Final[dict[str, str]] = {
+    # Temperature
+    "°C": "temperature",
+    "°F": "temperature",
+    "&#176;C": "temperature",
+    "&#176;F": "temperature",
+    "&deg;C": "temperature",
+    "&deg;F": "temperature",
+    # Energy
+    "kWh": "energy",
+    "MWh": "energy",
+    "Wh": "energy",
+    # Power
+    "kW": "power",
+    "W": "power",
+    # Pressure
+    "bar": "pressure",
+    "Pa": "pressure",
+    "hPa": "pressure",
+    # Voltage
+    "V": "voltage",
+    # Current
+    "A": "current",
+    "mA": "current",
+    # Frequency
+    "Hz": "frequency",
+    # Volume flow rate
+    "l/min": "volume_flow_rate",
+    "l/h": "volume_flow_rate",
+    # Duration
+    "h": "duration",
+    "min": "duration",
+    "s": "duration",
+    # Percentage
+    "%": "power_factor",
+}
+
+# HA-compatible state class mapping from BSB-LAN units
+# Maps unit strings to HA SensorStateClass values
+# See: https://developers.home-assistant.io/docs/core/entity/sensor/#available-state-classes
+UNIT_STATE_CLASS_MAP: Final[dict[str, str]] = {
+    # Energy counters are always total_increasing
+    "kWh": "total_increasing",
+    "MWh": "total_increasing",
+    "Wh": "total_increasing",
+    # All other numeric measurements
+    "°C": "measurement",
+    "°F": "measurement",
+    "&#176;C": "measurement",
+    "&#176;F": "measurement",
+    "&deg;C": "measurement",
+    "&deg;F": "measurement",
+    "kW": "measurement",
+    "W": "measurement",
+    "bar": "measurement",
+    "Pa": "measurement",
+    "hPa": "measurement",
+    "V": "measurement",
+    "A": "measurement",
+    "mA": "measurement",
+    "Hz": "measurement",
+    "l/min": "measurement",
+    "l/h": "measurement",
+    "%": "measurement",
+}
+
 # Hot Water Parameter Groups
 # Essential parameters for frequent monitoring
 HOT_WATER_ESSENTIAL_PARAMS: Final[set[str]] = {
