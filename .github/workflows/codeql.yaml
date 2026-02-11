@@ -11,6 +11,11 @@ on:
   schedule:
     - cron: "30 1 * * 0"
 
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
   codeql:
     name: Scanning

@@ -23,6 +23,11 @@ on:
           - alpha
           - rc
 
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
 jobs:
   update_release_draft:
     name: ✏️ Draft release
