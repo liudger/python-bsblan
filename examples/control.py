@@ -177,8 +177,8 @@ async def print_device_info(device: Device, info: Info) -> None:
     )
 
     attributes = {
-        "Device Name": device.name if device.name else "N/A",
-        "Version": device.version if device.version else "N/A",
+        "Device Name": device.name or "N/A",
+        "Version": device.version or "N/A",
         "Device Identification": device_identification,
     }
     print_attributes("Device Information", attributes)
