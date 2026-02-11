@@ -9,6 +9,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
 env:
   DEFAULT_PYTHON: "3.13"
 
