@@ -201,6 +201,6 @@ dev = [
     "ruff==0.14.13",
     "safety==3.7.0",
     "vulture==2.14",
-    "yamllint==1.37.1",
+    "yamllint==1.38.0",
     "zeroconf>=0.148.0",
 ]
