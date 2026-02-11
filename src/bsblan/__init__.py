@@ -2,6 +2,8 @@
 
 from .bsblan import BSBLAN, BSBLANConfig
 from .constants import (
+    UNIT_DEVICE_CLASS_MAP,
+    UNIT_STATE_CLASS_MAP,
     HeatingCircuitStatus,
     HVACActionCategory,
     get_hvac_action_category,
@@ -27,6 +29,8 @@ from .models import (
 
 __all__ = [
     "BSBLAN",
+    "UNIT_DEVICE_CLASS_MAP",
+    "UNIT_STATE_CLASS_MAP",
     "BSBLANAuthError",
     "BSBLANConfig",
     "BSBLANConnectionError",
