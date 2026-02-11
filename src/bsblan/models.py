@@ -11,7 +11,11 @@ from typing import Any, Final
 
 from mashumaro.mixins.json import DataClassJSONMixin
 
-from bsblan.constants import TEMPERATURE_UNITS
+from bsblan.constants import (
+    TEMPERATURE_UNITS,
+    UNIT_DEVICE_CLASS_MAP,
+    UNIT_STATE_CLASS_MAP,
+)
 
 # Maximum number of time slots per day supported by BSB-LAN
 MAX_TIME_SLOTS_PER_DAY: Final[int] = 3
@@ -225,6 +229,8 @@ class EntityInfo(DataClassJSONMixin):
         readonly: Whether the value is read-only.
         readwrite: Whether the value is read-write.
         precision: Optional precision for numeric values.
+        data_type_name: BSB-LAN data type name (e.g., "TEMP", "ENUM").
+        data_type_family: BSB-LAN data type family (e.g., "VALS", "ENUM").
 
     """
 
@@ -237,6 +243,8 @@ class EntityInfo(DataClassJSONMixin):
     readonly: int = field(default=0)
     readwrite: int = field(default=0)
     precision: float | None = field(default=None)
+    data_type_name: str = field(default="", metadata={"alias": "dataType_name"})
+    data_type_family: str = field(default="", metadata={"alias": "dataType_family"})
 
     def __post_init__(self) -> None:
         """Convert values based on data_type after initialization."""
@@ -311,6 +319,38 @@ class EntityInfo(DataClassJSONMixin):
 
         """
         return self.desc if self.data_type == DataType.ENUM else None
+
+    @property
+    def suggested_device_class(self) -> str | None:
+        """Suggest HA SensorDeviceClass based on unit and data type.
+
+        This maps BSB-LAN units to Home Assistant sensor device classes,
+        enabling automatic entity configuration in HA integrations.
+
+        Returns:
+            str | None: The suggested HA device class (e.g., "temperature",
+                "energy", "power"), or None if no mapping exists.
+
+        """
+        return UNIT_DEVICE_CLASS_MAP.get(self.unit)
+
+    @property
+    def suggested_state_class(self) -> str | None:
+        """Suggest HA SensorStateClass based on unit.
+
+        This maps BSB-LAN units to Home Assistant sensor state classes,
+        which determine how the data is tracked (measurement vs
+        total_increasing).
+
+        Energy counters (kWh, MWh, Wh) are mapped to "total_increasing",
+        while other numeric measurements use "measurement".
+
+        Returns:
+            str | None: The suggested HA state class (e.g., "measurement",
+                "total_increasing"), or None if no mapping exists.
+
+        """
+        return UNIT_STATE_CLASS_MAP.get(self.unit)
 
 
 @dataclass
