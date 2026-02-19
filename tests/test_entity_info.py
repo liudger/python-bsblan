@@ -23,6 +23,18 @@ def test_entity_info_invalid_time_conversion() -> None:
     assert entity.value == "24:61"
 
 
+def test_entity_info_undefined_value_becomes_none() -> None:
+    """Test that '---' (sensor/parameter not in use) is converted to None."""
+    entity = EntityInfo(
+        name="Inactive Sensor",
+        value="---",
+        unit="°C",
+        desc="",
+        data_type=DataType.PLAIN_NUMBER,
+    )
+    assert entity.value is None
+
+
 def test_entity_info_invalid_weekday_conversion() -> None:
     """Test EntityInfo with invalid weekday format."""
     # Create EntityInfo with invalid weekday format
@@ -42,16 +54,17 @@ def test_entity_info_general_conversion_error(caplog: pytest.LogCaptureFixture) 
     """Test EntityInfo with general conversion error."""
     with caplog.at_level(logging.WARNING):
         # Create EntityInfo that will cause a conversion error
+        # Using a non-numeric string with temperature unit triggers float() ValueError
         entity = EntityInfo(
             name="Error Test",
-            value=object(),  # Object that can't be converted
-            unit="",
+            value="not-convertible",
+            unit="°C",
             desc="",
             data_type=DataType.PLAIN_NUMBER,
         )
 
         # The original value should be preserved
-        assert isinstance(entity.value, object)
+        assert entity.value == "not-convertible"
         assert "Failed to convert value" in caplog.text
 
 

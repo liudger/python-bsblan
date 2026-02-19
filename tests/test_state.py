@@ -81,7 +81,7 @@ async def test_state(monkeypatch: Any) -> None:
 
     # Room temperature setpoint boost assertions
     assert state.room1_temp_setpoint_boost is not None
-    assert state.room1_temp_setpoint_boost.value == "---"
+    assert state.room1_temp_setpoint_boost.value is None
     assert state.room1_temp_setpoint_boost.unit == "°C"
 
     # Verify API call
