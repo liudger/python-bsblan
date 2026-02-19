@@ -7,7 +7,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import time
 from enum import IntEnum
-from typing import Any, Final
+from typing import Final, Generic, TypeVar, cast
 
 from mashumaro.mixins.json import DataClassJSONMixin
 
@@ -19,6 +19,12 @@ from bsblan.constants import (
 
 # Maximum number of time slots per day supported by BSB-LAN
 MAX_TIME_SLOTS_PER_DAY: Final[int] = 3
+
+# All possible EntityInfo value types after conversion
+EntityValue = float | int | str | time
+
+# TypeVar for EntityInfo generic
+T = TypeVar("T", bound=EntityValue)
 
 
 @dataclass
@@ -213,15 +219,25 @@ class DataType(IntEnum):
 
 
 @dataclass
-class EntityInfo(DataClassJSONMixin):
+class EntityInfo(DataClassJSONMixin, Generic[T]):
     """Convert Data to valid keys and convert to object attributes.
 
     This object holds info about specific objects and handles automatic type conversion
     based on data_type and unit.
 
+    The generic parameter ``T`` indicates the expected value type after conversion:
+
+    - ``EntityInfo[float]`` for temperature / numeric sensor values
+    - ``EntityInfo[int]`` for enums, weekdays and plain integers
+    - ``EntityInfo[time]`` for HH:MM time values
+    - ``EntityInfo[str]`` for string / datetime values
+
+    When the device returns ``"---"`` (sensor not in use), ``value`` is set to
+    ``None``.
+
     Attributes:
         name: Name attribute.
-        value: Value of attribute (type depends on data_type).
+        value: Converted value, or None when sensor/parameter is inactive.
         unit: Unit of measurement.
         desc: Description of the entity.
         data_type: Type of data (see DataType enum).
@@ -237,7 +253,7 @@ class EntityInfo(DataClassJSONMixin):
     name: str = field(metadata={"alias": "name"})
     unit: str = field(metadata={"alias": "unit"})
     desc: str = field(metadata={"alias": "desc"})
-    value: Any = field(metadata={"alias": "value"})
+    value: T | None = field(metadata={"alias": "value"})
     data_type: int = field(metadata={"alias": "dataType"})
     error: int = field(default=0)
     readonly: int = field(default=0)
@@ -248,7 +264,8 @@ class EntityInfo(DataClassJSONMixin):
 
     def __post_init__(self) -> None:
         """Convert values based on data_type after initialization."""
-        if self.value == "---":  # Special case for undefined values
+        if self.value == "---":  # Sensor/parameter not in use
+            self.value = None
             return
 
         try:
@@ -261,35 +278,37 @@ class EntityInfo(DataClassJSONMixin):
                 str(e),
             )
 
-    def convert_value(self) -> Any:
+    def convert_value(self) -> T | None:
         """Convert the value based on its data type.
 
         Returns:
-            Any: The converted value.
+            T | None: The converted value.
 
         """
-        result = self.value
+        # Raw values from BSB-LAN JSON are always strings at this point.
+        # We explicitly convert to str so the type checker knows None is excluded
+        # (__post_init__ guards against None before calling this method).
+        raw = str(self.value)
+        result: EntityValue = raw
 
         if self.data_type == DataType.PLAIN_NUMBER:
             # Handle temperature values
             if self._is_temperature():
-                result = float(self.value)
+                result = float(raw)
             else:
                 # Handle other numeric values
                 with suppress(ValueError):
-                    result = (
-                        float(self.value) if "." in str(self.value) else int(self.value)
-                    )
+                    result = float(raw) if "." in raw else int(raw)
 
         elif self.data_type == DataType.ENUM:
             # For ENUMs, we keep the value as int but provide access to description
             with suppress(ValueError):
-                result = int(self.value)
+                result = int(raw)
 
         elif self.data_type == DataType.TIME:
             # Convert HH:MM to time object
             try:
-                hour, minute = map(int, str(self.value).split(":"))
+                hour, minute = map(int, raw.split(":"))
                 result = time(hour=hour, minute=minute)
             except ValueError:
                 pass
@@ -297,9 +316,9 @@ class EntityInfo(DataClassJSONMixin):
         elif self.data_type == DataType.WEEKDAY:
             # Convert numeric weekday to int
             with suppress(ValueError):
-                result = int(self.value)
+                result = int(raw)
 
-        return result
+        return cast("T", result)
 
     def _is_temperature(self) -> bool:
         """Check if the value represents a temperature.

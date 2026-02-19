@@ -524,8 +524,8 @@ class BSBLAN:
             try:
                 static_values = await self.static_values()
                 if static_values.min_temp is not None:
-                    self._min_temp = float(static_values.min_temp.value)
-                    logger.debug("Min temperature initialized: %f", self._min_temp)
+                    self._min_temp = static_values.min_temp.value  # type: ignore[assignment]
+                    logger.debug("Min temperature initialized: %s", self._min_temp)
                 else:
                     logger.warning(
                         "min_temp not available from device, "
@@ -533,8 +533,8 @@ class BSBLAN:
                     )
 
                 if static_values.max_temp is not None:
-                    self._max_temp = float(static_values.max_temp.value)
-                    logger.debug("Max temperature initialized: %f", self._max_temp)
+                    self._max_temp = static_values.max_temp.value  # type: ignore[assignment]
+                    logger.debug("Max temperature initialized: %s", self._max_temp)
                 else:
                     logger.warning(
                         "max_temp not available from device, "
