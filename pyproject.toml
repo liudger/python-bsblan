@@ -148,6 +148,7 @@ ignore = [
   "D213", # Conflicts with other rules
   "D417", # False positives in some occasions
   "PLR2004", # Just annoying, not really useful
+  "UP046", # Generic subclass style kept for mashumaro compatibility
 
   # Conflicts with the Ruff formatter
   "COM812",
