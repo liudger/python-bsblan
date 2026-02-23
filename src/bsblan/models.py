@@ -322,16 +322,13 @@ class EntityInfo(BaseModel, Generic[T]):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_raw_value(cls, data: Any) -> Any:
+    def convert_raw_value(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Convert raw string values before pydantic validates types.
 
         BSB-LAN always sends values as strings. This validator converts
         them to the correct Python type (float, int, time) before
         pydantic's type checking runs.
         """
-        if not isinstance(data, dict):
-            return data
-
         raw_value = data.get("value")
         # Resolve data_type from either alias or field name
         data_type = data.get("dataType", data.get("data_type", 0))
