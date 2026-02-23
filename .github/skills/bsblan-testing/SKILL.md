@@ -101,12 +101,12 @@ uv run pytest -v
 uv run pytest tests/test_bsblan.py::test_function_name
 ```
 
-## Pre-commit Hooks
+## Prek Hooks
 
 Always run before committing:
 
 ```bash
-uv run pre-commit run --all-files
+prek run --all-files
 ```
 
 This runs:
@@ -114,7 +114,6 @@ This runs:
 - **Ruff**: Linting and formatting (88 char line limit)
 - **MyPy**: Static type checking
 - **Pylint**: Code analysis
-- **Pytest**: Test execution with coverage
 
 ## Mock Patterns
 

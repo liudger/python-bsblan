@@ -26,7 +26,7 @@ Review the changes against the python-bsblan coding standards.
 - [ ] Follows existing parameter naming conventions
 - [ ] Error handling uses custom exceptions (`BSBLANError`, `BSBLANConnectionError`)
 
-### Pre-commit
+### Prek
 - [ ] Ruff passes (linting + formatting)
 - [ ] MyPy passes (type checking)
 - [ ] Pylint passes (code analysis)
@@ -35,6 +35,6 @@ Review the changes against the python-bsblan coding standards.
 ## Run Validation
 
 ```bash
-uv run pre-commit run --all-files
+prek run --all-files
 uv run pytest --cov=src/bsblan --cov-report=term-missing
 ```
