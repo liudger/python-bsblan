@@ -17,7 +17,7 @@ Always run these commands after making changes:
 
 ```bash
 # Run all prek hooks (ruff, mypy, pylint)
-prek run --all-files
+uv run prek run --all-files
 ```
 
 ### Prek Includes
@@ -76,9 +76,8 @@ Parameters are identified by numeric IDs and mapped to readable names in `consta
 
 2. **Add to model in `models.py`**:
    ```python
-   @dataclass
-   class HotWaterConfig(DataClassORJSONMixin):
-       legionella_function_setpoint: ParameterValue | None = None
+   class HotWaterConfig(BaseModel):
+       legionella_function_setpoint: EntityInfo[float] | None = None
    ```
 
 3. **Update method in `bsblan.py`** if the parameter is settable:
@@ -128,25 +127,23 @@ Defined in `constants.py`:
 ## Data Models
 
 ### Model Pattern
-All models use `mashumaro` for JSON serialization:
+All models use `pydantic` `BaseModel` for validation and serialization:
 
 ```python
-from dataclasses import dataclass
-from mashumaro.mixins.orjson import DataClassORJSONMixin
+from pydantic import BaseModel
 
-@dataclass
-class HotWaterConfig(DataClassORJSONMixin):
+class HotWaterConfig(BaseModel):
     """Hot water configuration parameters."""
-    operating_mode: ParameterValue | None = None
-    nominal_setpoint: ParameterValue | None = None
+    operating_mode: EntityInfo[int] | None = None
+    nominal_setpoint: EntityInfo[float] | None = None
 ```
 
-### ParameterValue Structure
-Each parameter returns a `ParameterValue` with:
-- `value`: The actual value
+### EntityInfo Structure
+Each parameter returns an `EntityInfo[T]` (generic `BaseModel`) with:
+- `value`: The actual value (typed via generic `T`)
 - `unit`: Unit of measurement
 - `desc`: Human-readable description
-- `dataType`: Data type information
+- `data_type`: Data type information
 
 ## Async Patterns
 
@@ -222,7 +219,7 @@ Test fixtures (JSON responses) are in `tests/fixtures/`
 4. Update docstring with parameter description
 5. Add state preparation logic in `_prepare_*_state()` method
 6. Add tests for the new parameter
-7. Run `prek run --all-files`
+7. Run `uv run prek run --all-files`
 
 ### Renaming a Parameter
 
@@ -232,7 +229,7 @@ When renaming parameters for consistency:
 3. Update `bsblan.py` - method parameters and state handling
 4. Update `tests/` - all test files using the parameter
 5. Update `examples/` - any example code
-6. Run `prek run --all-files`
+6. Run `uv run prek run --all-files`
 
 ## API Versions
 
@@ -244,7 +241,7 @@ Version-specific parameters are handled in `constants.py` with extension diction
 
 ## Don't Forget
 
-- ✅ Run `prek run --all-files` after every change
+- ✅ Run `uv run prek run --all-files` after every change
 - ✅ Maintain 95%+ test coverage
 - ✅ Use type hints on all functions
 - ✅ Add docstrings to public methods

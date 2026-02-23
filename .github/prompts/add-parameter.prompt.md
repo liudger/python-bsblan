@@ -26,7 +26,7 @@ Add a new parameter to the python-bsblan library following the established patte
 
 After changes, run:
 ```bash
-prek run --all-files
+uv run prek run --all-files
 ```
 
 Coverage must be 95%+ total and 100% for new code.
