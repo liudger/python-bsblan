@@ -28,12 +28,11 @@ BASE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
 
 ### 2. Add to Model in `models.py`
 
-Add the field to the appropriate dataclass:
+Add the field to the appropriate model:
 
 ```python
-@dataclass
-class HotWaterConfig(DataClassORJSONMixin):
-    legionella_function_setpoint: ParameterValue | None = None
+class HotWaterConfig(BaseModel):
+    legionella_function_setpoint: EntityInfo[float] | None = None
 ```
 
 ### 3. Update Method in `bsblan.py` (if settable)
@@ -100,7 +99,7 @@ When adding new sections or groups, the lock is created automatically on first a
 Always run after changes:
 
 ```bash
-prek run --all-files
+uv run prek run --all-files
 uv run pytest --cov=src/bsblan --cov-report=term-missing
 ```
 

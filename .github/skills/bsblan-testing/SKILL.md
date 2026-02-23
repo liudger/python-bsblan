@@ -106,7 +106,7 @@ uv run pytest tests/test_bsblan.py::test_function_name
 Always run before committing:
 
 ```bash
-prek run --all-files
+uv run prek run --all-files
 ```
 
 This runs:

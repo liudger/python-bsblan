@@ -158,7 +158,7 @@ for pre-commit), all changes are linted and tested with each commit. You can
 run all checks and tests manually, using the following command:
 
 ```bash
-prek run --all-files
+uv run prek run --all-files
 ```
 
 To run just the Python tests:

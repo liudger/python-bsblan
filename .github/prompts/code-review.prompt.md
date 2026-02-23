@@ -21,7 +21,7 @@ Review the changes against the python-bsblan coding standards.
 - [ ] Patch coverage 100%
 
 ### Patterns
-- [ ] Uses `mashumaro` for JSON serialization
+- [ ] Uses `pydantic` `BaseModel` for validation and serialization
 - [ ] Uses `aiohttp` for async HTTP
 - [ ] Follows existing parameter naming conventions
 - [ ] Error handling uses custom exceptions (`BSBLANError`, `BSBLANConnectionError`)
@@ -35,6 +35,6 @@ Review the changes against the python-bsblan coding standards.
 ## Run Validation
 
 ```bash
-prek run --all-files
+uv run prek run --all-files
 uv run pytest --cov=src/bsblan --cov-report=term-missing
 ```
