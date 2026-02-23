@@ -222,3 +222,44 @@ def test_entity_info_string_plain_text_not_parsed() -> None:
 
     assert entity.value == "1.0.38-20200730"
     assert entity.unit == ""
+
+
+def test_entity_info_timeprog_schedule_string() -> None:
+    """Test TIMEPROG value with active and unused slots is kept as string."""
+    entity = EntityInfo(
+        name="Monday",
+        value="13:00-15:00 ##:##-##:## ##:##-##:##",
+        unit="",
+        desc="",
+        data_type=DataType.TIMEPROG,
+    )
+
+    assert entity.value == "13:00-15:00 ##:##-##:## ##:##-##:##"
+    assert entity.data_type == DataType.TIMEPROG
+
+
+def test_entity_info_timeprog_multiple_slots() -> None:
+    """Test TIMEPROG value with multiple active time slots."""
+    entity = EntityInfo(
+        name="Tuesday",
+        value="06:00-08:00 17:00-21:00 ##:##-##:##",
+        unit="",
+        desc="",
+        data_type=DataType.TIMEPROG,
+    )
+
+    assert entity.value == "06:00-08:00 17:00-21:00 ##:##-##:##"
+    assert entity.data_type == DataType.TIMEPROG
+
+
+def test_entity_info_timeprog_inactive() -> None:
+    """Test TIMEPROG with '---' (inactive/not in use) returns None."""
+    entity = EntityInfo(
+        name="Sunday",
+        value="---",
+        unit="",
+        desc="",
+        data_type=DataType.TIMEPROG,
+    )
+
+    assert entity.value is None
