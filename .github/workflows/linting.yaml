@@ -34,9 +34,9 @@ jobs:
       - name: 🏗 Install Python dependencies
         run: uv sync --dev
       - name: 🚀 Run all prek hooks
-        run: >-
-          uv run prek run --all-files
-          --hook-stage manual
+        env:
+          SKIP: no-commit-to-branch
+        run: uv run prek run --all-files
 
   prettier:
     name: Prettier
