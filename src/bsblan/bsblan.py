@@ -524,7 +524,7 @@ class BSBLAN:
             try:
                 static_values = await self.static_values()
                 if static_values.min_temp is not None:
-                    self._min_temp = static_values.min_temp.value  # type: ignore[assignment]
+                    self._min_temp = static_values.min_temp.value
                     logger.debug("Min temperature initialized: %s", self._min_temp)
                 else:
                     logger.warning(
@@ -533,7 +533,7 @@ class BSBLAN:
                     )
 
                 if static_values.max_temp is not None:
-                    self._max_temp = static_values.max_temp.value  # type: ignore[assignment]
+                    self._max_temp = static_values.max_temp.value
                     logger.debug("Max temperature initialized: %s", self._max_temp)
                 else:
                     logger.warning(
@@ -841,7 +841,7 @@ class BSBLAN:
         params = await self._extract_params_summary(section_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
-        return model_class.from_dict(data)
+        return model_class.model_validate(data)
 
     async def state(self, include: list[str] | None = None) -> State:
         """Get the current state from BSBLAN device.
@@ -911,7 +911,7 @@ class BSBLAN:
 
         """
         device_info = await self._request(base_path="/JI")
-        return Device.from_dict(device_info)
+        return Device.model_validate(device_info)
 
     async def info(self, include: list[str] | None = None) -> Info:
         """Get information about the current heating system config.
@@ -942,7 +942,7 @@ class BSBLAN:
         data = await self._request(params={"Parameter": "0"})
         # Create the data dictionary in the expected format
         time_data = {"time": data["0"]}
-        return DeviceTime.from_dict(time_data)
+        return DeviceTime.model_validate(time_data)
 
     async def set_time(self, time_value: str) -> None:
         """Set the time on the BSB-LAN device.
@@ -1146,7 +1146,7 @@ class BSBLAN:
         params = await self._extract_params_summary(filtered_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
-        return model_class.from_dict(data)
+        return model_class.model_validate(data)
 
     async def hot_water_state(self, include: list[str] | None = None) -> HotWaterState:
         """Get essential hot water state for frequent polling.
@@ -1436,7 +1436,7 @@ class BSBLAN:
             if param_id in response_data:
                 param_data = response_data[param_id]
                 if param_data and isinstance(param_data, dict):
-                    result[param_id] = EntityInfo.from_dict(param_data)
+                    result[param_id] = EntityInfo.model_validate(param_data)
 
         return result
 

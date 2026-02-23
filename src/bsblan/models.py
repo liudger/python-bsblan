@@ -7,9 +7,9 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import time
 from enum import IntEnum
-from typing import Final, Generic, TypeVar, cast
+from typing import Any, Final, Generic, TypeVar
 
-from mashumaro.mixins.json import DataClassJSONMixin
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from bsblan.constants import (
     TEMPERATURE_UNITS,
@@ -218,22 +218,78 @@ class DataType(IntEnum):
     PPS_TIME = 8  # PPS time (day of week, hour:minute)
 
 
-@dataclass
-class EntityInfo(DataClassJSONMixin, Generic[T]):
-    """Convert Data to valid keys and convert to object attributes.
+def _convert_bsblan_value(
+    raw_value: Any,
+    data_type: int,
+    unit: str,
+) -> EntityValue | None:
+    """Convert a raw BSB-LAN value to the appropriate Python type.
 
-    This object holds info about specific objects and handles automatic type conversion
-    based on data_type and unit.
+    Args:
+        raw_value: The raw value from the BSB-LAN API.
+        data_type: The BSB-LAN data type code.
+        unit: The unit of measurement.
 
-    The generic parameter ``T`` indicates the expected value type after conversion:
+    Returns:
+        The converted value, or None if the value is inactive.
+
+    """
+    if raw_value is None or raw_value == "---":
+        return None
+
+    raw = str(raw_value)
+    result: EntityValue = raw
+
+    try:
+        if data_type == DataType.PLAIN_NUMBER:
+            if any(unit.endswith(u) for u in TEMPERATURE_UNITS):
+                result = float(raw)
+            else:
+                with suppress(ValueError):
+                    result = float(raw) if "." in raw else int(raw)
+
+        elif data_type == DataType.ENUM:
+            with suppress(ValueError):
+                result = int(raw)
+
+        elif data_type == DataType.TIME:
+            try:
+                hour, minute = map(int, raw.split(":"))
+                result = time(hour=hour, minute=minute)
+            except ValueError:
+                pass
+
+        elif data_type == DataType.WEEKDAY:
+            with suppress(ValueError):
+                result = int(raw)
+
+    except (ValueError, TypeError) as e:
+        logging.getLogger(__name__).warning(
+            "Failed to convert value '%s' (type %s): %s",
+            raw_value,
+            data_type,
+            str(e),
+        )
+
+    return result
+
+
+class EntityInfo(BaseModel, Generic[T]):
+    """BSB-LAN parameter info with automatic type conversion.
+
+    This object holds info about specific objects and handles automatic type
+    conversion based on data_type and unit.
+
+    The generic parameter ``T`` indicates the expected value type after
+    conversion:
 
     - ``EntityInfo[float]`` for temperature / numeric sensor values
     - ``EntityInfo[int]`` for enums, weekdays and plain integers
     - ``EntityInfo[time]`` for HH:MM time values
     - ``EntityInfo[str]`` for string / datetime values
 
-    When the device returns ``"---"`` (sensor not in use), ``value`` is set to
-    ``None``.
+    When the device returns ``"---"`` (sensor not in use), ``value`` is set
+    to ``None``.
 
     Attributes:
         name: Name attribute.
@@ -250,91 +306,46 @@ class EntityInfo(DataClassJSONMixin, Generic[T]):
 
     """
 
-    name: str = field(metadata={"alias": "name"})
-    unit: str = field(metadata={"alias": "unit"})
-    desc: str = field(metadata={"alias": "desc"})
-    value: T | None = field(metadata={"alias": "value"})
-    data_type: int = field(metadata={"alias": "dataType"})
-    error: int = field(default=0)
-    readonly: int = field(default=0)
-    readwrite: int = field(default=0)
-    precision: float | None = field(default=None)
-    data_type_name: str = field(default="", metadata={"alias": "dataType_name"})
-    data_type_family: str = field(default="", metadata={"alias": "dataType_family"})
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
-    def __post_init__(self) -> None:
-        """Convert values based on data_type after initialization."""
-        if self.value == "---":  # Sensor/parameter not in use
-            self.value = None
-            return
+    name: str
+    unit: str
+    desc: str
+    value: T | None = None
+    data_type: int = Field(alias="dataType", default=0)
+    error: int = 0
+    readonly: int = 0
+    readwrite: int = 0
+    precision: float | None = None
+    data_type_name: str = Field(default="", alias="dataType_name")
+    data_type_family: str = Field(default="", alias="dataType_family")
 
-        try:
-            self.value = self.convert_value()
-        except (ValueError, TypeError) as e:
-            logging.getLogger(__name__).warning(
-                "Failed to convert value '%s' (type %s): %s",
-                self.value,
-                self.data_type,
-                str(e),
-            )
+    @model_validator(mode="before")
+    @classmethod
+    def convert_raw_value(cls, data: Any) -> Any:
+        """Convert raw string values before pydantic validates types.
 
-    def convert_value(self) -> T | None:
-        """Convert the value based on its data type.
-
-        Returns:
-            T | None: The converted value.
-
+        BSB-LAN always sends values as strings. This validator converts
+        them to the correct Python type (float, int, time) before
+        pydantic's type checking runs.
         """
-        # Raw values from BSB-LAN JSON are always strings at this point.
-        # We explicitly convert to str so the type checker knows None is excluded
-        # (__post_init__ guards against None before calling this method).
-        raw = str(self.value)
-        result: EntityValue = raw
+        if not isinstance(data, dict):
+            return data
 
-        if self.data_type == DataType.PLAIN_NUMBER:
-            # Handle temperature values
-            if self._is_temperature():
-                result = float(raw)
-            else:
-                # Handle other numeric values
-                with suppress(ValueError):
-                    result = float(raw) if "." in raw else int(raw)
+        raw_value = data.get("value")
+        # Resolve data_type from either alias or field name
+        data_type = data.get("dataType", data.get("data_type", 0))
+        unit = data.get("unit", "")
 
-        elif self.data_type == DataType.ENUM:
-            # For ENUMs, we keep the value as int but provide access to description
-            with suppress(ValueError):
-                result = int(raw)
-
-        elif self.data_type == DataType.TIME:
-            # Convert HH:MM to time object
-            try:
-                hour, minute = map(int, raw.split(":"))
-                result = time(hour=hour, minute=minute)
-            except ValueError:
-                pass
-
-        elif self.data_type == DataType.WEEKDAY:
-            # Convert numeric weekday to int
-            with suppress(ValueError):
-                result = int(raw)
-
-        return cast("T", result)
-
-    def _is_temperature(self) -> bool:
-        """Check if the value represents a temperature.
-
-        Returns:
-            bool: True if the value represents a temperature.
-
-        """
-        return any(self.unit.endswith(unit) for unit in TEMPERATURE_UNITS)
+        data["value"] = _convert_bsblan_value(raw_value, data_type, unit)
+        return data
 
     @property
     def enum_description(self) -> str | None:
         """Get the description for ENUM values.
 
         Returns:
-            str | None: The description of the ENUM value, or None if not applicable.
+            str | None: The description of the ENUM value, or None.
 
         """
         return self.desc if self.data_type == DataType.ENUM else None
@@ -391,18 +402,18 @@ class SetHotWaterParam:
         use HotWaterState, HotWaterConfig, or HotWaterSchedule.
 
     Attributes:
-        nominal_setpoint: The nominal setpoint temperature (°C).
-        reduced_setpoint: The reduced setpoint temperature (°C).
-        nominal_setpoint_max: The maximum nominal setpoint temperature (°C).
+        nominal_setpoint: The nominal setpoint temperature.
+        reduced_setpoint: The reduced setpoint temperature.
+        nominal_setpoint_max: The maximum nominal setpoint temperature.
         operating_mode: The operating mode (e.g., "0"=Off, "1"=On).
         dhw_time_programs: Time switch programs for DHW.
         eco_mode_selection: Eco mode selection.
         dhw_charging_priority: DHW charging priority.
-        legionella_function_setpoint: Legionella function setpoint temperature (°C).
+        legionella_function_setpoint: Legionella function setpoint temperature.
         legionella_function_periodicity: Legionella function periodicity.
         legionella_function_day: Day for legionella function.
         legionella_function_time: Time for legionella function (HH:MM).
-        legionella_function_dwelling_time: Legionella dwelling time (minutes).
+        legionella_function_dwelling_time: Legionella dwelling time (min).
         operating_mode_changeover: Operating mode changeover.
 
     """
@@ -422,41 +433,38 @@ class SetHotWaterParam:
     operating_mode_changeover: str | None = None
 
 
-@dataclass
-class State(DataClassJSONMixin):
+class State(BaseModel):
     """Object that holds information about the state of a climate system.
 
-    All fields are optional to support partial fetching via the include parameter.
-    When using state() without include, all required parameters will be populated.
+    All fields are optional to support partial fetching via the include
+    parameter. When using state() without include, all required parameters
+    will be populated.
     """
 
-    hvac_mode: EntityInfo | None = None
-    target_temperature: EntityInfo | None = None
-    hvac_action: EntityInfo | None = None
-    hvac_mode_changeover: EntityInfo | None = None
-    current_temperature: EntityInfo | None = None
-    room1_thermostat_mode: EntityInfo | None = None
-    room1_temp_setpoint_boost: EntityInfo | None = None
+    hvac_mode: EntityInfo[int] | None = None
+    target_temperature: EntityInfo[float] | None = None
+    hvac_action: EntityInfo[int] | None = None
+    hvac_mode_changeover: EntityInfo[int] | None = None
+    current_temperature: EntityInfo[float] | None = None
+    room1_thermostat_mode: EntityInfo[int] | None = None
+    room1_temp_setpoint_boost: EntityInfo[float] | None = None
 
 
-@dataclass
-class StaticState(DataClassJSONMixin):
+class StaticState(BaseModel):
     """Class for entities that are not changing."""
 
-    min_temp: EntityInfo | None = None
-    max_temp: EntityInfo | None = None
+    min_temp: EntityInfo[float] | None = None
+    max_temp: EntityInfo[float] | None = None
 
 
-@dataclass
-class Sensor(DataClassJSONMixin):
+class Sensor(BaseModel):
     """Object holds info about object for sensor climate."""
 
-    outside_temperature: EntityInfo | None = None
-    current_temperature: EntityInfo | None = None
+    outside_temperature: EntityInfo[float] | None = None
+    current_temperature: EntityInfo[float] | None = None
 
 
-@dataclass
-class HotWaterState(DataClassJSONMixin):
+class HotWaterState(BaseModel):
     """Essential hot water state information (READ from device).
 
     This class contains only the most important hot water parameters
@@ -468,15 +476,14 @@ class HotWaterState(DataClassJSONMixin):
 
     """
 
-    operating_mode: EntityInfo | None = None
-    nominal_setpoint: EntityInfo | None = None
-    release: EntityInfo | None = None
-    dhw_actual_value_top_temperature: EntityInfo | None = None
-    state_dhw_pump: EntityInfo | None = None
+    operating_mode: EntityInfo[int] | None = None
+    nominal_setpoint: EntityInfo[float] | None = None
+    release: EntityInfo[int] | None = None
+    dhw_actual_value_top_temperature: EntityInfo[float] | None = None
+    state_dhw_pump: EntityInfo[int] | None = None
 
 
-@dataclass
-class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-attributes
+class HotWaterConfig(BaseModel):  # pylint: disable=too-many-instance-attributes
     """Hot water configuration and advanced settings (READ from device).
 
     This class contains configuration parameters that are typically
@@ -488,28 +495,27 @@ class HotWaterConfig(DataClassJSONMixin):  # pylint: disable=too-many-instance-a
 
     """
 
-    eco_mode_selection: EntityInfo | None = None
-    nominal_setpoint_max: EntityInfo | None = None
-    reduced_setpoint: EntityInfo | None = None
-    dhw_charging_priority: EntityInfo | None = None
-    operating_mode_changeover: EntityInfo | None = None
+    eco_mode_selection: EntityInfo[int] | None = None
+    nominal_setpoint_max: EntityInfo[float] | None = None
+    reduced_setpoint: EntityInfo[float] | None = None
+    dhw_charging_priority: EntityInfo[int] | None = None
+    operating_mode_changeover: EntityInfo[int] | None = None
     # Legionella protection settings
-    legionella_function: EntityInfo | None = None
-    legionella_function_setpoint: EntityInfo | None = None
-    legionella_function_periodicity: EntityInfo | None = None
-    legionella_function_day: EntityInfo | None = None
-    legionella_function_time: EntityInfo | None = None
-    legionella_function_dwelling_time: EntityInfo | None = None
-    legionella_circulation_pump: EntityInfo | None = None
-    legionella_circulation_temp_diff: EntityInfo | None = None
+    legionella_function: EntityInfo[int] | None = None
+    legionella_function_setpoint: EntityInfo[float] | None = None
+    legionella_function_periodicity: EntityInfo[int] | None = None
+    legionella_function_day: EntityInfo[int] | None = None
+    legionella_function_time: EntityInfo[time] | None = None
+    legionella_function_dwelling_time: EntityInfo[float] | None = None
+    legionella_circulation_pump: EntityInfo[int] | None = None
+    legionella_circulation_temp_diff: EntityInfo[float] | None = None
     # DHW circulation pump settings
-    dhw_circulation_pump_release: EntityInfo | None = None
-    dhw_circulation_pump_cycling: EntityInfo | None = None
-    dhw_circulation_setpoint: EntityInfo | None = None
+    dhw_circulation_pump_release: EntityInfo[int] | None = None
+    dhw_circulation_pump_cycling: EntityInfo[int] | None = None
+    dhw_circulation_setpoint: EntityInfo[float] | None = None
 
 
-@dataclass
-class HotWaterSchedule(DataClassJSONMixin):
+class HotWaterSchedule(BaseModel):
     """Hot water time program schedules (READ from device).
 
     This class contains time program settings that are typically
@@ -521,25 +527,25 @@ class HotWaterSchedule(DataClassJSONMixin):
 
     """
 
-    dhw_time_program_monday: EntityInfo | None = None
-    dhw_time_program_tuesday: EntityInfo | None = None
-    dhw_time_program_wednesday: EntityInfo | None = None
-    dhw_time_program_thursday: EntityInfo | None = None
-    dhw_time_program_friday: EntityInfo | None = None
-    dhw_time_program_saturday: EntityInfo | None = None
-    dhw_time_program_sunday: EntityInfo | None = None
-    dhw_time_program_standard_values: EntityInfo | None = None
+    dhw_time_program_monday: EntityInfo[str | int] | None = None
+    dhw_time_program_tuesday: EntityInfo[str | int] | None = None
+    dhw_time_program_wednesday: EntityInfo[str | int] | None = None
+    dhw_time_program_thursday: EntityInfo[str | int] | None = None
+    dhw_time_program_friday: EntityInfo[str | int] | None = None
+    dhw_time_program_saturday: EntityInfo[str | int] | None = None
+    dhw_time_program_sunday: EntityInfo[str | int] | None = None
+    dhw_time_program_standard_values: EntityInfo[int] | None = None
 
 
-@dataclass
-class DeviceTime(DataClassJSONMixin):
+class DeviceTime(BaseModel):
     """Object holds device time information."""
 
-    time: EntityInfo
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    time: EntityInfo[str]
 
 
-@dataclass
-class Device(DataClassJSONMixin):
+class Device(BaseModel):
     """Object holds bsblan device information."""
 
     name: str
@@ -548,13 +554,13 @@ class Device(DataClassJSONMixin):
     uptime: int
 
 
-@dataclass
-class Info(DataClassJSONMixin):
+class Info(BaseModel):
     """Object holding the heatingSystem info.
 
-    All fields are optional to support partial fetching via the include parameter.
+    All fields are optional to support partial fetching via the include
+    parameter.
     """
 
-    device_identification: EntityInfo | None = None
-    controller_family: EntityInfo | None = None
-    controller_variant: EntityInfo | None = None
+    device_identification: EntityInfo[str] | None = None
+    controller_family: EntityInfo[int] | None = None
+    controller_variant: EntityInfo[int] | None = None
