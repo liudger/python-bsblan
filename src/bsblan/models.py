@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from datetime import time
 from enum import IntEnum
@@ -321,6 +322,11 @@ class EntityInfo(BaseModel, Generic[T]):
         BSB-LAN always sends values as strings. This validator converts
         them to the correct Python type (float, int, time) before
         pydantic's type checking runs.
+
+        Some STRING-type parameters (e.g. "7968 kWh") embed a numeric
+        value with a unit suffix.  When the ``unit`` field is empty and
+        the value matches ``<number> <known-unit>``, the numeric part is
+        extracted and the ``unit`` field is populated automatically.
         """
         raw_value = data.get("value")
         # Resolve data_type from either alias or field name
@@ -328,6 +334,16 @@ class EntityInfo(BaseModel, Generic[T]):
         unit = data.get("unit", "")
 
         data["value"] = _convert_bsblan_value(raw_value, data_type, unit)
+
+        # Handle STRING values with embedded units (e.g. "7968 kWh")
+        converted = data["value"]
+        if isinstance(converted, str) and not unit and data_type == DataType.STRING:
+            match = re.match(r"^(\d+(?:\.\d+)?)\s+(\S+)$", converted)
+            if match and match.group(2) in UNIT_DEVICE_CLASS_MAP:
+                num_str = match.group(1)
+                data["value"] = float(num_str) if "." in num_str else int(num_str)
+                data["unit"] = match.group(2)
+
         return data
 
     @property
@@ -452,6 +468,7 @@ class Sensor(BaseModel):
 
     outside_temperature: EntityInfo[float] | None = None
     current_temperature: EntityInfo[float] | None = None
+    total_energy: EntityInfo[int] | None = None
 
 
 class HotWaterState(BaseModel):
