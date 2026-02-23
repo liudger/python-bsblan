@@ -8,19 +8,22 @@ import pytest
 from bsblan.models import DataType, EntityInfo
 
 
-def test_entity_info_invalid_time_conversion() -> None:
-    """Test EntityInfo with invalid time format."""
-    # Create EntityInfo with invalid time format
-    entity = EntityInfo(
-        name="Invalid Time",
-        value="24:61",  # Invalid time
-        unit="",
-        desc="",
-        data_type=DataType.TIME,
-    )
+def test_entity_info_invalid_time_conversion(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test EntityInfo with invalid time format logs a warning."""
+    with caplog.at_level(logging.WARNING):
+        entity = EntityInfo(
+            name="Invalid Time",
+            value="24:61",  # Invalid time
+            unit="",
+            desc="",
+            data_type=DataType.TIME,
+        )
 
-    # The value should remain as string since conversion failed
-    assert entity.value == "24:61"
+        # The value should remain as string since conversion failed
+        assert entity.value == "24:61"
+        assert "Failed to convert value" in caplog.text
 
 
 def test_entity_info_undefined_value_becomes_none() -> None:
@@ -35,19 +38,58 @@ def test_entity_info_undefined_value_becomes_none() -> None:
     assert entity.value is None
 
 
-def test_entity_info_invalid_weekday_conversion() -> None:
-    """Test EntityInfo with invalid weekday format."""
-    # Create EntityInfo with invalid weekday format
-    entity = EntityInfo(
-        name="Invalid Weekday",
-        value="not-a-number",  # Invalid weekday
-        unit="",
-        desc="",
-        data_type=DataType.WEEKDAY,
-    )
+def test_entity_info_invalid_weekday_conversion(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test EntityInfo with invalid weekday format logs a warning."""
+    with caplog.at_level(logging.WARNING):
+        entity = EntityInfo(
+            name="Invalid Weekday",
+            value="not-a-number",  # Invalid weekday
+            unit="",
+            desc="",
+            data_type=DataType.WEEKDAY,
+        )
 
-    # The value should remain as string since conversion failed
-    assert entity.value == "not-a-number"
+        # The value should remain as string since conversion failed
+        assert entity.value == "not-a-number"
+        assert "Failed to convert value" in caplog.text
+
+
+def test_entity_info_invalid_plain_number_conversion(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test non-temperature PLAIN_NUMBER conversion failure logs a warning."""
+    with caplog.at_level(logging.WARNING):
+        entity = EntityInfo(
+            name="Invalid Number",
+            value="not-numeric",
+            unit="%",
+            desc="",
+            data_type=DataType.PLAIN_NUMBER,
+        )
+
+        # The value should remain as string since conversion failed
+        assert entity.value == "not-numeric"
+        assert "Failed to convert value" in caplog.text
+
+
+def test_entity_info_invalid_enum_conversion(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test ENUM conversion failure logs a warning."""
+    with caplog.at_level(logging.WARNING):
+        entity = EntityInfo(
+            name="Invalid Enum",
+            value="not-an-int",
+            unit="",
+            desc="Some description",
+            data_type=DataType.ENUM,
+        )
+
+        # The value should remain as string since conversion failed
+        assert entity.value == "not-an-int"
+        assert "Failed to convert value" in caplog.text
 
 
 def test_entity_info_general_conversion_error(caplog: pytest.LogCaptureFixture) -> None:
