@@ -216,6 +216,7 @@ class DataType(IntEnum):
     DATE = 6  # Day and month
     STRING = 7  # String value
     PPS_TIME = 8  # PPS time (day of week, hour:minute)
+    TIMEPROG = 9  # Time program (schedule slots)
 
 
 def _convert_bsblan_value(
@@ -528,6 +529,15 @@ class HotWaterSchedule(BaseModel):
     This class contains time program settings that are typically
     configured once and rarely changed.
 
+    The daily time programs (Monday–Sunday) use BSB-LAN dataType 9
+    (TIMEPROG) and return schedule strings like
+    ``"13:00-15:00 ##:##-##:## ##:##-##:##"`` where ``##:##`` marks
+    unused time slots.
+
+    ``dhw_time_program_standard_values`` is a YESNO enum (0=No, 1=Yes)
+    that resets all daily schedules back to the controller's factory
+    defaults when set to Yes. It is typically read-only via the API.
+
     Note:
         This is for READING from the device. For WRITING time programs,
         use SetHotWaterParam with set_hot_water().
@@ -541,6 +551,7 @@ class HotWaterSchedule(BaseModel):
     dhw_time_program_friday: EntityInfo[str | int] | None = None
     dhw_time_program_saturday: EntityInfo[str | int] | None = None
     dhw_time_program_sunday: EntityInfo[str | int] | None = None
+    # YESNO enum: resets all daily schedules to factory defaults when Yes (1)
     dhw_time_program_standard_values: EntityInfo[int] | None = None
 
 
