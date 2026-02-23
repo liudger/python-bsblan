@@ -100,7 +100,7 @@ When adding new sections or groups, the lock is created automatically on first a
 Always run after changes:
 
 ```bash
-uv run pre-commit run --all-files
+prek run --all-files
 uv run pytest --cov=src/bsblan --cov-report=term-missing
 ```
 

@@ -16,15 +16,14 @@ This repository contains the `python-bsblan` library, an asynchronous Python cli
 Always run these commands after making changes:
 
 ```bash
-# Run all pre-commit hooks (ruff, mypy, pylint, pytest)
-uv run pre-commit run --all-files
+# Run all prek hooks (ruff, mypy, pylint)
+prek run --all-files
 ```
 
-### Pre-commit Includes
+### Prek Includes
 - **Ruff**: Linting and formatting (88 char line limit)
 - **MyPy**: Static type checking
 - **Pylint**: Code analysis
-- **Pytest**: Test execution with coverage
 
 ### Coverage Requirements
 - Maintain **95%+ total test coverage**
@@ -223,7 +222,7 @@ Test fixtures (JSON responses) are in `tests/fixtures/`
 4. Update docstring with parameter description
 5. Add state preparation logic in `_prepare_*_state()` method
 6. Add tests for the new parameter
-7. Run `uv run pre-commit run --all-files`
+7. Run `prek run --all-files`
 
 ### Renaming a Parameter
 
@@ -233,7 +232,7 @@ When renaming parameters for consistency:
 3. Update `bsblan.py` - method parameters and state handling
 4. Update `tests/` - all test files using the parameter
 5. Update `examples/` - any example code
-6. Run `uv run pre-commit run --all-files`
+6. Run `prek run --all-files`
 
 ## API Versions
 
@@ -245,7 +244,7 @@ Version-specific parameters are handled in `constants.py` with extension diction
 
 ## Don't Forget
 
-- ✅ Run `uv run pre-commit run --all-files` after every change
+- ✅ Run `prek run --all-files` after every change
 - ✅ Maintain 95%+ test coverage
 - ✅ Use type hints on all functions
 - ✅ Add docstrings to public methods
