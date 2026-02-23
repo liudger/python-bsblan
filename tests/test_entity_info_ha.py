@@ -160,7 +160,7 @@ def test_data_type_name_and_family_default() -> None:
 )
 def test_data_type_name_from_json(type_name: str, type_family: str) -> None:
     """Test data_type_name/family populated from JSON response."""
-    entity = EntityInfo.from_dict(
+    entity = EntityInfo.model_validate(
         {
             "name": "Test",
             "dataType_name": type_name,
@@ -182,7 +182,7 @@ def test_data_type_name_from_json(type_name: str, type_family: str) -> None:
 
 def test_backwards_compat_no_data_type_name_in_json() -> None:
     """Test EntityInfo works when JSON has no dataType_name/family."""
-    entity = EntityInfo.from_dict(
+    entity = EntityInfo.model_validate(
         {
             "name": "Outside temp",
             "error": 0,

@@ -31,8 +31,8 @@ async def test_initialize_temperature_range_celsius() -> None:
     bsblan = BSBLAN(config)
 
     # Create mock static values with Celsius unit
-    min_temp = EntityInfo(name="Min Temp", value="10", unit="°C", desc="", data_type=0)
-    max_temp = EntityInfo(name="Max Temp", value="30", unit="°C", desc="", data_type=0)
+    min_temp = EntityInfo(name="Min Temp", value=10.0, unit="°C", desc="", data_type=0)
+    max_temp = EntityInfo(name="Max Temp", value=30.0, unit="°C", desc="", data_type=0)
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
@@ -53,8 +53,8 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
     bsblan = BSBLAN(config)
 
     # Create mock static values with Fahrenheit unit
-    min_temp = EntityInfo(name="Min Temp", value="50", unit="°F", desc="", data_type=0)
-    max_temp = EntityInfo(name="Max Temp", value="86", unit="°F", desc="", data_type=0)
+    min_temp = EntityInfo(name="Min Temp", value=50.0, unit="°F", desc="", data_type=0)
+    max_temp = EntityInfo(name="Max Temp", value=86.0, unit="°F", desc="", data_type=0)
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
     # Mock static_values method to return our test data
@@ -79,10 +79,10 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
 
     # Create mock static values with HTML degree symbol
     min_temp = EntityInfo(
-        name="Min Temp", value="10", unit="&deg;C", desc="", data_type=0
+        name="Min Temp", value=10.0, unit="&deg;C", desc="", data_type=0
     )
     max_temp = EntityInfo(
-        name="Max Temp", value="30", unit="&deg;C", desc="", data_type=0
+        name="Max Temp", value=30.0, unit="&deg;C", desc="", data_type=0
     )
     static_values = StaticState(min_temp=min_temp, max_temp=max_temp)
 
