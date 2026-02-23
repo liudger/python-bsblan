@@ -529,7 +529,7 @@ class HotWaterSchedule(BaseModel):
     This class contains time program settings that are typically
     configured once and rarely changed.
 
-    The daily time programs (Monday–Sunday) use BSB-LAN dataType 9
+    The daily time programs (Monday-Sunday) use BSB-LAN dataType 9
     (TIMEPROG) and return schedule strings like
     ``"13:00-15:00 ##:##-##:## ##:##-##:##"`` where ``##:##`` marks
     unused time slots.
