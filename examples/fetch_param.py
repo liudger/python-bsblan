@@ -34,9 +34,9 @@ async def fetch_parameters(param_ids: list[str]) -> None:
     config = BSBLANConfig(
         host=host,
         port=port,
-        passkey=env.get("passkey") or None,
-        username=env.get("username") or None,
-        password=env.get("password") or None,
+        passkey=str(env["passkey"]) if env.get("passkey") else None,
+        username=str(env["username"]) if env.get("username") else None,
+        password=str(env["password"]) if env.get("password") else None,
     )
 
     params_string = ",".join(param_ids)
