@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import time
 from enum import IntEnum
@@ -245,23 +244,17 @@ def _convert_bsblan_value(
             if any(unit.endswith(u) for u in TEMPERATURE_UNITS):
                 result = float(raw)
             else:
-                with suppress(ValueError):
-                    result = float(raw) if "." in raw else int(raw)
+                result = float(raw) if "." in raw else int(raw)
 
         elif data_type == DataType.ENUM:
-            with suppress(ValueError):
-                result = int(raw)
+            result = int(raw)
 
         elif data_type == DataType.TIME:
-            try:
-                hour, minute = map(int, raw.split(":"))
-                result = time(hour=hour, minute=minute)
-            except ValueError:
-                pass
+            hour, minute = map(int, raw.split(":"))
+            result = time(hour=hour, minute=minute)
 
         elif data_type == DataType.WEEKDAY:
-            with suppress(ValueError):
-                result = int(raw)
+            result = int(raw)
 
     except (ValueError, TypeError) as e:
         logging.getLogger(__name__).warning(
