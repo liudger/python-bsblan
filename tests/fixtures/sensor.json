@@ -16,5 +16,16 @@
     "dataType": 0,
     "readonly": 1,
     "unit": "&deg;C"
+  },
+  "3113": {
+    "name": "Energy brought in ",
+    "dataType_name": "STRING",
+    "dataType_family": "STRN",
+    "error": 0,
+    "value": "7968 kWh",
+    "desc": "",
+    "dataType": 7,
+    "readwrite": 1,
+    "unit": ""
   }
 }

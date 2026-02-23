@@ -105,3 +105,11 @@ async def test_sensor(
         assert sensor.current_temperature.value == expected_current_temp["value"]
         assert sensor.current_temperature.value == 18.2
         assert sensor.current_temperature.unit == "&deg;C"
+
+        # Verify total_energy (only present in full response)
+        if "3113" in sensor_response:
+            assert sensor.total_energy is not None
+            assert sensor.total_energy.value == 7968
+            assert sensor.total_energy.unit == "kWh"
+        else:
+            assert sensor.total_energy is None

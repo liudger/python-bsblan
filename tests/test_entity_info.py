@@ -152,3 +152,73 @@ def test_entity_info_enum_description() -> None:
 
     # The enum_description should return None
     assert non_enum_entity.enum_description is None
+
+
+def test_entity_info_string_with_embedded_unit_kwh() -> None:
+    """Test STRING value with embedded kWh unit is extracted to int."""
+    entity = EntityInfo(
+        name="Energy brought in",
+        value="7968 kWh",
+        unit="",
+        desc="",
+        data_type=DataType.STRING,
+    )
+
+    assert entity.value == 7968
+    assert entity.unit == "kWh"
+
+
+def test_entity_info_string_with_embedded_unit_float() -> None:
+    """Test STRING value with embedded unit and decimal is extracted to float."""
+    entity = EntityInfo(
+        name="Power value",
+        value="3.5 kW",
+        unit="",
+        desc="",
+        data_type=DataType.STRING,
+    )
+
+    assert entity.value == 3.5
+    assert entity.unit == "kW"
+
+
+def test_entity_info_string_with_unknown_unit_kept_as_string() -> None:
+    """Test STRING value with unknown unit remains as string."""
+    entity = EntityInfo(
+        name="Unknown unit",
+        value="42 foobar",
+        unit="",
+        desc="",
+        data_type=DataType.STRING,
+    )
+
+    assert entity.value == "42 foobar"
+    assert entity.unit == ""
+
+
+def test_entity_info_string_with_existing_unit_not_overwritten() -> None:
+    """Test STRING value is not parsed when unit field is already set."""
+    entity = EntityInfo(
+        name="Already has unit",
+        value="7968 kWh",
+        unit="something",
+        desc="",
+        data_type=DataType.STRING,
+    )
+
+    assert entity.value == "7968 kWh"
+    assert entity.unit == "something"
+
+
+def test_entity_info_string_plain_text_not_parsed() -> None:
+    """Test regular STRING value without number-unit pattern is kept as-is."""
+    entity = EntityInfo(
+        name="Firmware version",
+        value="1.0.38-20200730",
+        unit="",
+        desc="",
+        data_type=DataType.STRING,
+    )
+
+    assert entity.value == "1.0.38-20200730"
+    assert entity.unit == ""
