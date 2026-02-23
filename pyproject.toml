@@ -29,8 +29,7 @@ dependencies = [
     "yarl>=1.7.2",
     "packaging>=21.3",
     "backoff>=2.2.1",
-    "mashumaro>=3.13.1",
-    "orjson>=3.9.10",
+    "pydantic>=2.0",
 ]
 
 [project.urls]
@@ -148,8 +147,7 @@ ignore = [
   "D213", # Conflicts with other rules
   "D417", # False positives in some occasions
   "PLR2004", # Just annoying, not really useful
-  "UP046", # Generic subclass style kept for mashumaro compatibility
-
+  "UP046", # Pydantic v2 does not support PEP 695 type parameter syntax
   # Conflicts with the Ruff formatter
   "COM812",
   "ISC001",
@@ -163,7 +161,7 @@ fixture-parentheses = false
 known-first-party = ["bsblan"]
 
 [tool.ruff.lint.flake8-type-checking]
-runtime-evaluated-base-classes = ["mashumaro.mixins.orjson.DataClassORJSONMixin"]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
