@@ -41,6 +41,7 @@ BASE_DEVICE_PARAMS: Final[dict[str, str]] = {
 BASE_SENSOR_PARAMS: Final[dict[str, str]] = {
     "8700": "outside_temperature",
     "8740": "current_temperature",
+    "3113": "total_energy",
 }
 
 BASE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
