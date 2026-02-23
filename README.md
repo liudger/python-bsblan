@@ -153,12 +153,12 @@ npm install
 uv sync --dev
 ```
 
-As this repository uses the [pre-commit][pre-commit] framework, all changes
-are linted and tested with each commit. You can run all checks and tests
-manually, using the following command:
+As this repository uses [prek][prek] (a faster, Rust-based drop-in replacement
+for pre-commit), all changes are linted and tested with each commit. You can
+run all checks and tests manually, using the following command:
 
 ```bash
-uv run pre-commit run --all-files
+prek run --all-files
 ```
 
 To run just the Python tests:
@@ -214,7 +214,7 @@ SOFTWARE.
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
 [uv]: https://docs.astral.sh/uv/
 [uv-install]: https://docs.astral.sh/uv/getting-started/installation/
-[pre-commit]: https://pre-commit.com/
+[prek]: https://github.com/j178/prek
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
 [pypi]: https://pypi.org/project/python-bsblan/
 [python-versions-shield]: https://img.shields.io/pypi/pyversions/python-bsblan
