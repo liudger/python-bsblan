@@ -22,6 +22,9 @@ from .constants import (
     API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
     API_VERSION_ERROR_MSG,
     API_VERSIONS,
+    CIRCUIT_HEATING_SECTIONS,
+    CIRCUIT_STATIC_SECTIONS,
+    CIRCUIT_THERMOSTAT_PARAMS,
     DHW_TIME_PROGRAM_PARAMS,
     EMPTY_INCLUDE_LIST_ERROR_MSG,
     FIRMWARE_VERSION_ERROR_MSG,
@@ -40,6 +43,7 @@ from .constants import (
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     SETTABLE_HOT_WATER_PARAMS,
     TEMPERATURE_RANGE_ERROR_MSG,
+    VALID_CIRCUITS,
     VALID_HVAC_MODES,
     VERSION_ERROR_MSG,
     APIConfig,
@@ -73,7 +77,17 @@ if TYPE_CHECKING:
 
     from aiohttp.client import ClientSession
 
-SectionLiteral = Literal["heating", "staticValues", "device", "sensor", "hot_water"]
+SectionLiteral = Literal[
+    "heating",
+    "staticValues",
+    "device",
+    "sensor",
+    "hot_water",
+    "heating_circuit2",
+    "heating_circuit3",
+    "staticValues_circuit2",
+    "staticValues_circuit3",
+]
 
 # TypeVar for hot water data models
 HotWaterDataT = TypeVar(
@@ -114,6 +128,11 @@ class BSBLAN:
     _initialized: bool = False
     _api_validator: APIValidator = field(init=False)
     _temperature_unit: str = "°C"
+    # Per-circuit temperature ranges: circuit_number -> (min, max, initialized)
+    _circuit_temp_ranges: dict[int, dict[str, float | None]] = field(
+        default_factory=dict,
+    )
+    _circuit_temp_initialized: set[int] = field(default_factory=set)
     _hot_water_param_cache: dict[str, str] = field(default_factory=dict)
     # Track which hot water param groups have been validated
     _validated_hot_water_groups: set[str] = field(default_factory=set)
@@ -509,18 +528,25 @@ class BSBLAN:
         else:
             raise BSBLANVersionError(VERSION_ERROR_MSG)
 
-    async def _initialize_temperature_range(self) -> None:
+    async def _initialize_temperature_range(
+        self,
+        circuit: int = 1,
+    ) -> None:
         """Initialize the temperature range from static values (lazy loaded).
 
         This method is called on-demand when temperature range is needed.
         It uses lazy loading through static_values() which will validate
         the staticValues section if not already done.
 
+        Args:
+            circuit: The heating circuit number (1, 2, or 3).
+
         Note: Temperature unit is extracted during heating section validation
         from the response (parameter 710), so no extra API call is needed here.
+
         """
-        if not self._temperature_range_initialized:
-            # Try to get temperature range from static values (lazy loaded)
+        if circuit == 1 and not self._temperature_range_initialized:
+            # HC1 uses legacy fields for backwards compatibility
             try:
                 static_values = await self.static_values()
                 if static_values.min_temp is not None:
@@ -545,6 +571,58 @@ class BSBLAN:
                     "Failed to get static values: %s. Temperature range will be None",
                     str(err),
                 )
+
+            self._temperature_range_initialized = True
+        elif circuit != 1 and circuit not in self._circuit_temp_initialized:
+            # HC2/HC3 use per-circuit storage
+            try:
+                static_values = await self.static_values(circuit=circuit)
+                temp_range: dict[str, float | None] = {
+                    "min": None,
+                    "max": None,
+                }
+                if static_values.min_temp is not None:
+                    temp_range["min"] = static_values.min_temp.value
+                    logger.debug(
+                        "Circuit %d min temp initialized: %s",
+                        circuit,
+                        temp_range["min"],
+                    )
+                if static_values.max_temp is not None:
+                    temp_range["max"] = static_values.max_temp.value
+                    logger.debug(
+                        "Circuit %d max temp initialized: %s",
+                        circuit,
+                        temp_range["max"],
+                    )
+                self._circuit_temp_ranges[circuit] = temp_range
+            except BSBLANError as err:
+                logger.warning(
+                    "Failed to get static values for circuit %d: %s. "
+                    "Temperature range will be None",
+                    circuit,
+                    str(err),
+                )
+                self._circuit_temp_ranges[circuit] = {
+                    "min": None,
+                    "max": None,
+                }
+
+            self._circuit_temp_initialized.add(circuit)
+
+    def _validate_circuit(self, circuit: int) -> None:
+        """Validate the circuit number.
+
+        Args:
+            circuit: The heating circuit number to validate.
+
+        Raises:
+            BSBLANInvalidParameterError: If the circuit number is invalid.
+
+        """
+        if circuit not in VALID_CIRCUITS:
+            msg = f"Invalid circuit number: {circuit}. Must be 1, 2, or 3."
+            raise BSBLANInvalidParameterError(msg)
 
             self._temperature_range_initialized = True
 
@@ -843,7 +921,11 @@ class BSBLAN:
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return model_class.model_validate(data)
 
-    async def state(self, include: list[str] | None = None) -> State:
+    async def state(
+        self,
+        include: list[str] | None = None,
+        circuit: int = 1,
+    ) -> State:
         """Get the current state from BSBLAN device.
 
         Args:
@@ -852,6 +934,9 @@ class BSBLAN:
                 hvac_mode, target_temperature, hvac_action,
                 hvac_mode_changeover, current_temperature,
                 room1_thermostat_mode, room1_temp_setpoint_boost.
+            circuit: The heating circuit number (1, 2, or 3). Defaults to 1.
+                Circuit 2 and 3 use separate parameter IDs but return the
+                same State model with the same field names.
 
         Returns:
             State: The current state of the BSBLAN device.
@@ -864,8 +949,15 @@ class BSBLAN:
             # Fetch only hvac_mode and current_temperature
             state = await client.state(include=["hvac_mode", "current_temperature"])
 
+            # Fetch state for heating circuit 2
+            state_hc2 = await client.state(circuit=2)
+
         """
-        return await self._fetch_section_data("heating", State, include)
+        self._validate_circuit(circuit)
+        section: SectionLiteral = cast(
+            SectionLiteral, CIRCUIT_HEATING_SECTIONS[circuit]
+        )
+        return await self._fetch_section_data(section, State, include)
 
     async def sensor(self, include: list[str] | None = None) -> Sensor:
         """Get the sensor information from BSBLAN device.
@@ -885,13 +977,18 @@ class BSBLAN:
         """
         return await self._fetch_section_data("sensor", Sensor, include)
 
-    async def static_values(self, include: list[str] | None = None) -> StaticState:
+    async def static_values(
+        self,
+        include: list[str] | None = None,
+        circuit: int = 1,
+    ) -> StaticState:
         """Get the static information from BSBLAN device.
 
         Args:
             include: Optional list of parameter names to fetch. If None,
                 fetches all static parameters. Valid names include:
                 min_temp, max_temp.
+            circuit: The heating circuit number (1, 2, or 3). Defaults to 1.
 
         Returns:
             StaticState: The static information from the BSBLAN device.
@@ -900,8 +997,15 @@ class BSBLAN:
             # Fetch only min_temp
             static = await client.static_values(include=["min_temp"])
 
+            # Fetch static values for heating circuit 2
+            static_hc2 = await client.static_values(circuit=2)
+
         """
-        return await self._fetch_section_data("staticValues", StaticState, include)
+        self._validate_circuit(circuit)
+        section: SectionLiteral = cast(
+            SectionLiteral, CIRCUIT_STATIC_SECTIONS[circuit]
+        )
+        return await self._fetch_section_data(section, StaticState, include)
 
     async def device(self) -> Device:
         """Get BSBLAN device info.
@@ -968,6 +1072,7 @@ class BSBLAN:
         self,
         target_temperature: str | None = None,
         hvac_mode: int | None = None,
+        circuit: int = 1,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan.
 
@@ -975,9 +1080,18 @@ class BSBLAN:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer value.
                 Valid values: 0=off, 1=auto, 2=eco, 3=heat.
+            circuit: The heating circuit number (1, 2, or 3). Defaults to 1.
+
+        Example:
+            # Set HC1 temperature
+            await client.thermostat(target_temperature="21.0")
+
+            # Set HC2 mode
+            await client.thermostat(hvac_mode=1, circuit=2)
 
         """
-        await self._initialize_temperature_range()
+        self._validate_circuit(circuit)
+        await self._initialize_temperature_range(circuit)
 
         self._validate_single_parameter(
             target_temperature,
@@ -985,65 +1099,98 @@ class BSBLAN:
             error_msg=MULTI_PARAMETER_ERROR_MSG,
         )
 
-        state = await self._prepare_thermostat_state(target_temperature, hvac_mode)
+        state = await self._prepare_thermostat_state(
+            target_temperature,
+            hvac_mode,
+            circuit,
+        )
         await self._set_device_state(state)
 
     async def _prepare_thermostat_state(
         self,
         target_temperature: str | None,
         hvac_mode: int | None,
+        circuit: int = 1,
     ) -> dict[str, Any]:
         """Prepare the thermostat state for setting.
 
         Args:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer.
+            circuit: The heating circuit number (1, 2, or 3).
 
         Returns:
             dict[str, Any]: The prepared state for the thermostat.
 
         """
+        param_ids = CIRCUIT_THERMOSTAT_PARAMS[circuit]
         state: dict[str, Any] = {}
         if target_temperature is not None:
-            await self._validate_target_temperature(target_temperature)
+            await self._validate_target_temperature(
+                target_temperature,
+                circuit,
+            )
             state.update(
-                {"Parameter": "710", "Value": target_temperature, "Type": "1"},
+                {
+                    "Parameter": param_ids["target_temperature"],
+                    "Value": target_temperature,
+                    "Type": "1",
+                },
             )
         if hvac_mode is not None:
             self._validate_hvac_mode(hvac_mode)
             state.update(
                 {
-                    "Parameter": "700",
+                    "Parameter": param_ids["hvac_mode"],
                     "Value": str(hvac_mode),
                     "Type": "1",
                 },
             )
         return state
 
-    async def _validate_target_temperature(self, target_temperature: str) -> None:
+    async def _validate_target_temperature(
+        self,
+        target_temperature: str,
+        circuit: int = 1,
+    ) -> None:
         """Validate the target temperature.
 
         This method lazy-loads the temperature range if not already initialized.
 
         Args:
             target_temperature (str): The target temperature to validate.
+            circuit: The heating circuit number (1, 2, or 3).
 
         Raises:
             BSBLANError: If the temperature range cannot be initialized.
             BSBLANInvalidParameterError: If the target temperature is invalid.
 
         """
-        # Lazy load temperature range if needed
-        if self._min_temp is None or self._max_temp is None:
-            await self._initialize_temperature_range()
+        if circuit == 1:
+            # HC1 uses legacy fields for backwards compatibility
+            if self._min_temp is None or self._max_temp is None:
+                await self._initialize_temperature_range(circuit)
 
-        # After initialization attempt, check if we have the range
-        if self._min_temp is None or self._max_temp is None:
-            raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
+            if self._min_temp is None or self._max_temp is None:
+                raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
+
+            min_temp = self._min_temp
+            max_temp = self._max_temp
+        else:
+            # HC2/HC3 use per-circuit storage
+            if circuit not in self._circuit_temp_initialized:
+                await self._initialize_temperature_range(circuit)
+
+            temp_range = self._circuit_temp_ranges.get(circuit, {})
+            min_temp = temp_range.get("min")
+            max_temp = temp_range.get("max")
+
+            if min_temp is None or max_temp is None:
+                raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
 
         try:
             temp = float(target_temperature)
-            if not (self._min_temp <= temp <= self._max_temp):
+            if not (min_temp <= temp <= max_temp):
                 raise BSBLANInvalidParameterError(target_temperature)
         except ValueError as err:
             raise BSBLANInvalidParameterError(target_temperature) from err
