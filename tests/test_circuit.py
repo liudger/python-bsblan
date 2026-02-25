@@ -5,22 +5,24 @@
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncGenerator, Awaitable, Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
-from aiohttp.web_request import Request
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
-from bsblan.constants import API_V3, MULTI_PARAMETER_ERROR_MSG
+from bsblan.constants import MULTI_PARAMETER_ERROR_MSG, build_api_config
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
 from . import load_fixture
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Awaitable, Callable
+
+    from aiohttp.web_request import Request
 
 # --- Fixtures ---
 
@@ -33,9 +35,7 @@ async def mock_bsblan_circuit() -> AsyncGenerator[BSBLAN, None]:
         bsblan = BSBLAN(config, session=session)
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
-        bsblan._api_data = {
-            k: v.copy() for k, v in API_V3.items()
-        }
+        bsblan._api_data = build_api_config("v3")
         bsblan._min_temp = 8.0
         bsblan._max_temp = 30.0
         bsblan._temperature_range_initialized = True
@@ -84,12 +84,15 @@ async def test_state_circuit1_default(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        api_data = build_api_config("v3")
+        monkeypatch.setattr(bsblan, "_api_data", api_data)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(api_data)
         api_validator.validated_sections.add("heating")
         bsblan._api_validator = api_validator
 
@@ -114,13 +117,15 @@ async def test_state_circuit2(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(
             bsblan,
             "_api_data",
-            {k: v.copy() for k, v in API_V3.items()},
+            build_api_config("v3"),
         )
 
         api_validator = APIValidator(bsblan._api_data)
@@ -151,13 +156,15 @@ async def test_state_circuit2_with_include(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(
             bsblan,
             "_api_data",
-            {k: v.copy() for k, v in API_V3.items()},
+            build_api_config("v3"),
         )
 
         api_validator = APIValidator(bsblan._api_data)
@@ -175,7 +182,8 @@ async def test_state_circuit2_with_include(monkeypatch: Any) -> None:
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         state: State = await bsblan.state(
-            circuit=2, include=["hvac_mode"],
+            circuit=2,
+            include=["hvac_mode"],
         )
 
         assert isinstance(state, State)
@@ -193,13 +201,15 @@ async def test_static_values_circuit2(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(
             bsblan,
             "_api_data",
-            {k: v.copy() for k, v in API_V3.items()},
+            build_api_config("v3"),
         )
 
         api_validator = APIValidator(bsblan._api_data)
@@ -250,7 +260,8 @@ async def test_thermostat_circuit2_temperature(
         create_response_handler(expected_data),
     )
     await mock_bsblan_circuit.thermostat(
-        target_temperature="20", circuit=2,
+        target_temperature="20",
+        circuit=2,
     )
 
 
@@ -305,7 +316,8 @@ async def test_thermostat_circuit3_temperature(
         create_response_handler(expected_data),
     )
     await mock_bsblan_circuit.thermostat(
-        target_temperature="25", circuit=3,
+        target_temperature="25",
+        circuit=3,
     )
 
 
@@ -368,7 +380,8 @@ async def test_thermostat_circuit2_invalid_temperature(
 
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan_circuit.thermostat(
-            target_temperature="35", circuit=2,
+            target_temperature="35",
+            circuit=2,
         )
 
 
@@ -386,7 +399,8 @@ async def test_thermostat_circuit2_no_temp_range(
 
     with pytest.raises(BSBLANError, match="Temperature range"):
         await mock_bsblan_circuit.thermostat(
-            target_temperature="20", circuit=2,
+            target_temperature="20",
+            circuit=2,
         )
 
 
@@ -415,7 +429,8 @@ async def test_invalid_circuit_thermostat(
     """Test that invalid circuit numbers are rejected for thermostat."""
     with pytest.raises(BSBLANInvalidParameterError, match="Invalid circuit"):
         await mock_bsblan_circuit.thermostat(
-            target_temperature="20", circuit=0,
+            target_temperature="20",
+            circuit=0,
         )
 
 
@@ -447,13 +462,15 @@ async def test_circuit2_temp_range_initialization(
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(
             bsblan,
             "_api_data",
-            {k: v.copy() for k, v in API_V3.items()},
+            build_api_config("v3"),
         )
 
         api_validator = APIValidator(bsblan._api_data)
@@ -482,12 +499,15 @@ async def test_circuit1_temp_range_unchanged(
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        api_data = build_api_config("v3")
+        monkeypatch.setattr(bsblan, "_api_data", api_data)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(api_data)
         api_validator.validated_sections.add("staticValues")
         bsblan._api_validator = api_validator
 
@@ -515,13 +535,15 @@ async def test_thermostat_circuit2_lazy_temp_init(
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(
-            bsblan, "_firmware_version", "1.0.38-20200730234859",
+            bsblan,
+            "_firmware_version",
+            "1.0.38-20200730234859",
         )
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(
             bsblan,
             "_api_data",
-            {k: v.copy() for k, v in API_V3.items()},
+            build_api_config("v3"),
         )
 
         api_validator = APIValidator(bsblan._api_data)
@@ -536,7 +558,7 @@ async def test_thermostat_circuit2_lazy_temp_init(
 
         call_count = 0
 
-        async def mock_request(**kwargs: Any) -> dict[str, Any]:
+        async def mock_request(**_kwargs: Any) -> dict[str, Any]:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
