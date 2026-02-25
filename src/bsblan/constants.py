@@ -179,6 +179,14 @@ CIRCUIT_THERMOSTAT_PARAMS: Final[dict[int, dict[str, str]]] = {
     3: {"target_temperature": "1310", "hvac_mode": "1300"},
 }
 
+# Parameter IDs used to probe whether a heating circuit exists on the device.
+# We query the operating mode (hvac_mode) for each circuit.
+CIRCUIT_PROBE_PARAMS: Final[dict[int, str]] = {
+    1: "700",
+    2: "1000",
+    3: "1300",
+}
+
 
 def build_api_config(version: str) -> APIConfig:
     """Build API configuration dynamically based on version.
