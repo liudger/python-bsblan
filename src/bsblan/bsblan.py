@@ -567,6 +567,49 @@ class BSBLAN:
         else:
             raise BSBLANVersionError(VERSION_ERROR_MSG)
 
+    async def _fetch_temperature_range(
+        self,
+        circuit: int,
+    ) -> dict[str, float | None]:
+        """Fetch min/max temperature range for a circuit from the device.
+
+        Args:
+            circuit: The heating circuit number (1, 2, or 3).
+
+        Returns:
+            dict with 'min' and 'max' keys (values may be None if unavailable).
+
+        """
+        temp_range: dict[str, float | None] = {"min": None, "max": None}
+        try:
+            static_values = await self.static_values(circuit=circuit)
+        except BSBLANError as err:
+            logger.warning(
+                "Failed to get static values for circuit %d: %s. "
+                "Temperature range will be None",
+                circuit,
+                str(err),
+            )
+            return temp_range
+
+        if static_values.min_temp is not None:
+            temp_range["min"] = static_values.min_temp.value
+            logger.debug(
+                "Circuit %d min temp initialized: %s",
+                circuit,
+                temp_range["min"],
+            )
+
+        if static_values.max_temp is not None:
+            temp_range["max"] = static_values.max_temp.value
+            logger.debug(
+                "Circuit %d max temp initialized: %s",
+                circuit,
+                temp_range["max"],
+            )
+
+        return temp_range
+
     async def _initialize_temperature_range(
         self,
         circuit: int = 1,
@@ -584,69 +627,21 @@ class BSBLAN:
         from the response (parameter 710), so no extra API call is needed here.
 
         """
-        if circuit == 1 and not self._temperature_range_initialized:
+        if circuit == 1 and self._temperature_range_initialized:
+            return
+        if circuit != 1 and circuit in self._circuit_temp_initialized:
+            return
+
+        temp_range = await self._fetch_temperature_range(circuit)
+
+        if circuit == 1:
             # HC1 uses legacy fields for backwards compatibility
-            try:
-                static_values = await self.static_values()
-                if static_values.min_temp is not None:
-                    self._min_temp = static_values.min_temp.value
-                    logger.debug("Min temperature initialized: %s", self._min_temp)
-                else:
-                    logger.warning(
-                        "min_temp not available from device, "
-                        "temperature range will be None"
-                    )
-
-                if static_values.max_temp is not None:
-                    self._max_temp = static_values.max_temp.value
-                    logger.debug("Max temperature initialized: %s", self._max_temp)
-                else:
-                    logger.warning(
-                        "max_temp not available from device, "
-                        "temperature range will be None"
-                    )
-            except BSBLANError as err:
-                logger.warning(
-                    "Failed to get static values: %s. Temperature range will be None",
-                    str(err),
-                )
-
+            self._min_temp = temp_range["min"]
+            self._max_temp = temp_range["max"]
             self._temperature_range_initialized = True
-        elif circuit != 1 and circuit not in self._circuit_temp_initialized:
+        else:
             # HC2/HC3 use per-circuit storage
-            try:
-                static_values = await self.static_values(circuit=circuit)
-                temp_range: dict[str, float | None] = {
-                    "min": None,
-                    "max": None,
-                }
-                if static_values.min_temp is not None:
-                    temp_range["min"] = static_values.min_temp.value
-                    logger.debug(
-                        "Circuit %d min temp initialized: %s",
-                        circuit,
-                        temp_range["min"],
-                    )
-                if static_values.max_temp is not None:
-                    temp_range["max"] = static_values.max_temp.value
-                    logger.debug(
-                        "Circuit %d max temp initialized: %s",
-                        circuit,
-                        temp_range["max"],
-                    )
-                self._circuit_temp_ranges[circuit] = temp_range
-            except BSBLANError as err:
-                logger.warning(
-                    "Failed to get static values for circuit %d: %s. "
-                    "Temperature range will be None",
-                    circuit,
-                    str(err),
-                )
-                self._circuit_temp_ranges[circuit] = {
-                    "min": None,
-                    "max": None,
-                }
-
+            self._circuit_temp_ranges[circuit] = temp_range
             self._circuit_temp_initialized.add(circuit)
 
     def _validate_circuit(self, circuit: int) -> None:
