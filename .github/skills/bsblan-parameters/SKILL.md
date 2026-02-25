@@ -22,7 +22,7 @@ Before adding a new parameter, use `examples/fetch_param.py` to retrieve the raw
 
 ```bash
 # Set environment variables for your device
-export BSBLAN_HOST=your_host or blank to use autodiscovery        # Your BSB-LAN IP address
+export BSBLAN_HOST=<ip-or-host>     # Your BSB-LAN IP address; leave unset to use autodiscovery
 export BSBLAN_PASSKEY=your_passkey  # Optional: if your device requires a passkey
 export BSBLAN_USER=username         # Optional: if authentication is enabled
 export BSBLAN_PASS=password         # Optional: if authentication is enabled
