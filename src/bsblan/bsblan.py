@@ -203,7 +203,7 @@ class BSBLAN:
                 )
                 # A circuit exists if the response contains the param_id key
                 # with actual data (not an empty dict)
-                if param_id in response and response[param_id]:
+                if response.get(param_id):
                     available.append(circuit)
             except BSBLANError:
                 logger.debug("Circuit %d not available (request failed)", circuit)
@@ -990,7 +990,7 @@ class BSBLAN:
         """
         self._validate_circuit(circuit)
         section: SectionLiteral = cast(
-            SectionLiteral, CIRCUIT_HEATING_SECTIONS[circuit]
+            "SectionLiteral", CIRCUIT_HEATING_SECTIONS[circuit]
         )
         return await self._fetch_section_data(section, State, include)
 
@@ -1038,7 +1038,7 @@ class BSBLAN:
         """
         self._validate_circuit(circuit)
         section: SectionLiteral = cast(
-            SectionLiteral, CIRCUIT_STATIC_SECTIONS[circuit]
+            "SectionLiteral", CIRCUIT_STATIC_SECTIONS[circuit]
         )
         return await self._fetch_section_data(section, StaticState, include)
 
