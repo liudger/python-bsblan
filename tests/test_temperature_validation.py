@@ -21,7 +21,7 @@ async def test_validate_target_temperature_no_range() -> None:
     bsblan = BSBLAN(config)
 
     # Mock _initialize_temperature_range to do nothing (simulate failure)
-    async def mock_init_temp_range() -> None:
+    async def mock_init_temp_range(circuit: int = 1) -> None:
         pass
 
     bsblan._initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]

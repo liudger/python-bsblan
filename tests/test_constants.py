@@ -146,7 +146,17 @@ def test_api_config_structure(version: str) -> None:
     config = build_api_config(version)
 
     # Check all required sections exist
-    required_sections = {"heating", "staticValues", "device", "sensor", "hot_water"}
+    required_sections = {
+        "heating",
+        "staticValues",
+        "device",
+        "sensor",
+        "hot_water",
+        "heating_circuit2",
+        "heating_circuit3",
+        "staticValues_circuit2",
+        "staticValues_circuit3",
+    }
     assert set(config.keys()) == required_sections
 
     # Check that each section is a dict with string keys and values

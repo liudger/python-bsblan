@@ -1,0 +1,89 @@
+{
+  "1000": {
+    "name": "Operating mode",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
+    "error": 0,
+    "value": "1",
+    "desc": "Automatic",
+    "dataType": 1,
+    "readonly": 0,
+    "readwrite": 0,
+    "unit": ""
+  },
+  "1010": {
+    "name": "Comfort setpoint ",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
+    "error": 0,
+    "value": "20.0",
+    "desc": "",
+    "precision": 0.1,
+    "dataType": 0,
+    "readonly": 0,
+    "readwrite": 0,
+    "unit": "°C"
+  },
+  "1200": {
+    "name": "Operating mode changeover",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
+    "error": 0,
+    "value": "2",
+    "desc": "Reduced",
+    "dataType": 1,
+    "readonly": 0,
+    "readwrite": 0,
+    "unit": ""
+  },
+  "8001": {
+    "name": "Status heating circuit 2",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
+    "error": 0,
+    "value": "0",
+    "desc": "---",
+    "dataType": 1,
+    "readonly": 1,
+    "readwrite": 1,
+    "unit": ""
+  },
+  "8741": {
+    "name": "Room temperature setpoint 1",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
+    "error": 0,
+    "value": "18.5",
+    "desc": "",
+    "precision": 0.1,
+    "dataType": 0,
+    "readonly": 1,
+    "readwrite": 1,
+    "unit": "°C"
+  },
+  "8750": {
+    "name": "Room thermostat heating circuit 2",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
+    "error": 0,
+    "value": "0",
+    "desc": "No demand",
+    "dataType": 1,
+    "readonly": 1,
+    "readwrite": 1,
+    "unit": ""
+  },
+  "1070": {
+    "name": "Room temp setpoint boost (boost heating)",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
+    "error": 0,
+    "value": "---",
+    "desc": "",
+    "precision": 0.1,
+    "dataType": 0,
+    "readonly": 0,
+    "readwrite": 0,
+    "unit": "°C"
+  }
+}

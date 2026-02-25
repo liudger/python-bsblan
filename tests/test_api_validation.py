@@ -371,6 +371,10 @@ async def test_validate_api_section_hot_water_cache() -> None:
             "staticValues": {},
             "device": {},
             "hot_water": {"1600": "operating_mode", "1610": "nominal_setpoint"},
+            "heating_circuit2": {},
+            "heating_circuit3": {},
+            "staticValues_circuit2": {},
+            "staticValues_circuit3": {},
         }
         bsblan._api_validator = APIValidator(bsblan._api_data)
 

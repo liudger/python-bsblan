@@ -42,6 +42,10 @@ async def test_hot_water_state(
                 for k, v in API_V3["hot_water"].items()
                 if k not in ["561", "562", "563", "564", "565", "566", "567", "576"]
             },
+            "heating_circuit2": API_V3["heating_circuit2"].copy(),
+            "heating_circuit3": API_V3["heating_circuit3"].copy(),
+            "staticValues_circuit2": API_V3["staticValues_circuit2"].copy(),
+            "staticValues_circuit3": API_V3["staticValues_circuit3"].copy(),
         }
 
         monkeypatch.setattr(bsblan, "_api_data", test_api_v3)
