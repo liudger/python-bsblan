@@ -700,3 +700,19 @@ async def test_get_available_circuits_param_not_in_response(
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1]
+
+
+@pytest.mark.asyncio
+async def test_state_empty_section_after_validation(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test that fetching state for a circuit with all params removed raises error."""
+    bsblan = mock_bsblan_circuit
+
+    # Simulate validation removing all params for heating_circuit2
+    assert bsblan._api_validator is not None
+    bsblan._api_validator.api_config["heating_circuit2"] = {}  # type: ignore[index]
+    bsblan._api_validator.validated_sections.add("heating_circuit2")
+
+    with pytest.raises(BSBLANError, match="No valid parameters found"):
+        await bsblan.state(circuit=2)
