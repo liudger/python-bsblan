@@ -28,11 +28,14 @@ from .constants import (
     CIRCUIT_THERMOSTAT_PARAMS,
     DHW_TIME_PROGRAM_PARAMS,
     EMPTY_INCLUDE_LIST_ERROR_MSG,
+    EMPTY_SECTION_PARAMS_ERROR_MSG,
     FIRMWARE_VERSION_ERROR_MSG,
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
+    INVALID_CIRCUIT_ERROR_MSG,
     INVALID_INCLUDE_PARAMS_ERROR_MSG,
+    INVALID_RESPONSE_ERROR_MSG,
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
     MULTI_PARAMETER_ERROR_MSG,
@@ -41,6 +44,7 @@ from .constants import (
     NO_SCHEDULE_ERROR_MSG,
     NO_STATE_ERROR_MSG,
     PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG,
+    SECTION_NOT_FOUND_ERROR_MSG,
     SESSION_NOT_INITIALIZED_ERROR_MSG,
     SETTABLE_HOT_WATER_PARAMS,
     TEMPERATURE_RANGE_ERROR_MSG,
@@ -441,8 +445,8 @@ class BSBLAN:
         try:
             section_data = self._api_data[section]
         except KeyError as err:
-            error_msg = f"Section '{section}' not found in API data"
-            raise BSBLANError(error_msg) from err
+            msg = SECTION_NOT_FOUND_ERROR_MSG.format(section)
+            raise BSBLANError(msg) from err
 
         # Filter to only included params if specified
         if include is not None:
@@ -656,7 +660,7 @@ class BSBLAN:
 
         """
         if circuit not in VALID_CIRCUITS:
-            msg = f"Invalid circuit number: {circuit}. Must be 1, 2, or 3."
+            msg = INVALID_CIRCUIT_ERROR_MSG.format(circuit)
             raise BSBLANInvalidParameterError(msg)
 
     @property
@@ -801,8 +805,8 @@ class BSBLAN:
             raise
         except (ValueError, UnicodeDecodeError) as e:
             # Handle JSON decode errors and other parsing issues
-            error_msg = f"Invalid response format from BSB-LAN device: {e!s}"
-            raise BSBLANError(error_msg) from e
+            msg = INVALID_RESPONSE_ERROR_MSG.format(e)
+            raise BSBLANError(msg) from e
 
     def _process_response(
         self, response_data: dict[str, Any], base_path: str
@@ -936,6 +940,11 @@ class BSBLAN:
         await self._ensure_section_validated(section, include)
 
         section_params = self._api_validator.get_section_params(section)
+
+        # Guard: if validation removed all params, the section is not available
+        if not section_params:
+            msg = EMPTY_SECTION_PARAMS_ERROR_MSG.format(section)
+            raise BSBLANError(msg)
 
         # Filter parameters if include list is specified
         if include is not None:

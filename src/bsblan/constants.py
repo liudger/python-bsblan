@@ -508,6 +508,17 @@ MULTI_PARAMETER_ERROR_MSG: Final[str] = "Only one parameter can be set at a time
 SESSION_NOT_INITIALIZED_ERROR_MSG: Final[str] = "Session not initialized"
 API_DATA_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API data not initialized"
 API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API validator not initialized"
+SECTION_NOT_FOUND_ERROR_MSG: Final[str] = "Section '{}' not found in API data"
+INVALID_CIRCUIT_ERROR_MSG: Final[str] = (
+    "Invalid circuit number: {}. Must be 1, 2, or 3."
+)
+INVALID_RESPONSE_ERROR_MSG: Final[str] = (
+    "Invalid response format from BSB-LAN device: {}"
+)
+EMPTY_SECTION_PARAMS_ERROR_MSG: Final[str] = (
+    "No valid parameters found for section '{}'. "
+    "The device may not support this circuit or section."
+)
 
 # Time validation constants
 MIN_VALID_YEAR: Final[int] = 1900  # Reasonable minimum year for BSB-LAN devices
