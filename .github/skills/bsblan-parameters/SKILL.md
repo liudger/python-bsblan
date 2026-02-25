@@ -14,6 +14,57 @@ This skill guides you through adding new parameters to the python-bsblan library
 - Legionella-related parameters use `legionella_function_*` prefix
 - DHW (Domestic Hot Water) parameters use `dhw_*` prefix
 
+## Discovering Parameters from a Real System
+
+Before adding a new parameter, use `examples/fetch_param.py` to retrieve the raw API response from a real BSB-LAN device. This shows the exact structure, data types, units, and descriptions returned by the device.
+
+### Setup
+
+```bash
+# Set environment variables for your device
+export BSBLAN_HOST=your_host or blank to use autodiscovery        # Your BSB-LAN IP address
+export BSBLAN_PASSKEY=your_passkey  # Optional: if your device requires a passkey
+export BSBLAN_USER=username         # Optional: if authentication is enabled
+export BSBLAN_PASS=password         # Optional: if authentication is enabled
+export BSBLAN_PORT=80               # Optional: defaults to 80
+```
+
+### Fetching Parameters
+
+```bash
+# Fetch a single parameter
+cd examples && python fetch_param.py 1645
+
+# Fetch multiple parameters at once
+cd examples && python fetch_param.py 1645 1641 1642 1644 1646
+```
+
+### Example Output
+
+The raw API response shows the exact structure you need to model:
+
+```json
+{
+  "1645": {
+    "name": "Legionella function setpoint",
+    "value": "70.0",
+    "unit": "°C",
+    "desc": "",
+    "dataType": 0
+  }
+}
+```
+
+Use this output to determine:
+- **Field type**: `float`, `int`, or `str` based on the `value` format
+- **Unit**: The `unit` field (e.g., `°C`, `%`, `-`)
+- **Description**: The `name` field for docstrings
+- **Data type**: The `dataType` field for `EntityInfo` typing
+
+### Device Discovery
+
+`fetch_param.py` uses mDNS/Zeroconf discovery (via `examples/discovery.py`) to find your BSB-LAN device automatically when `BSBLAN_HOST` is not set. If mDNS is unavailable, set the `BSBLAN_HOST` environment variable directly.
+
 ## Steps to Add a New Parameter
 
 ### 1. Add to `constants.py`

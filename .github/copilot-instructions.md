@@ -211,8 +211,25 @@ Test fixtures (JSON responses) are in `tests/fixtures/`
 
 ## Common Tasks
 
+### Fetching Parameters from a Real Device
+
+Use `examples/fetch_param.py` to query raw parameter data from a real BSB-LAN device before adding new parameters:
+
+```bash
+# Set your device connection details
+export BSBLAN_HOST=blank to use auto-discovery
+export BSBLAN_PASSKEY=your_passkey  # if needed
+
+# Fetch one or more parameters
+cd examples && python fetch_param.py 1645
+cd examples && python fetch_param.py 1645 1641 1642 1644 1646
+```
+
+The output shows the raw JSON response including value, unit, description, and data type — use this to determine the correct model field type and naming.
+
 ### Adding a New Settable Parameter
 
+0. Fetch the parameter from a real device using `examples/fetch_param.py` to inspect the raw response
 1. Add parameter ID mapping in `constants.py`
 2. Add field to appropriate model in `models.py`
 3. Add parameter to method signature in `bsblan.py`
