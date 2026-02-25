@@ -659,8 +659,6 @@ class BSBLAN:
             msg = f"Invalid circuit number: {circuit}. Must be 1, 2, or 3."
             raise BSBLANInvalidParameterError(msg)
 
-            self._temperature_range_initialized = True
-
     @property
     def get_temperature_unit(self) -> str:
         """Get the unit of temperature.
