@@ -217,7 +217,8 @@ Use `examples/fetch_param.py` to query raw parameter data from a real BSB-LAN de
 
 ```bash
 # Set your device connection details
-export BSBLAN_HOST=blank to use auto-discovery
+# Leave BSBLAN_HOST unset to use auto-discovery, or set it explicitly:
+export BSBLAN_HOST="192.168.1.100"
 export BSBLAN_PASSKEY=your_passkey  # if needed
 
 # Fetch one or more parameters
