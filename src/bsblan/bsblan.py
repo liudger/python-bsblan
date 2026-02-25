@@ -23,6 +23,7 @@ from .constants import (
     API_VERSION_ERROR_MSG,
     API_VERSIONS,
     CIRCUIT_HEATING_SECTIONS,
+    CIRCUIT_PROBE_PARAMS,
     CIRCUIT_STATIC_SECTIONS,
     CIRCUIT_THERMOSTAT_PARAMS,
     DHW_TIME_PROGRAM_PARAMS,
@@ -173,6 +174,40 @@ class BSBLAN:
             await self._fetch_firmware_version()
             await self._setup_api_validator()
             self._initialized = True
+
+    async def get_available_circuits(self) -> list[int]:
+        """Detect which heating circuits are available on the device.
+
+        Probes the operating mode parameter for each circuit (1, 2, 3).
+        A circuit is considered available if the device returns a non-empty
+        response with a valid value (not empty ``{}``).
+
+        This is useful for integration setup flows (e.g., Home Assistant
+        config flow) to discover how many circuits the user's controller
+        supports.
+
+        Returns:
+            list[int]: Sorted list of available circuit numbers (e.g., [1, 2]).
+
+        Example:
+            async with BSBLAN(config) as client:
+                circuits = await client.get_available_circuits()
+                # circuits == [1, 2] for a dual-circuit controller
+
+        """
+        available: list[int] = []
+        for circuit, param_id in CIRCUIT_PROBE_PARAMS.items():
+            try:
+                response = await self._request(
+                    params={"Parameter": param_id},
+                )
+                # A circuit exists if the response contains the param_id key
+                # with actual data (not an empty dict)
+                if param_id in response and response[param_id]:
+                    available.append(circuit)
+            except BSBLANError:
+                logger.debug("Circuit %d not available (request failed)", circuit)
+        return sorted(available)
 
     async def _setup_api_validator(self) -> None:
         """Set up the API validator without validating sections.
