@@ -187,6 +187,17 @@ CIRCUIT_PROBE_PARAMS: Final[dict[int, str]] = {
     3: "1300",
 }
 
+# Status parameter IDs used as a secondary check for circuit availability.
+# Inactive circuits return value="0" and desc="---" for these parameters.
+CIRCUIT_STATUS_PARAMS: Final[dict[int, str]] = {
+    1: "8000",
+    2: "8001",
+    3: "8002",
+}
+
+# Marker value returned by BSB-LAN for parameters on inactive circuits
+INACTIVE_CIRCUIT_MARKER: Final[str] = "---"
+
 
 def build_api_config(version: str) -> APIConfig:
     """Build API configuration dynamically based on version.

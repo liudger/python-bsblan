@@ -25,6 +25,7 @@ from .constants import (
     CIRCUIT_HEATING_SECTIONS,
     CIRCUIT_PROBE_PARAMS,
     CIRCUIT_STATIC_SECTIONS,
+    CIRCUIT_STATUS_PARAMS,
     CIRCUIT_THERMOSTAT_PARAMS,
     DHW_TIME_PROGRAM_PARAMS,
     EMPTY_INCLUDE_LIST_ERROR_MSG,
@@ -33,6 +34,7 @@ from .constants import (
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
+    INACTIVE_CIRCUIT_MARKER,
     INVALID_CIRCUIT_ERROR_MSG,
     INVALID_INCLUDE_PARAMS_ERROR_MSG,
     INVALID_RESPONSE_ERROR_MSG,
@@ -182,9 +184,13 @@ class BSBLAN:
     async def get_available_circuits(self) -> list[int]:
         """Detect which heating circuits are available on the device.
 
-        Probes the operating mode parameter for each circuit (1, 2, 3).
-        A circuit is considered available if the device returns a non-empty
-        response with a valid value (not empty ``{}``).
+        Uses a two-step probe for each circuit (1, 2, 3):
+        1. Query the operating mode parameter — the response must be
+           non-empty and contain actual data.
+        2. Query the status parameter (8000/8001/8002) — an inactive
+           circuit returns ``value="0"`` with ``desc="---"``.
+
+        A circuit is only considered available when both checks pass.
 
         This is useful for integration setup flows (e.g., Home Assistant
         config flow) to discover how many circuits the user's controller
@@ -207,10 +213,44 @@ class BSBLAN:
                 )
                 # A circuit exists if the response contains the param_id key
                 # with actual data (not an empty dict)
-                if response.get(param_id):
-                    available.append(circuit)
+                if not response.get(param_id):
+                    continue
+
+                # Secondary check: query the status parameter.
+                # Inactive circuits either:
+                # - return value="0" and desc="---"
+                # - return an empty dict {} (param not supported)
+                status_id = CIRCUIT_STATUS_PARAMS[circuit]
+                status_resp = await self._request(
+                    params={"Parameter": status_id},
+                )
+                status_data = status_resp.get(status_id, {})
+
+                # Empty response means the parameter doesn't exist
+                if not status_data or not isinstance(status_data, dict):
+                    logger.debug(
+                        "Circuit %d has no status data (not supported)",
+                        circuit,
+                    )
+                    continue
+
+                # value="0" + desc="---" means inactive
+                if (
+                    status_data.get("desc") == INACTIVE_CIRCUIT_MARKER
+                    and str(status_data.get("value", "")) == "0"
+                ):
+                    logger.debug(
+                        "Circuit %d has status '---' (inactive)",
+                        circuit,
+                    )
+                    continue
+
+                available.append(circuit)
             except BSBLANError:
-                logger.debug("Circuit %d not available (request failed)", circuit)
+                logger.debug(
+                    "Circuit %d not available (request failed)",
+                    circuit,
+                )
         return sorted(available)
 
     async def _setup_api_validator(self) -> None:
