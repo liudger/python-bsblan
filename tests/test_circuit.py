@@ -596,12 +596,27 @@ async def test_get_available_circuits_two_circuits(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        # HC1 operating mode
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        # HC1 status - active
+        if param_id == "8000":
+            return {
+                "8000": {
+                    "value": "114",
+                    "desc": "Heating mode Comfort",
+                }
+            }
+        # HC2 operating mode
         if param_id == "1000":
             return {"1000": {"value": "1", "unit": "", "desc": "Automatic"}}
-        # HC3 returns empty
-        return {"1300": {}}
+        # HC2 status - active
+        if param_id == "8001":
+            return {"8001": {"value": "114", "desc": "Heating mode Comfort"}}
+        # HC3 operating mode - returns empty (not available)
+        if param_id == "1300":
+            return {"1300": {}}
+        return {}
 
     bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
 
@@ -616,12 +631,24 @@ async def test_get_available_circuits_all_three(
     """Test detecting all three available heating circuits."""
     bsblan = mock_bsblan_circuit
 
+    status_map = {
+        "8000": {"value": "114", "desc": "Heating mode Comfort"},
+        "8001": {"value": "140", "desc": "Heating Reduced"},
+        "8002": {"value": "114", "desc": "Heating mode Comfort"},
+    }
+
     async def mock_request(
         **kwargs: Any,
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
-        return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
+        # Operating mode params
+        if param_id in {"700", "1000", "1300"}:
+            return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
+        # Status params - all active
+        if param_id in status_map:
+            return {param_id: status_map[param_id]}
+        return {}
 
     bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
 
@@ -643,7 +670,99 @@ async def test_get_available_circuits_only_one(
         param_id = params.get("Parameter", "")
         if param_id == "700":
             return {"700": {"value": "3", "unit": "", "desc": "Comfort"}}
-        return {param_id: {}}
+        if param_id == "8000":
+            return {
+                "8000": {
+                    "value": "114",
+                    "desc": "Heating mode Comfort",
+                }
+            }
+        # HC2 and HC3 operating mode - return empty
+        if param_id in {"1000", "1300"}:
+            return {param_id: {}}
+        return {}
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+    assert circuits == [1]
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_inactive_by_status(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test that circuits with status '---' are detected as inactive.
+
+    This is the real-world scenario: the device returns a valid operating
+    mode for all 3 circuits, but status param shows '---' for HC2/HC3.
+    """
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        # All circuits return valid operating mode
+        if param_id in {"700", "1000", "1300"}:
+            return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
+        # HC1 status - active
+        if param_id == "8000":
+            return {
+                "8000": {
+                    "value": "114",
+                    "desc": "Heating mode Comfort",
+                }
+            }
+        # HC2 status - inactive (value=0, desc=---)
+        if param_id == "8001":
+            return {"8001": {"value": "0", "desc": "---"}}
+        # HC3 status - inactive (value=0, desc=---)
+        if param_id == "8002":
+            return {"8002": {"value": "0", "desc": "---"}}
+        return {}
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+    assert circuits == [1]
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_inactive_empty_status(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test that circuits with empty status response are inactive.
+
+    Some controllers return an empty dict for status params of circuits
+    that don't exist (e.g., HC3 status 8002 returns {}).
+    """
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        # All circuits return valid operating mode
+        if param_id in {"700", "1000", "1300"}:
+            return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
+        # HC1 status - active
+        if param_id == "8000":
+            return {
+                "8000": {
+                    "value": "114",
+                    "desc": "Heating mode Comfort",
+                }
+            }
+        # HC2 status - inactive (value=0, desc=---)
+        if param_id == "8001":
+            return {"8001": {"value": "0", "desc": "---"}}
+        # HC3 status - empty response (param not supported)
+        if param_id == "8002":
+            return {}
+        return {}
 
     bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
 
@@ -669,6 +788,13 @@ async def test_get_available_circuits_request_failure(
         param_id = params.get("Parameter", "")
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        if param_id == "8000":
+            return {
+                "8000": {
+                    "value": "114",
+                    "desc": "Heating mode Comfort",
+                }
+            }
         # HC2 and HC3 fail with connection error
         msg = "Connection failed"
         raise BSBLANError(msg)
@@ -693,6 +819,13 @@ async def test_get_available_circuits_param_not_in_response(
         param_id = params.get("Parameter", "")
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        if param_id == "8000":
+            return {
+                "8000": {
+                    "value": "114",
+                    "desc": "Heating mode Comfort",
+                }
+            }
         # Returns a response but without the expected param key
         return {"other_key": {"value": "1"}}
 
@@ -700,6 +833,40 @@ async def test_get_available_circuits_param_not_in_response(
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1]
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_status_failure_still_detects(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test that a circuit is still detected if status request fails.
+
+    If the operating mode returns valid data but the status request fails,
+    the circuit should be excluded (fail-safe).
+    """
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "700":
+            return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        # Status request fails
+        if param_id == "8000":
+            msg = "Connection failed"
+            raise BSBLANError(msg)
+        # HC2/HC3 return empty
+        if param_id in {"1000", "1300"}:
+            return {param_id: {}}
+        return {}
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    # HC1 status request fails -> entire circuit probe fails -> excluded
+    circuits = await bsblan.get_available_circuits()
+    assert circuits == []
 
 
 @pytest.mark.asyncio
