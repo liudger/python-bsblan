@@ -73,7 +73,7 @@ async def main() -> None:
     """
     # Create a configuration object
     config = BSBLANConfig(
-        host="10.0.2.60",
+        host="192.0.2.1",
         passkey=None,
         username=os.getenv("USERNAME"),  # Compliant
         password=os.getenv("PASSWORD"),  # Compliant
