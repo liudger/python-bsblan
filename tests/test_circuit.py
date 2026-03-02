@@ -836,10 +836,10 @@ async def test_get_available_circuits_param_not_in_response(
 
 
 @pytest.mark.asyncio
-async def test_get_available_circuits_status_failure_still_detects(
+async def test_get_available_circuits_status_failure_excludes_circuit(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
-    """Test that a circuit is still detected if status request fails.
+    """Test that a circuit is excluded if the status request fails.
 
     If the operating mode returns valid data but the status request fails,
     the circuit should be excluded (fail-safe).
