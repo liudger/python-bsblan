@@ -9,7 +9,7 @@ Compares different approaches using pluggable benchmark suites:
 
 Usage:
     # Set environment variables (optional - will use mDNS discovery if not set)
-    export BSBLAN_HOST=10.0.2.60
+    export BSBLAN_HOST=192.0.2.1
     export BSBLAN_PORT=80
     export BSBLAN_PASSKEY=your_passkey  # if needed
 

@@ -1,7 +1,7 @@
 """Fetch one or more BSB-LAN parameters and print the raw API response.
 
 Usage:
-    export BSBLAN_HOST=10.0.2.60
+    export BSBLAN_HOST=192.0.2.1
     export BSBLAN_PASSKEY=your_passkey  # if needed
 
     # Single parameter
