@@ -26,11 +26,19 @@ def test_entity_info_invalid_time_conversion(
         assert "Failed to convert value" in caplog.text
 
 
-def test_entity_info_undefined_value_becomes_none() -> None:
-    """Test that '---' (sensor/parameter not in use) is converted to None."""
+@pytest.mark.parametrize(
+    "raw_value",
+    [
+        pytest.param("---", id="dash_inactive"),
+        pytest.param("", id="empty_string"),
+        pytest.param(None, id="none_value"),
+    ],
+)
+def test_entity_info_undefined_value_becomes_none(raw_value: str | None) -> None:
+    """Test that inactive values ('---', '', None) are converted to None."""
     entity = EntityInfo(
         name="Inactive Sensor",
-        value="---",
+        value=raw_value,
         unit="°C",
         desc="",
         data_type=DataType.PLAIN_NUMBER,
