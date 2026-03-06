@@ -235,7 +235,7 @@ def _convert_bsblan_value(
         The converted value, or None if the value is inactive.
 
     """
-    if raw_value is None or raw_value == "---":
+    if raw_value is None or raw_value in {"---", ""}:
         return None
 
     raw = str(raw_value)
