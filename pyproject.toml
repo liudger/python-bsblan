@@ -199,7 +199,7 @@ dev = [
     "pyupgrade==3.21.2",
     "ruff==0.15.5",
     "safety==3.7.0",
-    "vulture==2.14",
+    "vulture==2.15",
     "yamllint==1.38.0",
     "zeroconf>=0.148.0",
 ]
