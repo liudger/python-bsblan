@@ -213,9 +213,7 @@ async def test_initialize_api_validator() -> None:
             "device": {},
             "hot_water": {},
             "heating_circuit2": {},
-            "heating_circuit3": {},
             "staticValues_circuit2": {},
-            "staticValues_circuit3": {},
         }
 
         # Create a coroutine mock for _validate_api_section that returns response data
