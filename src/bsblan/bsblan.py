@@ -612,7 +612,7 @@ class BSBLAN:
         """Fetch min/max temperature range for a circuit from the device.
 
         Args:
-            circuit: The heating circuit number (1, 2, or 3).
+            circuit: The heating circuit number (1 or 2).
 
         Returns:
             dict with 'min' and 'max' keys (values may be None if unavailable).
@@ -659,7 +659,7 @@ class BSBLAN:
         the staticValues section if not already done.
 
         Args:
-            circuit: The heating circuit number (1, 2, or 3).
+            circuit: The heating circuit number (1 or 2).
 
         Note: Temperature unit is extracted during heating section validation
         from the response (parameter 710), so no extra API call is needed here.
@@ -1009,8 +1009,8 @@ class BSBLAN:
                 hvac_mode, target_temperature, hvac_action,
                 hvac_mode_changeover, current_temperature,
                 room1_thermostat_mode, room1_temp_setpoint_boost.
-            circuit: The heating circuit number (1, 2, or 3). Defaults to 1.
-                Circuit 2 and 3 use separate parameter IDs but return the
+            circuit: The heating circuit number (1 or 2). Defaults to 1.
+                Circuit 2 uses separate parameter IDs but returns the
                 same State model with the same field names.
 
         Returns:
@@ -1063,7 +1063,7 @@ class BSBLAN:
             include: Optional list of parameter names to fetch. If None,
                 fetches all static parameters. Valid names include:
                 min_temp, max_temp.
-            circuit: The heating circuit number (1, 2, or 3). Defaults to 1.
+            circuit: The heating circuit number (1 or 2). Defaults to 1.
 
         Returns:
             StaticState: The static information from the BSBLAN device.
@@ -1155,7 +1155,7 @@ class BSBLAN:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer value.
                 Valid values: 0=off, 1=auto, 2=eco, 3=heat.
-            circuit: The heating circuit number (1, 2, or 3). Defaults to 1.
+            circuit: The heating circuit number (1 or 2). Defaults to 1.
 
         Example:
             # Set HC1 temperature
@@ -1192,7 +1192,7 @@ class BSBLAN:
         Args:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer.
-            circuit: The heating circuit number (1, 2, or 3).
+            circuit: The heating circuit number (1 or 2).
 
         Returns:
             dict[str, Any]: The prepared state for the thermostat.
@@ -1234,7 +1234,7 @@ class BSBLAN:
 
         Args:
             target_temperature (str): The target temperature to validate.
-            circuit: The heating circuit number (1, 2, or 3).
+            circuit: The heating circuit number (1 or 2).
 
         Raises:
             BSBLANError: If the temperature range cannot be initialized.
