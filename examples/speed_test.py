@@ -55,10 +55,10 @@ STATIC_PARAMS = ["714", "716"]  # Min/max temp setpoints
 ALL_PARAMS = INFO_PARAMS + STATIC_PARAMS
 
 # Heating circuit 1 (700-series)
-HC1_PARAMS = ["700", "710", "900", "8000", "8740", "8749"]
+HC1_PARAMS = ["700", "710", "900", "8000", "8740"]
 
 # Heating circuit 2 (1000-series) — mirrors HC1 with offset
-HC2_PARAMS = ["1000", "1010", "1200", "8001", "8770", "8779"]
+HC2_PARAMS = ["1000", "1010", "1200", "8001", "8770"]
 
 # Static values per circuit
 HC1_STATIC_PARAMS = ["714", "716"]
