@@ -91,9 +91,7 @@ SectionLiteral = Literal[
     "sensor",
     "hot_water",
     "heating_circuit2",
-    "heating_circuit3",
     "staticValues_circuit2",
-    "staticValues_circuit3",
 ]
 
 # TypeVar for hot water data models
@@ -184,10 +182,10 @@ class BSBLAN:
     async def get_available_circuits(self) -> list[int]:
         """Detect which heating circuits are available on the device.
 
-        Uses a two-step probe for each circuit (1, 2, 3):
+        Uses a two-step probe for each circuit (1, 2):
         1. Query the operating mode parameter — the response must be
            non-empty and contain actual data.
-        2. Query the status parameter (8000/8001/8002) — an inactive
+        2. Query the status parameter (8000/8001) — an inactive
            circuit returns ``value="0"`` with ``desc="---"``.
 
         A circuit is only considered available when both checks pass.
@@ -680,7 +678,7 @@ class BSBLAN:
             self._max_temp = temp_range["max"]
             self._temperature_range_initialized = True
         else:
-            # HC2/HC3 use per-circuit storage
+            # HC2 uses per-circuit storage
             self._circuit_temp_ranges[circuit] = temp_range
             self._circuit_temp_initialized.add(circuit)
 
@@ -1254,7 +1252,7 @@ class BSBLAN:
             min_temp = self._min_temp
             max_temp = self._max_temp
         else:
-            # HC2/HC3 use per-circuit storage
+            # HC2 uses per-circuit storage
             if circuit not in self._circuit_temp_initialized:
                 await self._initialize_temperature_range(circuit)
 
