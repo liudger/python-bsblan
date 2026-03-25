@@ -453,7 +453,6 @@ class State(BaseModel):
     hvac_action: EntityInfo[int] | None = None
     hvac_mode_changeover: EntityInfo[int] | None = None
     current_temperature: EntityInfo[float] | None = None
-    room1_thermostat_mode: EntityInfo[int] | None = None
     room1_temp_setpoint_boost: EntityInfo[float] | None = None
 
 
