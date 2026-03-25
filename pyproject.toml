@@ -166,6 +166,14 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 [tool.ruff.lint.mccabe]
 max-complexity = 25
 
+[[tool.ty.overrides]]
+include = ["tests/**", "**/test_*.py", "examples/**"]
+
+[tool.ty.overrides.rules]
+invalid-assignment = "ignore"
+invalid-argument-type = "ignore"
+unresolved-attribute = "ignore"
+
 [tool.codespell]
 ignore-words-list = "astroid"
 
@@ -188,7 +196,7 @@ dev = [
     # hatch is required to support type hinting and proper packaging of the py.typed file.
     "hatch>=1.14.1",
     "isort==8.0.1",
-    "ty==0.0.24",
+    "ty==0.0.25",
     "prek>=0.3.3",
     "pre-commit-hooks==6.0.0",
     "pylint==4.0.5",
