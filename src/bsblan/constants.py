@@ -7,8 +7,8 @@ from typing import Final, TypedDict
 
 # Supported heating circuits (1-based)
 MIN_CIRCUIT: Final[int] = 1
-MAX_CIRCUIT: Final[int] = 3
-VALID_CIRCUITS: Final[set[int]] = {1, 2, 3}
+MAX_CIRCUIT: Final[int] = 2
+VALID_CIRCUITS: Final[set[int]] = {1, 2}
 
 
 # API Versions
@@ -20,11 +20,9 @@ class APIConfig(TypedDict):
     device: dict[str, str]
     sensor: dict[str, str]
     hot_water: dict[str, str]
-    # Multi-circuit sections (heating circuit 2 and 3)
+    # Multi-circuit sections (heating circuit 2)
     heating_circuit2: dict[str, str]
-    heating_circuit3: dict[str, str]
     staticValues_circuit2: dict[str, str]
-    staticValues_circuit3: dict[str, str]
 
 
 # Base parameters that exist in all API versions
@@ -111,8 +109,8 @@ BASE_HEATING_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     "1200": "hvac_mode_changeover",
     # -------
     "8001": "hvac_action",
-    "8741": "current_temperature",
-    "8750": "room1_thermostat_mode",
+    "8770": "current_temperature",
+    "8779": "room1_thermostat_mode",
 }
 
 BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
@@ -131,52 +129,21 @@ V3_STATIC_VALUES_CIRCUIT2_EXTENSIONS: Final[dict[str, str]] = {
     "1016": "max_temp",
 }
 
-# --- Heating Circuit 3 parameters (1300-series) ---
-# These mirror HC1 (700-series) with an offset of +600
-BASE_HEATING_CIRCUIT3_PARAMS: Final[dict[str, str]] = {
-    "1300": "hvac_mode",
-    "1310": "target_temperature",
-    "1500": "hvac_mode_changeover",
-    # -------
-    "8002": "hvac_action",
-    "8742": "current_temperature",
-    "8751": "room1_thermostat_mode",
-}
-
-BASE_STATIC_VALUES_CIRCUIT3_PARAMS: Final[dict[str, str]] = {
-    "1314": "min_temp",
-}
-
-V1_STATIC_VALUES_CIRCUIT3_EXTENSIONS: Final[dict[str, str]] = {
-    "1330": "max_temp",
-}
-
-V3_HEATING_CIRCUIT3_EXTENSIONS: Final[dict[str, str]] = {
-    "1370": "room1_temp_setpoint_boost",
-}
-
-V3_STATIC_VALUES_CIRCUIT3_EXTENSIONS: Final[dict[str, str]] = {
-    "1316": "max_temp",
-}
-
 # Mapping from circuit number to section names
 CIRCUIT_HEATING_SECTIONS: Final[dict[int, str]] = {
     1: "heating",
     2: "heating_circuit2",
-    3: "heating_circuit3",
 }
 
 CIRCUIT_STATIC_SECTIONS: Final[dict[int, str]] = {
     1: "staticValues",
     2: "staticValues_circuit2",
-    3: "staticValues_circuit3",
 }
 
 # Mapping from circuit number to thermostat parameter IDs
 CIRCUIT_THERMOSTAT_PARAMS: Final[dict[int, dict[str, str]]] = {
     1: {"target_temperature": "710", "hvac_mode": "700"},
     2: {"target_temperature": "1010", "hvac_mode": "1000"},
-    3: {"target_temperature": "1310", "hvac_mode": "1300"},
 }
 
 # Parameter IDs used to probe whether a heating circuit exists on the device.
@@ -184,7 +151,6 @@ CIRCUIT_THERMOSTAT_PARAMS: Final[dict[int, dict[str, str]]] = {
 CIRCUIT_PROBE_PARAMS: Final[dict[int, str]] = {
     1: "700",
     2: "1000",
-    3: "1300",
 }
 
 # Status parameter IDs used as a secondary check for circuit availability.
@@ -192,7 +158,6 @@ CIRCUIT_PROBE_PARAMS: Final[dict[int, str]] = {
 CIRCUIT_STATUS_PARAMS: Final[dict[int, str]] = {
     1: "8000",
     2: "8001",
-    3: "8002",
 }
 
 # Marker value returned by BSB-LAN for parameters on inactive circuits
@@ -217,9 +182,7 @@ def build_api_config(version: str) -> APIConfig:
         "hot_water": BASE_HOT_WATER_PARAMS.copy(),
         # Multi-circuit sections
         "heating_circuit2": BASE_HEATING_CIRCUIT2_PARAMS.copy(),
-        "heating_circuit3": BASE_HEATING_CIRCUIT3_PARAMS.copy(),
         "staticValues_circuit2": BASE_STATIC_VALUES_CIRCUIT2_PARAMS.copy(),
-        "staticValues_circuit3": BASE_STATIC_VALUES_CIRCUIT3_PARAMS.copy(),
     }
 
     if version == "v1":
@@ -227,19 +190,12 @@ def build_api_config(version: str) -> APIConfig:
         config["staticValues_circuit2"].update(
             V1_STATIC_VALUES_CIRCUIT2_EXTENSIONS,
         )
-        config["staticValues_circuit3"].update(
-            V1_STATIC_VALUES_CIRCUIT3_EXTENSIONS,
-        )
     elif version == "v3":
         config["heating"].update(V3_HEATING_EXTENSIONS)
         config["staticValues"].update(V3_STATIC_VALUES_EXTENSIONS)
         config["heating_circuit2"].update(V3_HEATING_CIRCUIT2_EXTENSIONS)
         config["staticValues_circuit2"].update(
             V3_STATIC_VALUES_CIRCUIT2_EXTENSIONS,
-        )
-        config["heating_circuit3"].update(V3_HEATING_CIRCUIT3_EXTENSIONS)
-        config["staticValues_circuit3"].update(
-            V3_STATIC_VALUES_CIRCUIT3_EXTENSIONS,
         )
 
     return config
