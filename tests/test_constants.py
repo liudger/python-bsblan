@@ -153,9 +153,7 @@ def test_api_config_structure(version: str) -> None:
         "sensor",
         "hot_water",
         "heating_circuit2",
-        "heating_circuit3",
         "staticValues_circuit2",
-        "staticValues_circuit3",
     }
     assert set(config.keys()) == required_sections
 
