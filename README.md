@@ -150,8 +150,20 @@ To install all packages, including all development requirements:
 
 ```bash
 npm install
-uv sync --dev
+make setup
 ```
+
+### Makefile Targets
+
+A `Makefile` is provided for common development tasks. Run `make help` to
+see all available targets:
+
+| Command         | Description                          |
+|-----------------|--------------------------------------|
+| `make setup`    | Install dev dependencies & git hooks |
+| `make lint`     | Run all pre-commit hooks             |
+| `make test`     | Run tests                            |
+| `make coverage` | Run tests with coverage report       |
 
 As this repository uses [prek][prek] (a faster, Rust-based drop-in replacement
 for pre-commit), all changes are linted and tested with each commit. You can
