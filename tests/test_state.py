@@ -74,11 +74,6 @@ async def test_state(monkeypatch: Any) -> None:
     assert state.current_temperature.value == 19.3
     assert state.current_temperature.unit == "°C"
 
-    # Room thermostat mode assertions
-    assert state.room1_thermostat_mode is not None
-    assert state.room1_thermostat_mode.value == 0
-    assert state.room1_thermostat_mode.desc == "No demand"
-
     # Room temperature setpoint boost assertions
     assert state.room1_temp_setpoint_boost is not None
     assert state.room1_temp_setpoint_boost.value is None
@@ -86,5 +81,5 @@ async def test_state(monkeypatch: Any) -> None:
 
     # Verify API call
     request_mock.assert_called_once_with(
-        params={"Parameter": "700,710,900,8000,8740,8749,770"}
+        params={"Parameter": "700,710,900,8000,8740,770"}
     )
