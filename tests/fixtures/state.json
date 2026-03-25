@@ -61,18 +61,6 @@
     "readwrite": 1,
     "unit": "°C"
   },
-  "8749": {
-    "name": "Room thermostat heating circuit 1",
-    "dataType_name": "ENUM",
-    "dataType_family": "ENUM",
-    "error": 0,
-    "value": "0",
-    "desc": "No demand",
-    "dataType": 1,
-    "readonly": 1,
-    "readwrite": 1,
-    "unit": ""
-  },
   "770": {
     "name": "Room temp setpoint boost (boost heating)",
     "dataType_name": "TEMP",

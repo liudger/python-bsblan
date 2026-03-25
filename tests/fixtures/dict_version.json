@@ -4,8 +4,7 @@
     "710": "target_temperature",
     "900": "hvac_mode_changeover",
     "8000": "hvac_action",
-    "8740": "current_temperature",
-    "8749": "room1_thermostat_mode"
+    "8740": "current_temperature"
   },
   "staticValues": {
     "714": "min_temp",
