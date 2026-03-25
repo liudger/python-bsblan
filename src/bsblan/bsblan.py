@@ -1008,7 +1008,7 @@ class BSBLAN:
                 fetches all state parameters. Valid names include:
                 hvac_mode, target_temperature, hvac_action,
                 hvac_mode_changeover, current_temperature,
-                room1_thermostat_mode, room1_temp_setpoint_boost.
+                room1_temp_setpoint_boost.
             circuit: The heating circuit number (1 or 2). Defaults to 1.
                 Circuit 2 uses separate parameter IDs but returns the
                 same State model with the same field names.

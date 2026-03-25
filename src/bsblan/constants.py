@@ -33,7 +33,6 @@ BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     # -------
     "8000": "hvac_action",
     "8740": "current_temperature",
-    "8749": "room1_thermostat_mode",
 }
 
 BASE_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
@@ -110,7 +109,6 @@ BASE_HEATING_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     # -------
     "8001": "hvac_action",
     "8770": "current_temperature",
-    "8779": "room1_thermostat_mode",
 }
 
 BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
