@@ -4,7 +4,6 @@ Compares different approaches using pluggable benchmark suites:
 - basic: Original tests (parallel calls, read_parameters, filtering)
 - scalability: Large parameter set tests
 - dual-circuit: Single vs parallel calls for dual heating circuit params
-- triple-circuit: Same idea extended to 3 heating circuits
 - hot-water: Hot water parameter group loading tests
 
 Usage:
@@ -59,25 +58,16 @@ ALL_PARAMS = INFO_PARAMS + STATIC_PARAMS
 HC1_PARAMS = ["700", "710", "900", "8000", "8740", "8749"]
 
 # Heating circuit 2 (1000-series) — mirrors HC1 with offset
-HC2_PARAMS = ["1000", "1010", "1200", "8001", "8741", "8750"]
-
-# Heating circuit 3 (1300-series) — mirrors HC1 with offset
-HC3_PARAMS = ["1300", "1310", "1500", "8002", "8742", "8751"]
+HC2_PARAMS = ["1000", "1010", "1200", "8001", "8770", "8779"]
 
 # Static values per circuit
 HC1_STATIC_PARAMS = ["714", "716"]
 HC2_STATIC_PARAMS = ["1014", "1016"]
-HC3_STATIC_PARAMS = ["1314", "1316"]
 
 # Combined dual circuit parameter sets
 DUAL_HEATING_PARAMS = HC1_PARAMS + HC2_PARAMS
 DUAL_STATIC_PARAMS = HC1_STATIC_PARAMS + HC2_STATIC_PARAMS
 DUAL_ALL_PARAMS = DUAL_HEATING_PARAMS + DUAL_STATIC_PARAMS
-
-# Triple circuit parameter sets
-TRIPLE_HEATING_PARAMS = HC1_PARAMS + HC2_PARAMS + HC3_PARAMS
-TRIPLE_STATIC_PARAMS = HC1_STATIC_PARAMS + HC2_STATIC_PARAMS + HC3_STATIC_PARAMS
-TRIPLE_ALL_PARAMS = TRIPLE_HEATING_PARAMS + TRIPLE_STATIC_PARAMS
 
 # Sensor parameters
 SENSOR_PARAMS = ["8700", "8740"]
@@ -515,78 +505,6 @@ def build_dual_circuit_suite(bsblan: BSBLAN) -> BenchmarkSuite:
     return suite
 
 
-def build_triple_circuit_suite(bsblan: BSBLAN) -> BenchmarkSuite:
-    """Build the triple heating circuit benchmark suite.
-
-    Same idea as dual-circuit but for 3 circuits. Most systems have
-    at most 2 circuits; HC3 params will return '---' on those
-    devices but this still measures the network call overhead.
-    """
-    suite = BenchmarkSuite(
-        name="Triple Heating Circuit",
-        description=(
-            "Compare fetching strategies for 3 heating circuits.\n"
-            "  HC1: " + ", ".join(HC1_PARAMS) + "\n"
-            "  HC2: " + ", ".join(HC2_PARAMS) + "\n"
-            "  HC3: " + ", ".join(HC3_PARAMS)
-        ),
-    )
-
-    suite.add(
-        (f"HC1+HC2+HC3 combined — 1 call ({len(TRIPLE_HEATING_PARAMS)} params)"),
-        f"1 call ({len(TRIPLE_HEATING_PARAMS)}p)",
-        lambda: bsblan.read_parameters(TRIPLE_HEATING_PARAMS),
-        param_count=len(TRIPLE_HEATING_PARAMS),
-    )
-
-    suite.add(
-        "HC1+HC2+HC3 parallel — 3 calls",
-        "3 parallel",
-        lambda: asyncio.gather(
-            bsblan.read_parameters(HC1_PARAMS),
-            bsblan.read_parameters(HC2_PARAMS),
-            bsblan.read_parameters(HC3_PARAMS),
-        ),
-        param_count=len(TRIPLE_HEATING_PARAMS),
-    )
-
-    async def _sequential_3() -> None:
-        await bsblan.read_parameters(HC1_PARAMS)
-        await bsblan.read_parameters(HC2_PARAMS)
-        await bsblan.read_parameters(HC3_PARAMS)
-
-    suite.add(
-        "HC1+HC2+HC3 sequential — 3 calls",
-        "3 sequential",
-        _sequential_3,
-        param_count=len(TRIPLE_HEATING_PARAMS),
-    )
-
-    # Full init with static values
-    suite.add(
-        (f"All circuits + static — 1 call ({len(TRIPLE_ALL_PARAMS)} params)"),
-        f"1 call all ({len(TRIPLE_ALL_PARAMS)}p)",
-        lambda: bsblan.read_parameters(TRIPLE_ALL_PARAMS),
-        param_count=len(TRIPLE_ALL_PARAMS),
-    )
-
-    suite.add(
-        "All circuits + static — 6 parallel (heat+static per circ)",
-        "6 parallel per section",
-        lambda: asyncio.gather(
-            bsblan.read_parameters(HC1_PARAMS),
-            bsblan.read_parameters(HC2_PARAMS),
-            bsblan.read_parameters(HC3_PARAMS),
-            bsblan.read_parameters(HC1_STATIC_PARAMS),
-            bsblan.read_parameters(HC2_STATIC_PARAMS),
-            bsblan.read_parameters(HC3_STATIC_PARAMS),
-        ),
-        param_count=len(TRIPLE_ALL_PARAMS),
-    )
-
-    return suite
-
-
 def build_hot_water_suite(bsblan: BSBLAN) -> BenchmarkSuite:
     """Build the hot water parameter benchmark suite."""
     suite = BenchmarkSuite(
@@ -645,7 +563,6 @@ SUITE_BUILDERS: dict[str, Callable[[BSBLAN], BenchmarkSuite]] = {
     "basic": build_basic_suite,
     "scalability": build_scalability_suite,
     "dual-circuit": build_dual_circuit_suite,
-    "triple-circuit": build_triple_circuit_suite,
     "hot-water": build_hot_water_suite,
 }
 
