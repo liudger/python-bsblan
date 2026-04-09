@@ -76,7 +76,7 @@ jobs:
           uv run python -m coverage xml -i
       - name: 🚀 Upload coverage report
         if: env.HAS_CODECOV_TOKEN == 'true'
-        uses: codecov/codecov-action@v5.5.4
+        uses: codecov/codecov-action@v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: ℹ️ Skip Codecov upload (missing token)
