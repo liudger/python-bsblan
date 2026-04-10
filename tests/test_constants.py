@@ -8,10 +8,8 @@ from bsblan.constants import (
     API_V1,
     API_V3,
     BASE_HOT_WATER_PARAMS,
-    HOT_WATER_CONFIG_PARAMS,
-    HOT_WATER_ESSENTIAL_PARAMS,
-    HOT_WATER_SCHEDULE_PARAMS,
     HeatingCircuitStatus,
+    HotWaterParams,
     HVACActionCategory,
     build_api_config,
     get_hvac_action_category,
@@ -90,7 +88,7 @@ def test_pre_built_api_configurations(
 def test_hot_water_parameter_groups_completeness() -> None:
     """Test that hot water parameter groups cover all parameters."""
     all_grouped_params = (
-        HOT_WATER_ESSENTIAL_PARAMS | HOT_WATER_CONFIG_PARAMS | HOT_WATER_SCHEDULE_PARAMS
+        HotWaterParams.ESSENTIAL | HotWaterParams.CONFIG | HotWaterParams.SCHEDULE
     )
 
     # All BASE_HOT_WATER_PARAMS should be categorized into one of the groups
@@ -101,9 +99,9 @@ def test_hot_water_parameter_groups_completeness() -> None:
 @pytest.mark.parametrize(
     ("group1", "group2"),
     [
-        (HOT_WATER_ESSENTIAL_PARAMS, HOT_WATER_CONFIG_PARAMS),
-        (HOT_WATER_ESSENTIAL_PARAMS, HOT_WATER_SCHEDULE_PARAMS),
-        (HOT_WATER_CONFIG_PARAMS, HOT_WATER_SCHEDULE_PARAMS),
+        (HotWaterParams.ESSENTIAL, HotWaterParams.CONFIG),
+        (HotWaterParams.ESSENTIAL, HotWaterParams.SCHEDULE),
+        (HotWaterParams.CONFIG, HotWaterParams.SCHEDULE),
     ],
 )
 def test_hot_water_parameter_groups_no_overlap(
@@ -117,9 +115,9 @@ def test_hot_water_parameter_groups_no_overlap(
 @pytest.mark.parametrize(
     ("group", "expected_count"),
     [
-        (HOT_WATER_ESSENTIAL_PARAMS, 5),  # Current optimized count
-        (HOT_WATER_CONFIG_PARAMS, 16),  # Configuration parameters
-        (HOT_WATER_SCHEDULE_PARAMS, 8),  # Time program parameters
+        (HotWaterParams.ESSENTIAL, 5),  # Current optimized count
+        (HotWaterParams.CONFIG, 16),  # Configuration parameters
+        (HotWaterParams.SCHEDULE, 8),  # Time program parameters
     ],
 )
 def test_hot_water_parameter_groups_expected_counts(
@@ -133,9 +131,9 @@ def test_hot_water_parameter_groups_expected_counts(
 def test_hot_water_parameter_groups_total_count() -> None:
     """Test that total grouped parameters match base parameters."""
     total_grouped = (
-        len(HOT_WATER_ESSENTIAL_PARAMS)
-        + len(HOT_WATER_CONFIG_PARAMS)
-        + len(HOT_WATER_SCHEDULE_PARAMS)
+        len(HotWaterParams.ESSENTIAL)
+        + len(HotWaterParams.CONFIG)
+        + len(HotWaterParams.SCHEDULE)
     )
     assert total_grouped == len(BASE_HOT_WATER_PARAMS)
 

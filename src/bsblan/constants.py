@@ -8,7 +8,6 @@ from typing import Final, TypedDict
 # Supported heating circuits (1-based)
 MIN_CIRCUIT: Final[int] = 1
 MAX_CIRCUIT: Final[int] = 2
-VALID_CIRCUITS: Final[set[int]] = {1, 2}
 
 
 # API Versions
@@ -127,39 +126,33 @@ V3_STATIC_VALUES_CIRCUIT2_EXTENSIONS: Final[dict[str, str]] = {
     "1016": "max_temp",
 }
 
-# Mapping from circuit number to section names
-CIRCUIT_HEATING_SECTIONS: Final[dict[int, str]] = {
-    1: "heating",
-    2: "heating_circuit2",
-}
 
-CIRCUIT_STATIC_SECTIONS: Final[dict[int, str]] = {
-    1: "staticValues",
-    2: "staticValues_circuit2",
-}
+# Circuit configuration
+class CircuitConfig:
+    """Circuit-related constants for BSBLAN."""
 
-# Mapping from circuit number to thermostat parameter IDs
-CIRCUIT_THERMOSTAT_PARAMS: Final[dict[int, dict[str, str]]] = {
-    1: {"target_temperature": "710", "hvac_mode": "700"},
-    2: {"target_temperature": "1010", "hvac_mode": "1000"},
-}
-
-# Parameter IDs used to probe whether a heating circuit exists on the device.
-# We query the operating mode (hvac_mode) for each circuit.
-CIRCUIT_PROBE_PARAMS: Final[dict[int, str]] = {
-    1: "700",
-    2: "1000",
-}
-
-# Status parameter IDs used as a secondary check for circuit availability.
-# Inactive circuits return value="0" and desc="---" for these parameters.
-CIRCUIT_STATUS_PARAMS: Final[dict[int, str]] = {
-    1: "8000",
-    2: "8001",
-}
-
-# Marker value returned by BSB-LAN for parameters on inactive circuits
-INACTIVE_CIRCUIT_MARKER: Final[str] = "---"
+    VALID: Final[set[int]] = {1, 2}
+    HEATING_SECTIONS: Final[dict[int, str]] = {
+        1: "heating",
+        2: "heating_circuit2",
+    }
+    STATIC_SECTIONS: Final[dict[int, str]] = {
+        1: "staticValues",
+        2: "staticValues_circuit2",
+    }
+    THERMOSTAT_PARAMS: Final[dict[int, dict[str, str]]] = {
+        1: {"target_temperature": "710", "hvac_mode": "700"},
+        2: {"target_temperature": "1010", "hvac_mode": "1000"},
+    }
+    PROBE_PARAMS: Final[dict[int, str]] = {
+        1: "700",
+        2: "1000",
+    }
+    STATUS_PARAMS: Final[dict[int, str]] = {
+        1: "8000",
+        2: "8001",
+    }
+    INACTIVE_MARKER: Final[str] = "---"
 
 
 def build_api_config(version: str) -> APIConfig:
@@ -208,8 +201,14 @@ API_VERSIONS: Final[dict[str, APIConfig]] = {
     "v3": API_V3,
 }
 
-# Valid HVAC mode values for validation
-VALID_HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
+
+# Validation constants
+class Validation:
+    """Validation-related constants for BSBLAN."""
+
+    HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
+    MIN_YEAR: Final[int] = 1900
+    MAX_YEAR: Final[int] = 2100
 
 
 class HVACActionCategory(IntEnum):
@@ -494,10 +493,6 @@ class ErrorMsg:
     )
 
 
-# Time validation constants
-MIN_VALID_YEAR: Final[int] = 1900  # Reasonable minimum year for BSB-LAN devices
-MAX_VALID_YEAR: Final[int] = 2100  # Reasonable maximum year for BSB-LAN devices
-
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}
 
@@ -572,88 +567,91 @@ UNIT_STATE_CLASS_MAP: Final[dict[str, str]] = {
     "s": "measurement",
 }
 
+
 # Hot Water Parameter Groups
-# Essential parameters for frequent monitoring
-HOT_WATER_ESSENTIAL_PARAMS: Final[set[str]] = {
-    param_id
-    for param_id, name in BASE_HOT_WATER_PARAMS.items()
-    if name
-    in {
-        "operating_mode",
-        "nominal_setpoint",
-        "release",
-        "dhw_actual_value_top_temperature",
-        "state_dhw_pump",
+class HotWaterParams:
+    """Hot water parameter group constants for BSBLAN."""
+
+    # Essential parameters for frequent monitoring
+    ESSENTIAL: Final[set[str]] = {
+        param_id
+        for param_id, name in BASE_HOT_WATER_PARAMS.items()
+        if name
+        in {
+            "operating_mode",
+            "nominal_setpoint",
+            "release",
+            "dhw_actual_value_top_temperature",
+            "state_dhw_pump",
+        }
     }
-}
 
-# Configuration parameters checked less frequently
-HOT_WATER_CONFIG_PARAMS: Final[set[str]] = {
-    param_id
-    for param_id, name in BASE_HOT_WATER_PARAMS.items()
-    if name
-    in {
-        "eco_mode_selection",
-        "nominal_setpoint_max",
-        "reduced_setpoint",
-        "dhw_charging_priority",
-        "operating_mode_changeover",
-        "legionella_function",
-        "legionella_function_setpoint",
-        "legionella_function_periodicity",
-        "legionella_function_day",
-        "legionella_function_time",
-        "legionella_function_dwelling_time",
-        "legionella_circulation_pump",
-        "legionella_circulation_temp_diff",
-        "dhw_circulation_pump_release",
-        "dhw_circulation_pump_cycling",
-        "dhw_circulation_setpoint",
+    # Configuration parameters checked less frequently
+    CONFIG: Final[set[str]] = {
+        param_id
+        for param_id, name in BASE_HOT_WATER_PARAMS.items()
+        if name
+        in {
+            "eco_mode_selection",
+            "nominal_setpoint_max",
+            "reduced_setpoint",
+            "dhw_charging_priority",
+            "operating_mode_changeover",
+            "legionella_function",
+            "legionella_function_setpoint",
+            "legionella_function_periodicity",
+            "legionella_function_day",
+            "legionella_function_time",
+            "legionella_function_dwelling_time",
+            "legionella_circulation_pump",
+            "legionella_circulation_temp_diff",
+            "dhw_circulation_pump_release",
+            "dhw_circulation_pump_cycling",
+            "dhw_circulation_setpoint",
+        }
     }
-}
 
-# Schedule parameters (time programs)
-HOT_WATER_SCHEDULE_PARAMS: Final[set[str]] = {
-    param_id
-    for param_id, name in BASE_HOT_WATER_PARAMS.items()
-    if name
-    in {
-        "dhw_time_program_monday",
-        "dhw_time_program_tuesday",
-        "dhw_time_program_wednesday",
-        "dhw_time_program_thursday",
-        "dhw_time_program_friday",
-        "dhw_time_program_saturday",
-        "dhw_time_program_sunday",
-        "dhw_time_program_standard_values",
+    # Schedule parameters (time programs)
+    SCHEDULE: Final[set[str]] = {
+        param_id
+        for param_id, name in BASE_HOT_WATER_PARAMS.items()
+        if name
+        in {
+            "dhw_time_program_monday",
+            "dhw_time_program_tuesday",
+            "dhw_time_program_wednesday",
+            "dhw_time_program_thursday",
+            "dhw_time_program_friday",
+            "dhw_time_program_saturday",
+            "dhw_time_program_sunday",
+            "dhw_time_program_standard_values",
+        }
     }
-}
 
-# Settable hot water parameters mapping (param_id -> attribute name)
-# Used by set_hot_water to map SetHotWaterParam attributes to BSB-LAN parameter IDs
-SETTABLE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
-    "1610": "nominal_setpoint",
-    "1612": "reduced_setpoint",
-    "1614": "nominal_setpoint_max",
-    "1600": "operating_mode",
-    "1601": "eco_mode_selection",
-    "1630": "dhw_charging_priority",
-    "1645": "legionella_function_setpoint",
-    "1641": "legionella_function_periodicity",
-    "1642": "legionella_function_day",
-    "1644": "legionella_function_time",
-    "1646": "legionella_function_dwelling_time",
-    "1680": "operating_mode_changeover",
-}
+    # Settable parameters mapping (param_id -> attribute name)
+    SETTABLE: Final[dict[str, str]] = {
+        "1610": "nominal_setpoint",
+        "1612": "reduced_setpoint",
+        "1614": "nominal_setpoint_max",
+        "1600": "operating_mode",
+        "1601": "eco_mode_selection",
+        "1630": "dhw_charging_priority",
+        "1645": "legionella_function_setpoint",
+        "1641": "legionella_function_periodicity",
+        "1642": "legionella_function_day",
+        "1644": "legionella_function_time",
+        "1646": "legionella_function_dwelling_time",
+        "1680": "operating_mode_changeover",
+    }
 
-# DHW time program parameter mappings
-DHW_TIME_PROGRAM_PARAMS: Final[dict[str, str]] = {
-    "561": "monday",
-    "562": "tuesday",
-    "563": "wednesday",
-    "564": "thursday",
-    "565": "friday",
-    "566": "saturday",
-    "567": "sunday",
-    "576": "standard_values",
-}
+    # DHW time program parameter mappings
+    TIME_PROGRAMS: Final[dict[str, str]] = {
+        "561": "monday",
+        "562": "tuesday",
+        "563": "wednesday",
+        "564": "thursday",
+        "565": "friday",
+        "566": "saturday",
+        "567": "sunday",
+        "576": "standard_values",
+    }
