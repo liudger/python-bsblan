@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Run Release Drafter
-        uses: release-drafter/release-drafter@v7.1.1
+        uses: release-drafter/release-drafter@v7.2.0
         with:
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           prerelease-identifier: ${{ github.event.inputs.prerelease_identifier }}
