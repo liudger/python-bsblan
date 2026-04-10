@@ -19,23 +19,11 @@ from yarl import URL
 
 from .constants import (
     API_VERSIONS,
-    CIRCUIT_HEATING_SECTIONS,
-    CIRCUIT_PROBE_PARAMS,
-    CIRCUIT_STATIC_SECTIONS,
-    CIRCUIT_STATUS_PARAMS,
-    CIRCUIT_THERMOSTAT_PARAMS,
-    DHW_TIME_PROGRAM_PARAMS,
-    HOT_WATER_CONFIG_PARAMS,
-    HOT_WATER_ESSENTIAL_PARAMS,
-    HOT_WATER_SCHEDULE_PARAMS,
-    INACTIVE_CIRCUIT_MARKER,
-    MAX_VALID_YEAR,
-    MIN_VALID_YEAR,
-    SETTABLE_HOT_WATER_PARAMS,
-    VALID_CIRCUITS,
-    VALID_HVAC_MODES,
     APIConfig,
+    CircuitConfig,
     ErrorMsg,
+    HotWaterParams,
+    Validation,
 )
 from .exceptions import (
     BSBLANAuthError,
@@ -186,7 +174,7 @@ class BSBLAN:
 
         """
         available: list[int] = []
-        for circuit, param_id in CIRCUIT_PROBE_PARAMS.items():
+        for circuit, param_id in CircuitConfig.PROBE_PARAMS.items():
             try:
                 response = await self._request(
                     params={"Parameter": param_id},
@@ -200,7 +188,7 @@ class BSBLAN:
                 # Inactive circuits either:
                 # - return value="0" and desc="---"
                 # - return an empty dict {} (param not supported)
-                status_id = CIRCUIT_STATUS_PARAMS[circuit]
+                status_id = CircuitConfig.STATUS_PARAMS[circuit]
                 status_resp = await self._request(
                     params={"Parameter": status_id},
                 )
@@ -216,7 +204,7 @@ class BSBLAN:
 
                 # value="0" + desc="---" means inactive
                 if (
-                    status_data.get("desc") == INACTIVE_CIRCUIT_MARKER
+                    status_data.get("desc") == CircuitConfig.INACTIVE_MARKER
                     and str(status_data.get("value", "")) == "0"
                 ):
                     logger.debug(
@@ -674,7 +662,7 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the circuit number is invalid.
 
         """
-        if circuit not in VALID_CIRCUITS:
+        if circuit not in CircuitConfig.VALID:
             msg = ErrorMsg.INVALID_CIRCUIT.format(circuit)
             raise BSBLANInvalidParameterError(msg)
 
@@ -1012,7 +1000,7 @@ class BSBLAN:
         """
         self._validate_circuit(circuit)
         section: SectionLiteral = cast(
-            "SectionLiteral", CIRCUIT_HEATING_SECTIONS[circuit]
+            "SectionLiteral", CircuitConfig.HEATING_SECTIONS[circuit]
         )
         return await self._fetch_section_data(section, State, include)
 
@@ -1060,7 +1048,7 @@ class BSBLAN:
         """
         self._validate_circuit(circuit)
         section: SectionLiteral = cast(
-            "SectionLiteral", CIRCUIT_STATIC_SECTIONS[circuit]
+            "SectionLiteral", CircuitConfig.STATIC_SECTIONS[circuit]
         )
         return await self._fetch_section_data(section, StaticState, include)
 
@@ -1180,7 +1168,7 @@ class BSBLAN:
             dict[str, Any]: The prepared state for the thermostat.
 
         """
-        param_ids = CIRCUIT_THERMOSTAT_PARAMS[circuit]
+        param_ids = CircuitConfig.THERMOSTAT_PARAMS[circuit]
         state: dict[str, Any] = {}
         if target_temperature is not None:
             await self._validate_target_temperature(
@@ -1262,7 +1250,7 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the HVAC mode is invalid.
 
         """
-        if hvac_mode not in VALID_HVAC_MODES:
+        if hvac_mode not in Validation.HVAC_MODES:
             raise BSBLANInvalidParameterError(str(hvac_mode))
 
     def _validate_time_format(self, time_value: str) -> None:
@@ -1276,7 +1264,7 @@ class BSBLAN:
 
         """
         try:
-            validate_time_format(time_value, MIN_VALID_YEAR, MAX_VALID_YEAR)
+            validate_time_format(time_value, Validation.MIN_YEAR, Validation.MAX_YEAR)
         except ValueError as err:
             raise BSBLANInvalidParameterError(str(err)) from err
 
@@ -1379,7 +1367,7 @@ class BSBLAN:
 
         """
         return await self._fetch_hot_water_data(
-            param_filter=HOT_WATER_ESSENTIAL_PARAMS,
+            param_filter=HotWaterParams.ESSENTIAL,
             model_class=HotWaterState,
             error_msg="No essential hot water parameters available",
             group_name="essential",
@@ -1419,7 +1407,7 @@ class BSBLAN:
 
         """
         return await self._fetch_hot_water_data(
-            param_filter=HOT_WATER_CONFIG_PARAMS,
+            param_filter=HotWaterParams.CONFIG,
             model_class=HotWaterConfig,
             error_msg="No hot water configuration parameters available",
             group_name="config",
@@ -1455,7 +1443,7 @@ class BSBLAN:
 
         """
         return await self._fetch_hot_water_data(
-            param_filter=HOT_WATER_SCHEDULE_PARAMS,
+            param_filter=HotWaterParams.SCHEDULE,
             model_class=HotWaterSchedule,
             error_msg="No hot water schedule parameters available",
             group_name="schedule",
@@ -1548,7 +1536,9 @@ class BSBLAN:
         # Invert DHW_TIME_PROGRAM_PARAMS to get day_name -> param_id mapping
         # Exclude standard_values as it's not a day of the week
         day_param_map = {
-            v: k for k, v in DHW_TIME_PROGRAM_PARAMS.items() if v != "standard_values"
+            v: k
+            for k, v in HotWaterParams.TIME_PROGRAMS.items()
+            if v != "standard_values"
         }
 
         for day_name, param_id in day_param_map.items():
@@ -1580,14 +1570,14 @@ class BSBLAN:
         state: dict[str, Any] = {}
 
         # Process all mapped parameters using constants
-        for param_id, attr_name in SETTABLE_HOT_WATER_PARAMS.items():
+        for param_id, attr_name in HotWaterParams.SETTABLE.items():
             value = getattr(params, attr_name)
             if value is not None:
                 state.update({"Parameter": param_id, "Value": str(value), "Type": "1"})
 
         # Process time programs if provided using constants
         if params.dhw_time_programs:
-            for param_id, attr_name in DHW_TIME_PROGRAM_PARAMS.items():
+            for param_id, attr_name in HotWaterParams.TIME_PROGRAMS.items():
                 value = getattr(params.dhw_time_programs, attr_name)
                 if value is not None:
                     state.update({"Parameter": param_id, "Value": value, "Type": "1"})
