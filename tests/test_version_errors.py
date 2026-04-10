@@ -7,7 +7,7 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_VERSION_ERROR_MSG, FIRMWARE_VERSION_ERROR_MSG
+from bsblan.constants import ErrorMsg
 from bsblan.exceptions import BSBLANError, BSBLANVersionError
 from bsblan.models import Device
 
@@ -19,7 +19,7 @@ async def test_set_api_version_without_firmware() -> None:
     bsblan = BSBLAN(config)
 
     # Firmware version is None by default
-    with pytest.raises(BSBLANError, match=FIRMWARE_VERSION_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.FIRMWARE_VERSION):
         bsblan._set_api_version()
 
 
@@ -91,7 +91,7 @@ async def test_initialize_api_validator_no_api_version() -> None:
     bsblan = BSBLAN(config)
 
     # API version is None by default
-    with pytest.raises(BSBLANError, match=API_VERSION_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
         await bsblan._initialize_api_validator()
 
 

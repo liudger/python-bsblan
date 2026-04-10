@@ -16,7 +16,7 @@ from aiohttp.web_request import Request
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig
-from bsblan.constants import MULTI_PARAMETER_ERROR_MSG
+from bsblan.constants import ErrorMsg
 from bsblan.exceptions import (
     BSBLANError,
     BSBLANInvalidParameterError,
@@ -191,4 +191,4 @@ async def test_no_parameters(mock_bsblan: BSBLAN) -> None:
     """Test calling thermostat without parameters."""
     with pytest.raises(BSBLANError) as exc_info:
         await mock_bsblan.thermostat()
-    assert str(exc_info.value) == MULTI_PARAMETER_ERROR_MSG
+    assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER

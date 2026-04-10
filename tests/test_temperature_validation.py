@@ -9,7 +9,7 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_VERSIONS, TEMPERATURE_RANGE_ERROR_MSG, APIConfig
+from bsblan.constants import API_VERSIONS, APIConfig, ErrorMsg
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -27,7 +27,7 @@ async def test_validate_target_temperature_no_range() -> None:
     bsblan._initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
 
     # Temperature range is not initialized by default
-    with pytest.raises(BSBLANError, match=TEMPERATURE_RANGE_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.TEMPERATURE_RANGE):
         await bsblan._validate_target_temperature("22.0")
 
 

@@ -463,42 +463,40 @@ def get_hvac_action_category(status_code: int) -> HVACActionCategory:
 
 
 # Error Messages
-NO_STATE_ERROR_MSG: Final[str] = "No state provided."
-NO_SCHEDULE_ERROR_MSG: Final[str] = "No schedule provided."
-VERSION_ERROR_MSG: Final[str] = "Version not supported"
-FIRMWARE_VERSION_ERROR_MSG: Final[str] = "Firmware version not available"
-TEMPERATURE_RANGE_ERROR_MSG: Final[str] = "Temperature range not initialized"
-API_VERSION_ERROR_MSG: Final[str] = "API version not set"
-MULTI_PARAMETER_ERROR_MSG: Final[str] = "Only one parameter can be set at a time"
-SESSION_NOT_INITIALIZED_ERROR_MSG: Final[str] = "Session not initialized"
-API_DATA_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API data not initialized"
-API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG: Final[str] = "API validator not initialized"
-SECTION_NOT_FOUND_ERROR_MSG: Final[str] = "Section '{}' not found in API data"
-INVALID_CIRCUIT_ERROR_MSG: Final[str] = "Invalid circuit number: {}. Must be 1 or 2."
-INVALID_RESPONSE_ERROR_MSG: Final[str] = (
-    "Invalid response format from BSB-LAN device: {}"
-)
-EMPTY_SECTION_PARAMS_ERROR_MSG: Final[str] = (
-    "No valid parameters found for section '{}'. "
-    "The device may not support this circuit or section."
-)
+class ErrorMsg:
+    """Error message constants for BSBLAN."""
+
+    NO_STATE = "No state provided."
+    NO_SCHEDULE = "No schedule provided."
+    VERSION = "Version not supported"
+    FIRMWARE_VERSION = "Firmware version not available"
+    TEMPERATURE_RANGE = "Temperature range not initialized"
+    API_VERSION = "API version not set"
+    MULTI_PARAMETER = "Only one parameter can be set at a time"
+    SESSION_NOT_INITIALIZED = "Session not initialized"
+    API_DATA_NOT_INITIALIZED = "API data not initialized"
+    API_VALIDATOR_NOT_INITIALIZED = "API validator not initialized"
+    SECTION_NOT_FOUND = "Section '{}' not found in API data"
+    INVALID_CIRCUIT = "Invalid circuit number: {}. Must be 1 or 2."
+    INVALID_RESPONSE = "Invalid response format from BSB-LAN device: {}"
+    EMPTY_SECTION_PARAMS = (
+        "No valid parameters found for section '{}'. "
+        "The device may not support this circuit or section."
+    )
+    NO_PARAMETER_IDS = "No parameter IDs provided"
+    NO_PARAMETER_NAMES = "No parameter names provided"
+    PARAMETER_NAMES_NOT_RESOLVED = "Could not resolve any parameter names"
+    INVALID_INCLUDE_PARAMS = (
+        "None of the requested parameters are valid for this section"
+    )
+    EMPTY_INCLUDE_LIST = (
+        "Empty include list provided. Use None to fetch all parameters."
+    )
+
 
 # Time validation constants
 MIN_VALID_YEAR: Final[int] = 1900  # Reasonable minimum year for BSB-LAN devices
 MAX_VALID_YEAR: Final[int] = 2100  # Reasonable maximum year for BSB-LAN devices
-
-# Error messages for low-level parameter access
-NO_PARAMETER_IDS_ERROR_MSG: Final[str] = "No parameter IDs provided"
-NO_PARAMETER_NAMES_ERROR_MSG: Final[str] = "No parameter names provided"
-PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG: Final[str] = (
-    "Could not resolve any parameter names"
-)
-INVALID_INCLUDE_PARAMS_ERROR_MSG: Final[str] = (
-    "None of the requested parameters are valid for this section"
-)
-EMPTY_INCLUDE_LIST_ERROR_MSG: Final[str] = (
-    "Empty include list provided. Use None to fetch all parameters."
-)
 
 # Handle both ASCII and Unicode degree symbols
 TEMPERATURE_UNITS = {"°C", "°F", "&#176;C", "&#176;F", "&deg;C", "&deg;F"}

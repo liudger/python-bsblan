@@ -16,8 +16,7 @@ import pytest
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
 from bsblan.constants import (
     API_V3,
-    EMPTY_INCLUDE_LIST_ERROR_MSG,
-    INVALID_INCLUDE_PARAMS_ERROR_MSG,
+    ErrorMsg,
 )
 from bsblan.exceptions import BSBLANError
 from bsblan.utility import APIValidator
@@ -120,7 +119,7 @@ async def test_section_method_with_empty_include_list(
         with pytest.raises(BSBLANError) as exc_info:
             await method(include=[])
 
-        assert str(exc_info.value) == EMPTY_INCLUDE_LIST_ERROR_MSG
+        assert str(exc_info.value) == ErrorMsg.EMPTY_INCLUDE_LIST
         request_mock.assert_not_awaited()
 
 
@@ -160,7 +159,7 @@ async def test_section_method_with_invalid_params(
         with pytest.raises(BSBLANError) as exc_info:
             await method(include=["nonexistent_param"])
 
-        assert str(exc_info.value) == INVALID_INCLUDE_PARAMS_ERROR_MSG
+        assert str(exc_info.value) == ErrorMsg.INVALID_INCLUDE_PARAMS
         request_mock.assert_not_awaited()
 
 
@@ -520,7 +519,7 @@ async def test_hot_water_method_with_empty_include_list(
         with pytest.raises(BSBLANError) as exc_info:
             await method(include=[])
 
-        assert str(exc_info.value) == EMPTY_INCLUDE_LIST_ERROR_MSG
+        assert str(exc_info.value) == ErrorMsg.EMPTY_INCLUDE_LIST
         request_mock.assert_not_awaited()
 
 
@@ -571,5 +570,5 @@ async def test_hot_water_method_with_invalid_params(
         with pytest.raises(BSBLANError) as exc_info:
             await method(include=["nonexistent_param"])
 
-        assert str(exc_info.value) == INVALID_INCLUDE_PARAMS_ERROR_MSG
+        assert str(exc_info.value) == ErrorMsg.INVALID_INCLUDE_PARAMS
         request_mock.assert_not_awaited()

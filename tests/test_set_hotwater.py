@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from bsblan import BSBLAN, BSBLANError, SetHotWaterParam
-from bsblan.constants import MULTI_PARAMETER_ERROR_MSG, NO_STATE_ERROR_MSG
+from bsblan.constants import ErrorMsg
 
 
 @pytest.mark.asyncio
@@ -44,7 +44,7 @@ async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
     )
 
     # Test setting multiple parameters (should raise an error)
-    with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.MULTI_PARAMETER):
         await mock_bsblan.set_hot_water(
             SetHotWaterParam(nominal_setpoint=60.0, reduced_setpoint=40.0)
         )
@@ -173,7 +173,7 @@ async def test_prepare_hot_water_state(mock_bsblan: BSBLAN) -> None:
 
     # Test preparing no parameters (should raise an error)
     params = SetHotWaterParam()
-    with pytest.raises(BSBLANError, match=NO_STATE_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.NO_STATE):
         mock_bsblan._prepare_hot_water_state(params)
 
     # Test preparing operating_mode

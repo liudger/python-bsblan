@@ -18,9 +18,6 @@ from packaging import version as pkg_version
 from yarl import URL
 
 from .constants import (
-    API_DATA_NOT_INITIALIZED_ERROR_MSG,
-    API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
-    API_VERSION_ERROR_MSG,
     API_VERSIONS,
     CIRCUIT_HEATING_SECTIONS,
     CIRCUIT_PROBE_PARAMS,
@@ -28,32 +25,17 @@ from .constants import (
     CIRCUIT_STATUS_PARAMS,
     CIRCUIT_THERMOSTAT_PARAMS,
     DHW_TIME_PROGRAM_PARAMS,
-    EMPTY_INCLUDE_LIST_ERROR_MSG,
-    EMPTY_SECTION_PARAMS_ERROR_MSG,
-    FIRMWARE_VERSION_ERROR_MSG,
     HOT_WATER_CONFIG_PARAMS,
     HOT_WATER_ESSENTIAL_PARAMS,
     HOT_WATER_SCHEDULE_PARAMS,
     INACTIVE_CIRCUIT_MARKER,
-    INVALID_CIRCUIT_ERROR_MSG,
-    INVALID_INCLUDE_PARAMS_ERROR_MSG,
-    INVALID_RESPONSE_ERROR_MSG,
     MAX_VALID_YEAR,
     MIN_VALID_YEAR,
-    MULTI_PARAMETER_ERROR_MSG,
-    NO_PARAMETER_IDS_ERROR_MSG,
-    NO_PARAMETER_NAMES_ERROR_MSG,
-    NO_SCHEDULE_ERROR_MSG,
-    NO_STATE_ERROR_MSG,
-    PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG,
-    SECTION_NOT_FOUND_ERROR_MSG,
-    SESSION_NOT_INITIALIZED_ERROR_MSG,
     SETTABLE_HOT_WATER_PARAMS,
-    TEMPERATURE_RANGE_ERROR_MSG,
     VALID_CIRCUITS,
     VALID_HVAC_MODES,
-    VERSION_ERROR_MSG,
     APIConfig,
+    ErrorMsg,
 )
 from .exceptions import (
     BSBLANAuthError,
@@ -258,7 +240,7 @@ class BSBLAN:
         section validation until the data is needed (lazy loading).
         """
         if self._api_version is None:
-            raise BSBLANError(API_VERSION_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_VERSION)
 
         # Initialize API data if not already done
         if self._api_data is None:
@@ -285,7 +267,7 @@ class BSBLAN:
 
         """
         if not self._api_validator:
-            raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
 
         # Fast path: skip if already validated (no lock needed)
         if self._api_validator.is_section_validated(section):
@@ -335,10 +317,10 @@ class BSBLAN:
             return
 
         if not self._api_validator:
-            raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
 
         if not self._api_data:
-            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
 
         # Get or create lock for this group
         if group_name not in self._hot_water_group_locks:
@@ -424,7 +406,7 @@ class BSBLAN:
         This method is kept for backwards compatibility.
         """
         if self._api_version is None:
-            raise BSBLANError(API_VERSION_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_VERSION)
 
         # Initialize API data if not already done
         if self._api_data is None:
@@ -468,10 +450,10 @@ class BSBLAN:
 
         """
         if not self._api_validator:
-            raise BSBLANError(API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
 
         if not self._api_data:
-            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
 
         # Assign to local variable after asserting it's not None
         api_validator = self._api_validator
@@ -483,7 +465,7 @@ class BSBLAN:
         try:
             section_data = self._api_data[section]
         except KeyError as err:
-            msg = SECTION_NOT_FOUND_ERROR_MSG.format(section)
+            msg = ErrorMsg.SECTION_NOT_FOUND.format(section)
             raise BSBLANError(msg) from err
 
         # Filter to only included params if specified
@@ -592,7 +574,7 @@ class BSBLAN:
 
         """
         if not self._firmware_version:
-            raise BSBLANError(FIRMWARE_VERSION_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.FIRMWARE_VERSION)
 
         version = pkg_version.parse(self._firmware_version)
         if version < pkg_version.parse("1.2.0"):
@@ -603,7 +585,7 @@ class BSBLAN:
         elif version >= pkg_version.parse("3.0.0"):
             self._api_version = "v3"
         else:
-            raise BSBLANVersionError(VERSION_ERROR_MSG)
+            raise BSBLANVersionError(ErrorMsg.VERSION)
 
     async def _fetch_temperature_range(
         self,
@@ -693,7 +675,7 @@ class BSBLAN:
 
         """
         if circuit not in VALID_CIRCUITS:
-            msg = INVALID_CIRCUIT_ERROR_MSG.format(circuit)
+            msg = ErrorMsg.INVALID_CIRCUIT.format(circuit)
             raise BSBLANInvalidParameterError(msg)
 
     @property
@@ -724,7 +706,7 @@ class BSBLAN:
             self._api_data = self._copy_api_config()
             logger.debug("API data initialized for version: %s", self._api_version)
         if self._api_data is None:
-            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
         return self._api_data
 
     def _copy_api_config(self) -> APIConfig:
@@ -738,7 +720,7 @@ class BSBLAN:
 
         """
         if self._api_version is None:
-            raise BSBLANError(API_VERSION_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_VERSION)
         source_config: APIConfig = API_VERSIONS[self._api_version]
         return cast(
             "APIConfig",
@@ -814,7 +796,7 @@ class BSBLAN:
 
         """
         if self.session is None:
-            raise BSBLANError(SESSION_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.SESSION_NOT_INITIALIZED)
         url = self._build_url(base_path)
         auth = self._get_auth()
         headers = self._get_headers()
@@ -838,7 +820,7 @@ class BSBLAN:
             raise
         except (ValueError, UnicodeDecodeError) as e:
             # Handle JSON decode errors and other parsing issues
-            msg = INVALID_RESPONSE_ERROR_MSG.format(e)
+            msg = ErrorMsg.INVALID_RESPONSE.format(e)
             raise BSBLANError(msg) from e
 
     def _process_response(
@@ -976,20 +958,20 @@ class BSBLAN:
 
         # Guard: if validation removed all params, the section is not available
         if not section_params:
-            msg = EMPTY_SECTION_PARAMS_ERROR_MSG.format(section)
+            msg = ErrorMsg.EMPTY_SECTION_PARAMS.format(section)
             raise BSBLANError(msg)
 
         # Filter parameters if include list is specified
         if include is not None:
             if not include:
-                raise BSBLANError(EMPTY_INCLUDE_LIST_ERROR_MSG)
+                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
             section_params = {
                 param_id: name
                 for param_id, name in section_params.items()
                 if name in include
             }
             if not section_params:
-                raise BSBLANError(INVALID_INCLUDE_PARAMS_ERROR_MSG)
+                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
 
         params = await self._extract_params_summary(section_params)
         data = await self._request(params={"Parameter": params["string_par"]})
@@ -1171,7 +1153,7 @@ class BSBLAN:
         self._validate_single_parameter(
             target_temperature,
             hvac_mode,
-            error_msg=MULTI_PARAMETER_ERROR_MSG,
+            error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
         state = await self._prepare_thermostat_state(
@@ -1247,7 +1229,7 @@ class BSBLAN:
                 await self._initialize_temperature_range(circuit)
 
             if self._min_temp is None or self._max_temp is None:
-                raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
+                raise BSBLANError(ErrorMsg.TEMPERATURE_RANGE)
 
             min_temp = self._min_temp
             max_temp = self._max_temp
@@ -1261,7 +1243,7 @@ class BSBLAN:
             max_temp = temp_range.get("max")
 
             if min_temp is None or max_temp is None:
-                raise BSBLANError(TEMPERATURE_RANGE_ERROR_MSG)
+                raise BSBLANError(ErrorMsg.TEMPERATURE_RANGE)
 
         try:
             temp = float(target_temperature)
@@ -1353,14 +1335,14 @@ class BSBLAN:
         # Apply include filter if specified
         if include is not None:
             if not include:
-                raise BSBLANError(EMPTY_INCLUDE_LIST_ERROR_MSG)
+                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
             filtered_params = {
                 param_id: name
                 for param_id, name in filtered_params.items()
                 if name in include
             }
             if not filtered_params:
-                raise BSBLANError(INVALID_INCLUDE_PARAMS_ERROR_MSG)
+                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
 
         if not filtered_params:
             raise BSBLANError(error_msg)
@@ -1529,7 +1511,7 @@ class BSBLAN:
             params.legionella_function_dwelling_time,
             params.operating_mode_changeover,
             *time_program_params,
-            error_msg=MULTI_PARAMETER_ERROR_MSG,
+            error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
         state = self._prepare_hot_water_state(params)
@@ -1561,7 +1543,7 @@ class BSBLAN:
 
         """
         if not schedule.has_any_schedule():
-            raise BSBLANError(NO_SCHEDULE_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.NO_SCHEDULE)
 
         # Invert DHW_TIME_PROGRAM_PARAMS to get day_name -> param_id mapping
         # Exclude standard_values as it's not a day of the week
@@ -1611,7 +1593,7 @@ class BSBLAN:
                     state.update({"Parameter": param_id, "Value": value, "Type": "1"})
 
         if not state:
-            raise BSBLANError(NO_STATE_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.NO_STATE)
         return state
 
     # -------------------------------------------------------------------------
@@ -1646,7 +1628,7 @@ class BSBLAN:
 
         """
         if not parameter_ids:
-            raise BSBLANError(NO_PARAMETER_IDS_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.NO_PARAMETER_IDS)
 
         # Request the parameters from the device
         params_string = ",".join(parameter_ids)
@@ -1744,17 +1726,17 @@ class BSBLAN:
 
         """
         if not parameter_names:
-            raise BSBLANError(NO_PARAMETER_NAMES_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.NO_PARAMETER_NAMES)
 
         if not self._api_data:
-            raise BSBLANError(API_DATA_NOT_INITIALIZED_ERROR_MSG)
+            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
 
         # Resolve names to IDs
         name_to_id = self.get_parameter_ids(parameter_names)
 
         if not name_to_id:
             unknown_params = ", ".join(parameter_names)
-            msg = f"{PARAMETER_NAMES_NOT_RESOLVED_ERROR_MSG}: {unknown_params}"
+            msg = f"{ErrorMsg.PARAMETER_NAMES_NOT_RESOLVED}: {unknown_params}"
             raise BSBLANError(msg)
 
         # Fetch parameters by ID

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from bsblan import BSBLAN, BSBLANError, SetHotWaterParam
-from bsblan.constants import MULTI_PARAMETER_ERROR_MSG
+from bsblan.constants import ErrorMsg
 from bsblan.models import DHWTimeSwitchPrograms
 
 
@@ -125,7 +125,7 @@ async def test_set_dhw_time_program(mock_bsblan: BSBLAN) -> None:
         monday="13:00-14:00 ##:##-##:## ##:##-##:##",
         tuesday="06:00-08:00 17:00-20:00 ##:##-##:##",
     )
-    with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.MULTI_PARAMETER):
         await mock_bsblan.set_hot_water(
             SetHotWaterParam(dhw_time_programs=dhw_programs)
         )

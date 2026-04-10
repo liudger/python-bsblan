@@ -14,7 +14,7 @@ from aresponses import ResponsesMockServer
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_VERSION_ERROR_MSG,
+    ErrorMsg,
 )
 from bsblan.exceptions import BSBLANError
 
@@ -95,7 +95,7 @@ async def test_api_version_error() -> None:
         # Force api_version to None to test error condition
         bsblan._api_version = None
 
-        with pytest.raises(BSBLANError, match=API_VERSION_ERROR_MSG):
+        with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
             await bsblan._initialize_api_data()
 
 

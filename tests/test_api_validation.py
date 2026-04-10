@@ -17,10 +17,9 @@ import pytest
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_DATA_NOT_INITIALIZED_ERROR_MSG,
-    API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG,
     API_VERSIONS,
     APIConfig,
+    ErrorMsg,
 )
 from bsblan.exceptions import BSBLANError
 from bsblan.utility import APIValidator
@@ -86,7 +85,7 @@ async def test_validate_api_section_no_validator() -> None:
         # Ensure validator is None
         bsblan._api_validator = None  # type: ignore[assignment]
 
-        with pytest.raises(BSBLANError, match=API_VALIDATOR_NOT_INITIALIZED_ERROR_MSG):
+        with pytest.raises(BSBLANError, match=ErrorMsg.API_VALIDATOR_NOT_INITIALIZED):
             await bsblan._validate_api_section("device")
 
 
@@ -100,7 +99,7 @@ async def test_validate_api_section_no_api_data() -> None:
         bsblan._api_validator = APIValidator({})
         bsblan._api_data = None
 
-        with pytest.raises(BSBLANError, match=API_DATA_NOT_INITIALIZED_ERROR_MSG):
+        with pytest.raises(BSBLANError, match=ErrorMsg.API_DATA_NOT_INITIALIZED):
             await bsblan._validate_api_section("device")
 
 
