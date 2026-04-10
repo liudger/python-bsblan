@@ -7,7 +7,7 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import MULTI_PARAMETER_ERROR_MSG
+from bsblan.constants import ErrorMsg
 from bsblan.exceptions import BSBLANError
 
 
@@ -59,17 +59,17 @@ def test_validate_single_parameter() -> None:
     bsblan._validate_single_parameter(1, None, None, error_msg="Test error")
 
     # Test with no parameters
-    with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.MULTI_PARAMETER):
         bsblan._validate_single_parameter(
-            None, None, None, error_msg=MULTI_PARAMETER_ERROR_MSG
+            None, None, None, error_msg=ErrorMsg.MULTI_PARAMETER
         )
 
     # Test with multiple parameters
-    with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.MULTI_PARAMETER):
         bsblan._validate_single_parameter(
-            1, 2, None, error_msg=MULTI_PARAMETER_ERROR_MSG
+            1, 2, None, error_msg=ErrorMsg.MULTI_PARAMETER
         )
 
     # Test with all parameters
-    with pytest.raises(BSBLANError, match=MULTI_PARAMETER_ERROR_MSG):
-        bsblan._validate_single_parameter(1, 2, 3, error_msg=MULTI_PARAMETER_ERROR_MSG)
+    with pytest.raises(BSBLANError, match=ErrorMsg.MULTI_PARAMETER):
+        bsblan._validate_single_parameter(1, 2, 3, error_msg=ErrorMsg.MULTI_PARAMETER)

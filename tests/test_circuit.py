@@ -13,7 +13,7 @@ import pytest
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
-from bsblan.constants import MULTI_PARAMETER_ERROR_MSG, build_api_config
+from bsblan.constants import ErrorMsg, build_api_config
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -390,7 +390,7 @@ async def test_thermostat_circuit2_no_params(
 
     with pytest.raises(BSBLANError) as exc_info:
         await mock_bsblan_circuit.thermostat(circuit=2)
-    assert str(exc_info.value) == MULTI_PARAMETER_ERROR_MSG
+    assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
 
 
 # --- Temperature range initialization tests ---

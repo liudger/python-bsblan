@@ -10,8 +10,8 @@ import pytest
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_VERSION_ERROR_MSG,
     API_VERSIONS,
+    ErrorMsg,
 )
 from bsblan.exceptions import BSBLANError
 
@@ -23,7 +23,7 @@ async def test_initialize_api_data_no_api_version() -> None:
     bsblan = BSBLAN(config)
 
     # API version is None by default
-    with pytest.raises(BSBLANError, match=API_VERSION_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
         await bsblan._initialize_api_data()
 
 

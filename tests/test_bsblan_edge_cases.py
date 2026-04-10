@@ -9,7 +9,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig
-from bsblan.constants import API_DATA_NOT_INITIALIZED_ERROR_MSG
+from bsblan.constants import ErrorMsg
 from bsblan.exceptions import BSBLANConnectionError, BSBLANError
 
 
@@ -137,5 +137,5 @@ async def test_initialize_api_data_none_after_init(monkeypatch: Any) -> None:
 
     monkeypatch.setattr(BSBLAN, "__setattr__", mock_setattr)
 
-    with pytest.raises(BSBLANError, match=API_DATA_NOT_INITIALIZED_ERROR_MSG):
+    with pytest.raises(BSBLANError, match=ErrorMsg.API_DATA_NOT_INITIALIZED):
         await bsblan._initialize_api_data()
