@@ -9,23 +9,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig
-from bsblan.constants import ErrorMsg
 from bsblan.exceptions import BSBLANConnectionError, BSBLANError
-
-
-@pytest.mark.asyncio
-async def test_initialize_api_data_edge_case() -> None:
-    """Test _initialize_api_data when API data is None after version setting."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Force API version to be set but data to be None
-    bsblan._api_version = "v3"
-    bsblan._api_data = None
-
-    # This should trigger the defensive check in _initialize_api_data
-    api_data = await bsblan._initialize_api_data()
-    assert api_data is not None
 
 
 @pytest.mark.asyncio
@@ -107,35 +91,3 @@ def test_bsblan_config_initialization_edge_cases() -> None:
     assert bsblan.session is None
     assert bsblan._initialized is False
     assert len(bsblan._hot_water_param_cache) == 0
-
-
-@pytest.mark.asyncio
-async def test_initialize_api_data_none_after_init(monkeypatch: Any) -> None:
-    """Test _initialize_api_data raises error when api_data remains None.
-
-    This covers the defensive check at line 391 in bsblan.py.
-    """
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Set API version so we pass the first check
-    bsblan._api_version = "v3"
-
-    # Monkeypatch dict comprehension to return None (simulating failure)
-    original_items = dict.items
-
-    def mock_items(self: dict[str, Any]) -> Any:
-        # Return empty to prevent assignment
-        return original_items(self)
-
-    # Force _api_data to stay None by patching the assignment
-    def mock_setattr(obj: Any, name: str, value: Any) -> None:
-        if name == "_api_data":
-            object.__setattr__(obj, name, None)
-        else:
-            object.__setattr__(obj, name, value)
-
-    monkeypatch.setattr(BSBLAN, "__setattr__", mock_setattr)
-
-    with pytest.raises(BSBLANError, match=ErrorMsg.API_DATA_NOT_INITIALIZED):
-        await bsblan._initialize_api_data()

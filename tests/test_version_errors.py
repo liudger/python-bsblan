@@ -85,14 +85,14 @@ async def test_fetch_firmware_version() -> None:
 
 
 @pytest.mark.asyncio
-async def test_initialize_api_validator_no_api_version() -> None:
-    """Test initialize API validator with no API version set."""
+async def test_setup_api_validator_no_api_version() -> None:
+    """Test setup API validator with no API version set."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
     # API version is None by default
     with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
-        await bsblan._initialize_api_validator()
+        await bsblan._setup_api_validator()
 
 
 @pytest.mark.asyncio
