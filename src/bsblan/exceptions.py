@@ -26,15 +26,14 @@ class BSBLANConnectionError(BSBLANError):
     message_timeout: str = "Timeout occurred while connecting to BSBLAN device."
     message_error: str = "Error occurred while connecting to BSBLAN device."
 
-    def __init__(self, response: str | None = None) -> None:
+    def __init__(self, message: str | None = None) -> None:
         """Initialize a new instance of the BSBLANConnectionError class.
 
         Args:
-            response: Optional response message.
+            message: Optional error message.
 
         """
-        self.response = response
-        super().__init__(self.message)
+        super().__init__(message)
 
 
 class BSBLANVersionError(BSBLANError):
