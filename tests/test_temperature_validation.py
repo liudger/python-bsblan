@@ -9,26 +9,25 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_VERSIONS, APIConfig, ErrorMsg
+from bsblan.constants import API_VERSIONS, APIConfig
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
 
 @pytest.mark.asyncio
 async def test_validate_target_temperature_no_range() -> None:
-    """Test validating target temperature with temperature range not initialized."""
+    """Test validating target temperature when device has no min/max params."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Mock _initialize_temperature_range to do nothing (simulate failure)
+    # Mock _initialize_temperature_range to do nothing (simulate no min/max)
     async def mock_init_temp_range(circuit: int = 1) -> None:
         pass
 
     bsblan._initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
 
-    # Temperature range is not initialized by default
-    with pytest.raises(BSBLANError, match=ErrorMsg.TEMPERATURE_RANGE):
-        await bsblan._validate_target_temperature("22.0")
+    # Should pass through without error when min/max are not available
+    await bsblan._validate_target_temperature("22.0")
 
 
 @pytest.mark.asyncio

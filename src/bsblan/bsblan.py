@@ -1201,23 +1201,28 @@ class BSBLAN:
         """Validate the target temperature.
 
         This method lazy-loads the temperature range if not already initialized.
+        If the device does not provide min/max temperature parameters,
+        only validates that the value is a valid float.
 
         Args:
             target_temperature (str): The target temperature to validate.
             circuit: The heating circuit number (1 or 2).
 
         Raises:
-            BSBLANError: If the temperature range cannot be initialized.
             BSBLANInvalidParameterError: If the target temperature is invalid.
 
         """
+        # Validate it's a valid float first
+        try:
+            temp = float(target_temperature)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(target_temperature) from err
+
+        # Try to load temperature range for bounds checking
         if circuit == 1:
             # HC1 uses legacy fields for backwards compatibility
             if self._min_temp is None or self._max_temp is None:
                 await self._initialize_temperature_range(circuit)
-
-            if self._min_temp is None or self._max_temp is None:
-                raise BSBLANError(ErrorMsg.TEMPERATURE_RANGE)
 
             min_temp = self._min_temp
             max_temp = self._max_temp
@@ -1230,15 +1235,12 @@ class BSBLAN:
             min_temp = temp_range.get("min")
             max_temp = temp_range.get("max")
 
-            if min_temp is None or max_temp is None:
-                raise BSBLANError(ErrorMsg.TEMPERATURE_RANGE)
+        # Skip range validation if device doesn't provide min/max
+        if min_temp is None or max_temp is None:
+            return
 
-        try:
-            temp = float(target_temperature)
-            if not (min_temp <= temp <= max_temp):
-                raise BSBLANInvalidParameterError(target_temperature)
-        except ValueError as err:
-            raise BSBLANInvalidParameterError(target_temperature) from err
+        if not (min_temp <= temp <= max_temp):
+            raise BSBLANInvalidParameterError(target_temperature)
 
     def _validate_hvac_mode(self, hvac_mode: int) -> None:
         """Validate the HVAC mode.
