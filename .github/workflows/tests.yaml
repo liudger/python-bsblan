@@ -43,7 +43,7 @@ jobs:
       - name: 🚀 Run pytest
         run: uv run pytest --cov=bsblan tests
       - name: ⬆️ Upload coverage artifact
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: coverage-${{ matrix.python }}
           include-hidden-files: true
