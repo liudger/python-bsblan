@@ -345,7 +345,10 @@ async def test_thermostat_circuit2_no_temp_range(
         target_temperature="20",
         circuit=2,
     )
-    mock_bsblan_circuit._request.assert_awaited_once()
+    mock_bsblan_circuit._request.assert_awaited_once_with(
+        base_path="/JS",
+        data={"Parameter": "1010", "Value": "20", "Type": "1"},
+    )
 
 
 # --- Validation tests ---
