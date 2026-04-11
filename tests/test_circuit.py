@@ -332,7 +332,7 @@ async def test_thermostat_circuit2_invalid_temperature(
 async def test_thermostat_circuit2_no_temp_range(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
-    """Test error when HC2 temp range not available."""
+    """Test thermostat passes through when HC2 temp range not available."""
     # Set HC2 as initialized but with None range
     mock_bsblan_circuit._circuit_temp_ranges[2] = {
         "min": None,
@@ -340,11 +340,13 @@ async def test_thermostat_circuit2_no_temp_range(
     }
     mock_bsblan_circuit._circuit_temp_initialized.add(2)
 
-    with pytest.raises(BSBLANError, match="Temperature range"):
-        await mock_bsblan_circuit.thermostat(
-            target_temperature="20",
-            circuit=2,
-        )
+    # Should pass through without range validation when min/max are None
+    mock_bsblan_circuit._request = AsyncMock(return_value={"status": "success"})
+    await mock_bsblan_circuit.thermostat(
+        target_temperature="20",
+        circuit=2,
+    )
+    mock_bsblan_circuit._request.assert_awaited_once()
 
 
 # --- Validation tests ---
