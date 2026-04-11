@@ -37,8 +37,8 @@ async def test_validate_target_temperature_invalid_value() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._min_temp = 10.0
-    bsblan._max_temp = 30.0
+    bsblan._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
+    bsblan._circuit_temp_initialized.add(1)
 
     # Test with non-numeric value
     with pytest.raises(BSBLANInvalidParameterError):
@@ -52,8 +52,8 @@ async def test_validate_target_temperature_out_of_range() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._min_temp = 10.0
-    bsblan._max_temp = 30.0
+    bsblan._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
+    bsblan._circuit_temp_initialized.add(1)
 
     # Test with value below minimum
     with pytest.raises(BSBLANInvalidParameterError):
@@ -71,8 +71,8 @@ async def test_validate_target_temperature_valid() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._min_temp = 10.0
-    bsblan._max_temp = 30.0
+    bsblan._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
+    bsblan._circuit_temp_initialized.add(1)
 
     # Test with valid value (should not raise exception)
     await bsblan._validate_target_temperature("22.0")
@@ -108,7 +108,8 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         await client._initialize_temperature_range()
 
         # min_temp should remain None
-        assert client._min_temp is None
+        temp_range = client._circuit_temp_ranges.get(1, {})
+        assert temp_range.get("min") is None
 
 
 @pytest.mark.asyncio
@@ -141,7 +142,8 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         await client._initialize_temperature_range()
 
         # max_temp should remain None
-        assert client._max_temp is None
+        temp_range = client._circuit_temp_ranges.get(1, {})
+        assert temp_range.get("max") is None
 
 
 @pytest.mark.asyncio
@@ -171,5 +173,6 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
         await client._initialize_temperature_range()
 
         # Both should remain None
-        assert client._min_temp is None
-        assert client._max_temp is None
+        temp_range = client._circuit_temp_ranges.get(1, {})
+        assert temp_range.get("min") is None
+        assert temp_range.get("max") is None

@@ -96,14 +96,11 @@ class BSBLAN:
     _close_session: bool = False
     _firmware_version: str | None = None
     _api_version: str | None = None
-    _min_temp: float | None = None
-    _max_temp: float | None = None
-    _temperature_range_initialized: bool = False
     _api_data: APIConfig | None = None
     _initialized: bool = False
     _api_validator: APIValidator = field(init=False)
     _temperature_unit: str = "°C"
-    # Per-circuit temperature ranges: circuit_number -> (min, max, initialized)
+    # Per-circuit temperature ranges: circuit_number -> {min, max}
     _circuit_temp_ranges: dict[int, dict[str, float | None]] = field(
         default_factory=dict,
     )
@@ -345,7 +342,7 @@ class BSBLAN:
                 return
 
             # Request only these specific parameters from the device
-            params = await self._extract_params_summary(group_params)
+            params = self._extract_params_summary(group_params)
             response_data = await self._request(
                 params={"Parameter": params["string_par"]}
             )
@@ -385,39 +382,6 @@ class BSBLAN:
                 len(group_params),
                 len(params_to_remove),
             )
-
-    async def _initialize_api_validator(self) -> None:
-        """Initialize and validate API data against device capabilities.
-
-        DEPRECATED: This method validates all sections upfront.
-        Use _setup_api_validator() + _ensure_section_validated() for lazy loading.
-        This method is kept for backwards compatibility.
-        """
-        if self._api_version is None:
-            raise BSBLANError(ErrorMsg.API_VERSION)
-
-        # Initialize API data if not already done
-        if self._api_data is None:
-            self._api_data = self._copy_api_config()
-
-        # Initialize the API validator
-        self._api_validator = APIValidator(self._api_data)
-
-        # Perform initial validation of each section (eager loading)
-        sections: list[SectionLiteral] = [
-            "heating",
-            "sensor",
-            "staticValues",
-            "device",
-            "hot_water",
-        ]
-        for section in sections:
-            response_data = await self._validate_api_section(section)
-
-            # Extract temperature unit from heating section validation
-            # (parameter 710 - target_temperature is always in heating section)
-            if section == "heating" and response_data:
-                self._extract_temperature_unit_from_response(response_data)
 
     async def _validate_api_section(
         self, section: SectionLiteral, include: list[str] | None = None
@@ -466,7 +430,7 @@ class BSBLAN:
 
         try:
             # Request data from device for validation
-            params = await self._extract_params_summary(section_data)
+            params = self._extract_params_summary(section_data)
             response_data = await self._request(
                 params={"Parameter": params["string_par"]}
             )
@@ -635,22 +599,12 @@ class BSBLAN:
         from the response (parameter 710), so no extra API call is needed here.
 
         """
-        if circuit == 1 and self._temperature_range_initialized:
-            return
-        if circuit != 1 and circuit in self._circuit_temp_initialized:
+        if circuit in self._circuit_temp_initialized:
             return
 
         temp_range = await self._fetch_temperature_range(circuit)
-
-        if circuit == 1:
-            # HC1 uses legacy fields for backwards compatibility
-            self._min_temp = temp_range["min"]
-            self._max_temp = temp_range["max"]
-            self._temperature_range_initialized = True
-        else:
-            # HC2 uses per-circuit storage
-            self._circuit_temp_ranges[circuit] = temp_range
-            self._circuit_temp_initialized.add(circuit)
+        self._circuit_temp_ranges[circuit] = temp_range
+        self._circuit_temp_initialized.add(circuit)
 
     def _validate_circuit(self, circuit: int) -> None:
         """Validate the circuit number.
@@ -679,23 +633,6 @@ class BSBLAN:
 
         """
         return self._temperature_unit
-
-    async def _initialize_api_data(self) -> APIConfig:
-        """Initialize and cache the API data.
-
-        Returns:
-            APIConfig: The API configuration data.
-
-        Raises:
-            BSBLANError: If the API version or data is not initialized.
-
-        """
-        if self._api_data is None:
-            self._api_data = self._copy_api_config()
-            logger.debug("API data initialized for version: %s", self._api_version)
-        if self._api_data is None:
-            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
-        return self._api_data
 
     def _copy_api_config(self) -> APIConfig:
         """Create a copy of the API configuration for the current version.
@@ -900,7 +837,7 @@ class BSBLAN:
         if sum(param is not None for param in params) != 1:
             raise BSBLANError(error_msg)
 
-    async def _extract_params_summary(self, params: dict[Any, Any]) -> dict[Any, Any]:
+    def _extract_params_summary(self, params: dict[Any, Any]) -> dict[Any, Any]:
         """Get the parameters info from BSBLAN device.
 
         Args:
@@ -961,7 +898,7 @@ class BSBLAN:
             if not section_params:
                 raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
 
-        params = await self._extract_params_summary(section_params)
+        params = self._extract_params_summary(section_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return model_class.model_validate(data)
@@ -1219,21 +1156,12 @@ class BSBLAN:
             raise BSBLANInvalidParameterError(target_temperature) from err
 
         # Try to load temperature range for bounds checking
-        if circuit == 1:
-            # HC1 uses legacy fields for backwards compatibility
-            if self._min_temp is None or self._max_temp is None:
-                await self._initialize_temperature_range(circuit)
+        if circuit not in self._circuit_temp_initialized:
+            await self._initialize_temperature_range(circuit)
 
-            min_temp = self._min_temp
-            max_temp = self._max_temp
-        else:
-            # HC2 uses per-circuit storage
-            if circuit not in self._circuit_temp_initialized:
-                await self._initialize_temperature_range(circuit)
-
-            temp_range = self._circuit_temp_ranges.get(circuit, {})
-            min_temp = temp_range.get("min")
-            max_temp = temp_range.get("max")
+        temp_range = self._circuit_temp_ranges.get(circuit, {})
+        min_temp = temp_range.get("min")
+        max_temp = temp_range.get("max")
 
         # Skip range validation if device doesn't provide min/max
         if min_temp is None or max_temp is None:
@@ -1337,7 +1265,7 @@ class BSBLAN:
         if not filtered_params:
             raise BSBLANError(error_msg)
 
-        params = await self._extract_params_summary(filtered_params)
+        params = self._extract_params_summary(filtered_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
         return model_class.model_validate(data)

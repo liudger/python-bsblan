@@ -20,74 +20,33 @@ from bsblan.exceptions import BSBLANError
 
 
 @pytest.mark.asyncio
-async def test_initialize_api_data_v1(aresponses: ResponsesMockServer) -> None:
-    """Test initialization of API data with v1 version."""
-    # Mock the device config endpoint for v1
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            text=json.dumps(
-                {
-                    "Brötje": {
-                        "5870": "Some Parameter",
-                    }
-                }
-            ),
-        ),
-    )
-
+async def test_copy_api_config_v1() -> None:
+    """Test _copy_api_config with v1 version."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v1"
 
-        await bsblan._initialize_api_data()
+        api_data = bsblan._copy_api_config()
 
-        # Verify API data was initialized
-        assert bsblan._api_data is not None
+        # Verify API data was created
+        assert api_data is not None
 
 
 @pytest.mark.asyncio
-async def test_initialize_api_data_v3(aresponses: ResponsesMockServer) -> None:
-    """Test initialization of API data with v3 version."""
-    # Mock the device info endpoint for v3
-    aresponses.add(
-        "example.com",
-        "/JQ",
-        "POST",
-        aresponses.Response(
-            status=200,
-            headers={"Content-Type": "application/json"},
-            text=json.dumps(
-                {
-                    "knownDevices": {
-                        "0": {
-                            "device": "Test Device",
-                            "family": "123",
-                            "type": "456",
-                            "var": "789",
-                        }
-                    }
-                }
-            ),
-        ),
-    )
-
+async def test_copy_api_config_v3() -> None:
+    """Test _copy_api_config with v3 version."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
 
-        await bsblan._initialize_api_data()
+        api_data = bsblan._copy_api_config()
 
-        # Verify API data was initialized
-        assert bsblan._api_data is not None
+        # Verify API data was created
+        assert api_data is not None
 
 
 @pytest.mark.asyncio
-async def test_api_version_error() -> None:
+async def test_copy_api_config_no_version() -> None:
     """Test error when API version is not set."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
@@ -96,7 +55,7 @@ async def test_api_version_error() -> None:
         bsblan._api_version = None
 
         with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
-            await bsblan._initialize_api_data()
+            bsblan._copy_api_config()
 
 
 @pytest.mark.asyncio
@@ -201,41 +160,16 @@ async def test_initialize_with_session(aresponses: ResponsesMockServer) -> None:
 
 
 @pytest.mark.asyncio
-async def test_initialize_api_validator() -> None:
-    """Test initialize_api_validator method."""
+async def test_setup_api_validator() -> None:
+    """Test _setup_api_validator method."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
-        bsblan._api_data = {
-            "heating": {},
-            "sensor": {},
-            "staticValues": {},
-            "device": {},
-            "hot_water": {},
-            "heating_circuit2": {},
-            "staticValues_circuit2": {},
-        }
 
-        # Create a coroutine mock for _validate_api_section that returns response data
-        async def mock_validate_section(section: str) -> dict[str, Any]:
-            # Return mock response for heating to trigger temperature extraction
-            if section == "heating":
-                return {
-                    "710": {
-                        "name": "Target Temperature",
-                        "value": "20.0",
-                        "unit": "°C",
-                    }
-                }
-            return {}
-
-        bsblan._validate_api_section = mock_validate_section  # type: ignore[method-assign]
-
-        await bsblan._initialize_api_validator()
+        await bsblan._setup_api_validator()
 
         assert bsblan._api_validator is not None
-        # Verify temperature unit was extracted from heating section
-        assert bsblan._temperature_unit == "°C"
+        assert bsblan._api_data is not None
 
 
 @pytest.mark.asyncio

@@ -41,9 +41,9 @@ async def test_initialize_temperature_range_celsius() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._min_temp == 10.0
-        assert bsblan._max_temp == 30.0
-        assert bsblan._temperature_range_initialized is True
+        assert bsblan._circuit_temp_ranges[1]["min"] == 10.0
+        assert bsblan._circuit_temp_ranges[1]["max"] == 30.0
+        assert 1 in bsblan._circuit_temp_initialized
 
 
 @pytest.mark.asyncio
@@ -63,9 +63,9 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._min_temp == 50.0
-        assert bsblan._max_temp == 86.0
-        assert bsblan._temperature_range_initialized is True
+        assert bsblan._circuit_temp_ranges[1]["min"] == 50.0
+        assert bsblan._circuit_temp_ranges[1]["max"] == 86.0
+        assert 1 in bsblan._circuit_temp_initialized
 
 
 @pytest.mark.asyncio
@@ -92,9 +92,9 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._min_temp == 10.0
-        assert bsblan._max_temp == 30.0
-        assert bsblan._temperature_range_initialized is True
+        assert bsblan._circuit_temp_ranges[1]["min"] == 10.0
+        assert bsblan._circuit_temp_ranges[1]["max"] == 30.0
+        assert 1 in bsblan._circuit_temp_initialized
 
 
 @pytest.mark.asyncio

@@ -174,7 +174,7 @@ async def test_validate_api_section_validation_error(
 
         try:
             # _api_validator is already set on bsblan
-            async def mock_extract_params(*_args: Any) -> dict[str, Any]:
+            def mock_extract_params(*_args: Any) -> dict[str, Any]:
                 # Not using the parameters
                 return {"string_par": "5870", "list": ["Device Parameter"]}
 

@@ -36,9 +36,8 @@ async def mock_bsblan_circuit() -> AsyncGenerator[BSBLAN, None]:
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
         bsblan._api_data = build_api_config("v3")
-        bsblan._min_temp = 8.0
-        bsblan._max_temp = 30.0
-        bsblan._temperature_range_initialized = True
+        bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+        bsblan._circuit_temp_initialized.add(1)
 
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("heating")
@@ -464,11 +463,9 @@ async def test_circuit1_temp_range_unchanged(
 
         await bsblan._initialize_temperature_range(circuit=1)
 
-        assert bsblan._temperature_range_initialized
-        assert bsblan._min_temp == 8.0
-        assert bsblan._max_temp == 20.0
-        # HC1 should NOT be in per-circuit storage
-        assert 1 not in bsblan._circuit_temp_initialized
+        assert 1 in bsblan._circuit_temp_initialized
+        assert bsblan._circuit_temp_ranges[1]["min"] == 8.0
+        assert bsblan._circuit_temp_ranges[1]["max"] == 20.0
 
 
 @pytest.mark.asyncio
