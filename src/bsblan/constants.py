@@ -50,6 +50,34 @@ BASE_SENSOR_PARAMS: Final[dict[str, str]] = {
     "3113": "total_energy",
 }
 
+# Extended sensor parameter groups (optional, not polled by default)
+# These are validated lazily on first access, similar to hot water groups.
+
+SENSOR_TEMPERATURE_PARAMS: Final[dict[str, str]] = {
+    "8310": "boiler_temperature",
+    "8314": "return_temperature",
+    "8316": "flue_gas_temperature",
+    "8703": "outside_temperature_damped",
+    "8743": "flow_temperature_hc1",
+    "8773": "flow_temperature_hc2",
+}
+
+SENSOR_DIAGNOSTIC_PARAMS: Final[dict[str, str]] = {
+    "8003": "status_dhw",
+    "8005": "status_boiler",
+    "8323": "fan_speed",
+    "8326": "burner_modulation",
+    "8327": "water_pressure",
+    "8330": "boiler_pump_modulation",
+}
+
+SENSOR_PERFORMANCE_PARAMS: Final[dict[str, str]] = {
+    "8336": "operating_hours_heating",
+    "8337": "burner_starts",
+    "8338": "burner_hours_stage1",
+    "8339": "burner_hours_dhw",
+}
+
 BASE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
     "1600": "operating_mode",
     "1601": "eco_mode_selection",
@@ -655,3 +683,23 @@ class HotWaterParams:
         "567": "sunday",
         "576": "standard_values",
     }
+
+
+# Extended Sensor Parameter Groups
+class SensorParams:
+    """Extended sensor parameter group constants for BSBLAN.
+
+    These are optional diagnostic/performance parameters that are
+    not polled by default. Users can opt-in to fetch these via
+    dedicated methods (sensor_temperature, sensor_diagnostic,
+    sensor_performance).
+    """
+
+    # Temperature sensors (flow, return, flue gas, etc.)
+    TEMPERATURE: Final[set[str]] = set(SENSOR_TEMPERATURE_PARAMS.keys())
+
+    # Diagnostic sensors (modulation, pressure, fan speed, etc.)
+    DIAGNOSTIC: Final[set[str]] = set(SENSOR_DIAGNOSTIC_PARAMS.keys())
+
+    # Performance counters (operating hours, burner starts, etc.)
+    PERFORMANCE: Final[set[str]] = set(SENSOR_PERFORMANCE_PARAMS.keys())

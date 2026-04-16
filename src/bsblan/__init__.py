@@ -6,6 +6,7 @@ from .constants import (
     UNIT_STATE_CLASS_MAP,
     HeatingCircuitStatus,
     HVACActionCategory,
+    SensorParams,
     get_hvac_action_category,
 )
 from .exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
@@ -22,6 +23,9 @@ from .models import (
     HotWaterState,
     Info,
     Sensor,
+    SensorDiagnostic,
+    SensorPerformance,
+    SensorTemperature,
     SetHotWaterParam,
     State,
     StaticState,
@@ -50,6 +54,10 @@ __all__ = [
     "HotWaterState",
     "Info",
     "Sensor",
+    "SensorDiagnostic",
+    "SensorParams",
+    "SensorPerformance",
+    "SensorTemperature",
     "SetHotWaterParam",
     "State",
     "StaticState",

@@ -471,6 +471,49 @@ class Sensor(BaseModel):
     total_energy: EntityInfo[int] | None = None
 
 
+class SensorTemperature(BaseModel):
+    """Extended temperature sensor readings (optional, not polled by default).
+
+    Contains flow, return, boiler and flue gas temperatures for detailed
+    system monitoring.
+    """
+
+    boiler_temperature: EntityInfo[float] | None = None
+    return_temperature: EntityInfo[float] | None = None
+    flue_gas_temperature: EntityInfo[float] | None = None
+    outside_temperature_damped: EntityInfo[float] | None = None
+    flow_temperature_hc1: EntityInfo[float] | None = None
+    flow_temperature_hc2: EntityInfo[float] | None = None
+
+
+class SensorDiagnostic(BaseModel):
+    """Diagnostic sensor readings (optional, not polled by default).
+
+    Contains burner modulation, water pressure, fan speed and status
+    information for system health monitoring.
+    """
+
+    status_dhw: EntityInfo[int] | None = None
+    status_boiler: EntityInfo[int] | None = None
+    fan_speed: EntityInfo[float] | None = None
+    burner_modulation: EntityInfo[float] | None = None
+    water_pressure: EntityInfo[float] | None = None
+    boiler_pump_modulation: EntityInfo[float] | None = None
+
+
+class SensorPerformance(BaseModel):
+    """Performance counter readings (optional, not polled by default).
+
+    Contains operating hours, burner starts and runtime counters
+    for long-term performance tracking.
+    """
+
+    operating_hours_heating: EntityInfo[float] | None = None
+    burner_starts: EntityInfo[float] | None = None
+    burner_hours_stage1: EntityInfo[float] | None = None
+    burner_hours_dhw: EntityInfo[float] | None = None
+
+
 class HotWaterState(BaseModel):
     """Essential hot water state information (READ from device).
 

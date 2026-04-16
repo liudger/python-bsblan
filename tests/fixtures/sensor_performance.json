@@ -1,0 +1,38 @@
+{
+  "8336": {
+    "name": "Operating hours heating",
+    "error": 0,
+    "value": "12450",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "h"
+  },
+  "8337": {
+    "name": "Burner starts",
+    "error": 0,
+    "value": "8523",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": ""
+  },
+  "8338": {
+    "name": "Burner hours stage 1",
+    "error": 0,
+    "value": "9870",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "h"
+  },
+  "8339": {
+    "name": "Burner hours DHW",
+    "error": 0,
+    "value": "3240",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "h"
+  }
+}

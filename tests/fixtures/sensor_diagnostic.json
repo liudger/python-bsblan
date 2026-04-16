@@ -1,0 +1,56 @@
+{
+  "8003": {
+    "name": "Status DHW",
+    "error": 0,
+    "value": "118",
+    "desc": "Heating",
+    "dataType": 1,
+    "readonly": 1,
+    "unit": ""
+  },
+  "8005": {
+    "name": "Status boiler",
+    "error": 0,
+    "value": "114",
+    "desc": "Heating comfort",
+    "dataType": 1,
+    "readonly": 1,
+    "unit": ""
+  },
+  "8323": {
+    "name": "Fan speed",
+    "error": 0,
+    "value": "2850",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "Hz"
+  },
+  "8326": {
+    "name": "Burner modulation",
+    "error": 0,
+    "value": "72.5",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "%"
+  },
+  "8327": {
+    "name": "Water pressure",
+    "error": 0,
+    "value": "1.8",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "bar"
+  },
+  "8330": {
+    "name": "Boiler pump modulation",
+    "error": 0,
+    "value": "85.0",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "%"
+  }
+}

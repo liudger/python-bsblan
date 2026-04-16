@@ -19,6 +19,9 @@ from yarl import URL
 
 from .constants import (
     API_VERSIONS,
+    SENSOR_DIAGNOSTIC_PARAMS,
+    SENSOR_PERFORMANCE_PARAMS,
+    SENSOR_TEMPERATURE_PARAMS,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -43,6 +46,9 @@ from .models import (
     HotWaterState,
     Info,
     Sensor,
+    SensorDiagnostic,
+    SensorPerformance,
+    SensorTemperature,
     SetHotWaterParam,
     State,
     StaticState,
@@ -67,6 +73,11 @@ SectionLiteral = Literal[
 # TypeVar for hot water data models
 HotWaterDataT = TypeVar(
     "HotWaterDataT", HotWaterState, HotWaterConfig, HotWaterSchedule
+)
+
+# TypeVar for extended sensor data models
+SensorExtDataT = TypeVar(
+    "SensorExtDataT", SensorTemperature, SensorDiagnostic, SensorPerformance
 )
 
 # TypeVar for section data models
@@ -108,9 +119,13 @@ class BSBLAN:
     _hot_water_param_cache: dict[str, str] = field(default_factory=dict)
     # Track which hot water param groups have been validated
     _validated_hot_water_groups: set[str] = field(default_factory=set)
+    # Extended sensor param cache and group tracking (like hot water)
+    _sensor_param_cache: dict[str, str] = field(default_factory=dict)
+    _validated_sensor_groups: set[str] = field(default_factory=set)
     # Locks to prevent concurrent validation of the same section/group
     _section_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
     _hot_water_group_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
+    _sensor_group_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -508,6 +523,16 @@ class BSBLAN:
         """
         self._hot_water_param_cache = params.copy()
         logger.debug("Manually set cache with %d hot water parameters", len(params))
+
+    def set_sensor_cache(self, params: dict[str, str]) -> None:
+        """Set the sensor parameter cache manually (for testing).
+
+        Args:
+            params: Dictionary of parameter_id -> parameter_name mappings
+
+        """
+        self._sensor_param_cache = params.copy()
+        logger.debug("Manually set cache with %d sensor parameters", len(params))
 
     async def _fetch_firmware_version(self) -> None:
         """Fetch the firmware version if not already available."""
@@ -959,6 +984,94 @@ class BSBLAN:
         """
         return await self._fetch_section_data("sensor", Sensor, include)
 
+    async def sensor_temperature(
+        self, include: list[str] | None = None
+    ) -> SensorTemperature:
+        """Get extended temperature sensor readings.
+
+        Optional diagnostic sensors not polled by default. Returns flow,
+        return, boiler and flue gas temperatures for detailed monitoring.
+
+        Uses granular lazy loading - validates only the temperature
+        sensor params on first access.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all temperature sensor parameters. Valid names:
+                boiler_temperature, return_temperature, flue_gas_temperature,
+                outside_temperature_damped, flow_temperature_hc1,
+                flow_temperature_hc2.
+
+        Returns:
+            SensorTemperature: Extended temperature sensor readings.
+
+        """
+        return await self._fetch_sensor_data(
+            group_params=SENSOR_TEMPERATURE_PARAMS,
+            model_class=SensorTemperature,
+            error_msg="No temperature sensor parameters available",
+            group_name="temperature",
+            include=include,
+        )
+
+    async def sensor_diagnostic(
+        self, include: list[str] | None = None
+    ) -> SensorDiagnostic:
+        """Get diagnostic sensor readings.
+
+        Optional diagnostic sensors not polled by default. Returns burner
+        modulation, water pressure, fan speed and status information.
+
+        Uses granular lazy loading - validates only the diagnostic
+        sensor params on first access.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all diagnostic sensor parameters. Valid names:
+                status_dhw, status_boiler, fan_speed, burner_modulation,
+                water_pressure, boiler_pump_modulation.
+
+        Returns:
+            SensorDiagnostic: Diagnostic sensor readings.
+
+        """
+        return await self._fetch_sensor_data(
+            group_params=SENSOR_DIAGNOSTIC_PARAMS,
+            model_class=SensorDiagnostic,
+            error_msg="No diagnostic sensor parameters available",
+            group_name="diagnostic",
+            include=include,
+        )
+
+    async def sensor_performance(
+        self, include: list[str] | None = None
+    ) -> SensorPerformance:
+        """Get performance counter readings.
+
+        Optional performance sensors not polled by default. Returns
+        operating hours, burner starts and runtime counters.
+
+        Uses granular lazy loading - validates only the performance
+        sensor params on first access.
+
+        Args:
+            include: Optional list of parameter names to fetch. If None,
+                fetches all performance sensor parameters. Valid names:
+                operating_hours_heating, burner_starts, burner_hours_stage1,
+                burner_hours_dhw.
+
+        Returns:
+            SensorPerformance: Performance counter readings.
+
+        """
+        return await self._fetch_sensor_data(
+            group_params=SENSOR_PERFORMANCE_PARAMS,
+            model_class=SensorPerformance,
+            error_msg="No performance sensor parameters available",
+            group_name="performance",
+            include=include,
+        )
+
     async def static_values(
         self,
         include: list[str] | None = None,
@@ -1247,6 +1360,150 @@ class BSBLAN:
         filtered_params = {
             param_id: param_name
             for param_id, param_name in self._hot_water_param_cache.items()
+            if param_id in param_filter
+        }
+
+        # Apply include filter if specified
+        if include is not None:
+            if not include:
+                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
+            filtered_params = {
+                param_id: name
+                for param_id, name in filtered_params.items()
+                if name in include
+            }
+            if not filtered_params:
+                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
+
+        if not filtered_params:
+            raise BSBLANError(error_msg)
+
+        params = self._extract_params_summary(filtered_params)
+        data = await self._request(params={"Parameter": params["string_par"]})
+        data = dict(zip(params["list"], list(data.values()), strict=True))
+        return model_class.model_validate(data)
+
+    async def _ensure_sensor_group_validated(
+        self,
+        group_name: str,
+        group_params: dict[str, str],
+        include: list[str] | None = None,
+    ) -> None:
+        """Validate an extended sensor parameter group (lazy loading).
+
+        Similar to hot water group validation, but works with standalone
+        parameter dicts that are not part of the APIConfig sections.
+
+        Args:
+            group_name: Name of the group (temperature, diagnostic, performance)
+            group_params: Full parameter dict for this group
+            include: Optional list of parameter names to include in validation.
+
+        """
+        # Fast path: skip if already validated (no lock needed)
+        if group_name in self._validated_sensor_groups:
+            return
+
+        # Get or create lock for this group
+        if group_name not in self._sensor_group_locks:
+            self._sensor_group_locks[group_name] = asyncio.Lock()
+
+        async with self._sensor_group_locks[group_name]:
+            # Double-check after acquiring lock
+            if group_name in self._validated_sensor_groups:
+                return
+
+            logger.debug("Lazy loading sensor group: %s", group_name)
+
+            # Apply include filter if specified
+            params_to_validate = dict(group_params)
+            if include is not None:
+                params_to_validate = {
+                    param_id: name
+                    for param_id, name in params_to_validate.items()
+                    if name in include
+                }
+
+            if not params_to_validate:
+                logger.debug(
+                    "No parameters to validate for sensor group %s",
+                    group_name,
+                )
+                self._validated_sensor_groups.add(group_name)
+                return
+
+            # Request these parameters from the device
+            params = self._extract_params_summary(params_to_validate)
+            response_data = await self._request(
+                params={"Parameter": params["string_par"]}
+            )
+
+            # Validate and filter out unsupported params
+            params_to_remove: list[str] = []
+            for param_id, param_name in params_to_validate.items():
+                if param_id not in response_data:
+                    logger.info(
+                        "Sensor param %s (%s) not found in response",
+                        param_id,
+                        param_name,
+                    )
+                    params_to_remove.append(param_id)
+                    continue
+
+                param_data = response_data[param_id]
+                if not param_data or param_data.get("value") in (None, "---"):
+                    logger.info(
+                        "Sensor param %s (%s) returned invalid value: %s",
+                        param_id,
+                        param_name,
+                        param_data.get("value") if param_data else None,
+                    )
+                    params_to_remove.append(param_id)
+
+            # Cache validated params
+            for param_id, param_name in params_to_validate.items():
+                if param_id not in params_to_remove:
+                    self._sensor_param_cache[param_id] = param_name
+
+            self._validated_sensor_groups.add(group_name)
+            logger.debug(
+                "Validated sensor group '%s': %d params, removed %d unsupported",
+                group_name,
+                len(params_to_validate),
+                len(params_to_remove),
+            )
+
+    async def _fetch_sensor_data(
+        self,
+        group_params: dict[str, str],
+        model_class: type[SensorExtDataT],
+        error_msg: str,
+        group_name: str,
+        include: list[str] | None = None,
+    ) -> SensorExtDataT:
+        """Fetch extended sensor data for a specific parameter group.
+
+        Args:
+            group_params: Full parameter dict for this group.
+            model_class: The model type to deserialize the response into.
+            error_msg: Error message if no parameters are available.
+            group_name: Name of the param group for lazy validation tracking.
+            include: Optional list of parameter names to fetch.
+
+        Returns:
+            The populated model instance.
+
+        Raises:
+            BSBLANError: If no parameters are available for the group.
+
+        """
+        await self._ensure_sensor_group_validated(group_name, group_params, include)
+
+        # Use cached validated params filtered to this group
+        param_filter = set(group_params.keys())
+        filtered_params = {
+            param_id: param_name
+            for param_id, param_name in self._sensor_param_cache.items()
             if param_id in param_filter
         }
 

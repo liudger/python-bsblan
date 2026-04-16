@@ -1,0 +1,56 @@
+{
+  "8310": {
+    "name": "Boiler temperature",
+    "error": 0,
+    "value": "62.3",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  },
+  "8314": {
+    "name": "Return temperature",
+    "error": 0,
+    "value": "45.1",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  },
+  "8316": {
+    "name": "Flue gas temperature",
+    "error": 0,
+    "value": "128.5",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  },
+  "8703": {
+    "name": "Outside temp sensor damped",
+    "error": 0,
+    "value": "6.8",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  },
+  "8743": {
+    "name": "Flow temperature HC1",
+    "error": 0,
+    "value": "55.2",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  },
+  "8773": {
+    "name": "Flow temperature HC2",
+    "error": 0,
+    "value": "42.0",
+    "desc": "",
+    "dataType": 0,
+    "readonly": 1,
+    "unit": "&deg;C"
+  }
+}
