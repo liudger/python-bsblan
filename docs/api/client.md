@@ -24,7 +24,6 @@ The main entry point for interacting with BSB-LAN devices.
         - hot_water_schedule
         - set_hot_water
         - set_hot_water_schedule
-        - reset_validation
 
 ## BSBLANConfig
 
