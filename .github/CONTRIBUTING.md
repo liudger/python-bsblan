@@ -35,7 +35,7 @@ All contributions must follow these requirements:
 
 - **Python 3.12+** — use modern Python features and type hints on all functions
 - **Line length** — maximum 88 characters (enforced by Ruff)
-- **Linting** — code must pass Ruff, MyPy, and Pylint checks
+- **Linting** — code must pass Ruff, ty, and Pylint checks
 - **Formatting** — code is formatted with Ruff (based on Black style)
 - **Naming** — use `snake_case` for all parameter names and follow existing
   patterns in the codebase
@@ -49,7 +49,7 @@ Before submitting a pull request, run all pre-commit hooks:
 uv run prek run --all-files
 ```
 
-This runs Ruff (linting + formatting), MyPy (type checking), and Pylint
+This runs Ruff (linting + formatting), ty (type checking), and Pylint
 (code analysis) in one command.
 
 ## Testing requirements

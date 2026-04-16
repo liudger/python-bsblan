@@ -16,13 +16,13 @@ This repository contains the `python-bsblan` library, an asynchronous Python cli
 Always run these commands after making changes:
 
 ```bash
-# Run all prek hooks (ruff, mypy, pylint)
+# Run all prek hooks (ruff, ty, pylint)
 uv run prek run --all-files
 ```
 
 ### Prek Includes
 - **Ruff**: Linting and formatting (88 char line limit)
-- **MyPy**: Static type checking
+- **ty**: Static type checking
 - **Pylint**: Code analysis
 
 ### Coverage Requirements
