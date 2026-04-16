@@ -34,7 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Run Release Drafter
-        uses: release-drafter/release-drafter@v7.2.0
+        # yamllint disable-line rule:line-length
+        uses: release-drafter/release-drafter@a6a982fee9675c45c1765e9fa5308f7d6c3ecbd4 # v7.2.0
         with:
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           prerelease-identifier: ${{ github.event.inputs.prerelease_identifier }}

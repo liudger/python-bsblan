@@ -1,0 +1,12 @@
+---
+rules:
+  dangerous-triggers:
+    ignore:
+      # Safe: only approves PRs, does not checkout or run PR code
+      - auto-approve-renovate.yml
+      # Safe: only reads PR labels, does not checkout or run PR code
+      - pr-labels.yaml
+  bot-conditions:
+    ignore:
+      # Already checks both github.actor and github.actor_id for safety
+      - auto-approve-renovate.yml
