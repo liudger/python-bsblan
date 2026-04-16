@@ -10,6 +10,7 @@
 [![Code Coverage][codecov-shield]][codecov]
 [![Quality Gate Status][sonarcloud-shield]][sonarcloud]
 [![OpenSSF Scorecard][scorecard-shield]][scorecard]
+[![OpenSSF Best Practices][bestpractices-shield]][bestpractices]
 
 [![Documentation][docs-shield]][docs]
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
@@ -181,5 +182,7 @@ SOFTWARE.
 [semver]: http://semver.org/spec/v2.0.0.html
 [scorecard-shield]: https://api.scorecard.dev/projects/github.com/liudger/python-bsblan/badge
 [scorecard]: https://scorecard.dev/viewer/?uri=github.com/liudger/python-bsblan
+[bestpractices-shield]: https://www.bestpractices.dev/projects/12561/badge
+[bestpractices]: https://www.bestpractices.dev/projects/12561
 [sonarcloud-shield]: https://sonarcloud.io/api/project_badges/measure?project=liudger_python-bsblan&metric=alert_status
 [sonarcloud]: https://sonarcloud.io/summary/new_code?id=liudger_python-bsblan
