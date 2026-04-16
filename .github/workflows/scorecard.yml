@@ -24,11 +24,7 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
-    # Scorecard is only relevant on the default branch and for PRs.
-    # This conditional can be removed if disabled.
-    if: >-
-      github.event.repository.default_branch == github.ref_name ||
-      github.event_name == 'pull_request'
+    if: github.event.repository.default_branch == github.ref_name
     permissions:
       # Needed to upload the results to code-scanning dashboard.
       security-events: write
