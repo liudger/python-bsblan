@@ -105,7 +105,9 @@ Create tests in `tests/test_*.py`:
 @pytest.mark.asyncio
 async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
     """Test setting BSBLAN hot water state."""
-    await mock_bsblan.set_hot_water(nominal_setpoint=60.0)
+    await mock_bsblan.set_hot_water(
+        SetHotWaterParam(nominal_setpoint=60.0)
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={"Parameter": "1610", "Value": "60.0", "Type": "1"},

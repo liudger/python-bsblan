@@ -84,8 +84,14 @@ Parameters are identified by numeric IDs and mapped to readable names in `consta
    ```python
    async def set_hot_water(
        self,
-       legionella_function_setpoint: float | None = None,
+       params: SetHotWaterParam,
    ) -> None:
+   ```
+   And add the field to `SetHotWaterParam` in `models.py`:
+   ```python
+   @dataclass
+   class SetHotWaterParam:
+       legionella_function_setpoint: float | None = None
    ```
 
 4. **Add tests in `tests/test_*.py`**
@@ -149,9 +155,11 @@ Each parameter returns an `EntityInfo[T]` (generic `BaseModel`) with:
 
 ### Client Usage
 ```python
-async with BSBLAN(host="192.168.1.100") as client:
+from bsblan import BSBLAN, BSBLANConfig, SetHotWaterParam
+
+async with BSBLAN(BSBLANConfig(host="192.168.1.100")) as client:
     state = await client.state()
-    await client.set_hot_water(nominal_setpoint=55.0)
+    await client.set_hot_water(SetHotWaterParam(nominal_setpoint=55.0))
 ```
 
 ### Lazy Loading Architecture
@@ -199,7 +207,9 @@ This prevents duplicate network requests when concurrent calls access the same s
 @pytest.mark.asyncio
 async def test_set_hot_water(mock_bsblan: BSBLAN) -> None:
     """Test setting BSBLAN hot water state."""
-    await mock_bsblan.set_hot_water(nominal_setpoint=60.0)
+    await mock_bsblan.set_hot_water(
+        SetHotWaterParam(nominal_setpoint=60.0)
+    )
     mock_bsblan._request.assert_awaited_with(
         base_path="/JS",
         data={"Parameter": "1610", "Value": "60.0", "Type": "1"},
