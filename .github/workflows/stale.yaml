@@ -7,14 +7,15 @@ on:
     - cron: "0 8 * * *"
   workflow_dispatch:
 
-permissions:
-  issues: write
-  pull-requests: write
+permissions: read-all
 
 jobs:
   stale:
     name: 🧹 Clean up stale issues and PRs
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - name: 🚀 Run stale
         uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f # v10.2.0

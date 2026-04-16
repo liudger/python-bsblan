@@ -23,15 +23,16 @@ on:
           - alpha
           - rc
 
-permissions:
-  contents: write
-  issues: read
-  pull-requests: read
+permissions: read-all
 
 jobs:
   update_release_draft:
     name: ✏️ Draft release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: read
     steps:
       - name: 🚀 Run Release Drafter
         # yamllint disable-line rule:line-length

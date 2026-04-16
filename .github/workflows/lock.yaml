@@ -7,14 +7,15 @@ on:
     - cron: "0 9 * * *"
   workflow_dispatch:
 
-permissions:
-  issues: write
-  pull-requests: write
+permissions: read-all
 
 jobs:
   lock:
     name: 🔒 Lock closed issues and PRs
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       # yamllint disable-line rule:line-length
       - uses: dessant/lock-threads@f5f995c727ac99a91dec92781a8e34e7c839a65e # v6.0.0
