@@ -9,6 +9,7 @@
 [![Build Status][build-shield]][build]
 [![Code Coverage][codecov-shield]][codecov]
 [![Quality Gate Status][sonarcloud-shield]][sonarcloud]
+[![OpenSSF Scorecard][scorecard-shield]][scorecard]
 
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
@@ -233,5 +234,7 @@ SOFTWARE.
 [releases-shield]: https://img.shields.io/github/v/release/liudger/python-bsblan.svg
 [releases]: https://github.com/liudger/python-bsblan/releases
 [semver]: http://semver.org/spec/v2.0.0.html
+[scorecard-shield]: https://api.scorecard.dev/projects/github.com/liudger/python-bsblan/badge
+[scorecard]: https://scorecard.dev/viewer/?uri=github.com/liudger/python-bsblan
 [sonarcloud-shield]: https://sonarcloud.io/api/project_badges/measure?project=liudger_python-bsblan&metric=alert_status
 [sonarcloud]: https://sonarcloud.io/summary/new_code?id=liudger_python-bsblan
