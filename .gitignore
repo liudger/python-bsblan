@@ -124,5 +124,5 @@ node_modules/
 # Deepcode AI
 .dccache
 
-# MkDocs
+# MkDocs build output
 site/
