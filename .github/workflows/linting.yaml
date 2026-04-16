@@ -65,6 +65,6 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
       - name: 🏗 Install NPM dependencies
-        run: npm install
+        run: npm ci
       - name: 🚀 Run prettier
         run: uv run prek run prettier --all-files
