@@ -67,10 +67,12 @@ This runs Ruff (linting + formatting), ty (type checking), and Pylint
 
 ## Testing requirements
 
-- **Test coverage** — maintain **95%+ total coverage**
-- **Patch coverage** — all new or modified code must have **100% coverage**
-  (CI will fail otherwise)
+- **Test coverage** — aim for **95%+ total coverage**
+- **Patch coverage** — all new or modified code should have **100% coverage**
 - **Framework** — tests use `pytest` with `pytest-asyncio`
+
+Coverage is tracked via [Codecov](https://codecov.io/) and reviewed during
+pull requests. Please ensure your changes include adequate tests.
 
 Run the test suite:
 
