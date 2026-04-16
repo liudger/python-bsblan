@@ -1,0 +1,69 @@
+---
+site_name: python-bsblan
+site_url: https://liudger.github.io/python-bsblan
+site_description: Asynchronous Python client for BSB-LAN devices
+site_author: Willem-Jan van Rootselaar
+repo_url: https://github.com/liudger/python-bsblan
+repo_name: liudger/python-bsblan
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - API Reference:
+      - Client: api/client.md
+      - Models: api/models.md
+      - Exceptions: api/exceptions.md
+      - Constants: api/constants.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - toc:
+      permalink: true
