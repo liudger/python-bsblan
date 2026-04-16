@@ -11,6 +11,7 @@
 [![Quality Gate Status][sonarcloud-shield]][sonarcloud]
 [![OpenSSF Scorecard][scorecard-shield]][scorecard]
 
+[![Documentation][docs-shield]][docs]
 [![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
 Asynchronous Python client for BSBLan.
@@ -21,96 +22,35 @@ This package allows you to control and monitor a BSBLan device
 programmatically. It is mainly created to allow third-party programs to automate
 the behavior of [BSBLan][bsblanmodule].
 
+**[Full documentation](https://liudger.github.io/python-bsblan)**
+
 ## Installation
 
 ```bash
 pip install python-bsblan
 ```
 
-## Usage
+## Quick start
 
 ```python
-# pylint: disable=W0621
-"""Asynchronous Python client for BSBLan."""
-
 import asyncio
-import os
-
-from bsblan import BSBLAN, BSBLANConfig, Device, Info, Sensor, State, StaticState
-
-
-async def print_state(state: State) -> None:
-    """Print the current state of the BSBLan device."""
-    print(f"HVAC Action: {state.hvac_action.desc}")
-    print(f"HVAC Mode: {state.hvac_mode.desc}")
-    print(f"Current Temperature: {state.current_temperature.value}")
-
-
-async def print_sensor(sensor: Sensor) -> None:
-    """Print sensor information from the BSBLan device."""
-    print(f"Outside Temperature: {sensor.outside_temperature.value}")
-
-
-async def print_device_info(device: Device, info: Info) -> None:
-    """Print device and general information."""
-    print(f"Device Name: {device.name}")
-    print(f"Version: {device.version}")
-    print(f"Device Identification: {info.device_identification.value}")
-
-
-async def print_static_state(static_state: StaticState) -> None:
-    """Print static state information."""
-    print(f"Min Temperature: {static_state.min_temp.value}")
-    print(f"Max Temperature: {static_state.max_temp.value}")
-
+from bsblan import BSBLAN, BSBLANConfig
 
 async def main() -> None:
-    """Show example on controlling your BSBLan device.
-
-    Options:
-    - passkey (http://url/"passkey"/) if your device is setup for passkey authentication
-    - username and password if your device is setup for username/password authentication
-
-    """
-    # Create a configuration object
-    config = BSBLANConfig(
-        host="192.0.2.1",
-        passkey=None,
-        username=os.getenv("USERNAME"),  # Compliant
-        password=os.getenv("PASSWORD"),  # Compliant
-    )
-
-    # Initialize BSBLAN with the configuration object
-    async with BSBLAN(config) as bsblan:
-        # Get and print state
-        state: State = await bsblan.state()
-        await print_state(state)
+    config = BSBLANConfig(host="192.168.1.100")
+    async with BSBLAN(config) as client:
+        # Read current state
+        state = await client.state()
+        print(f"Current temperature: {state.current_temperature.value}")
 
         # Set thermostat temperature
-        print("\nSetting temperature to 18°C")
-        await bsblan.thermostat(target_temperature="18")
+        await client.thermostat(target_temperature="21.5")
 
-        # Set HVAC mode (using raw integer: 0=off, 1=auto, 2=eco, 3=heat)
-        print("Setting HVAC mode to heat")
-        await bsblan.thermostat(hvac_mode=3)
-
-        # Get and print sensor information
-        sensor: Sensor = await bsblan.sensor()
-        await print_sensor(sensor)
-
-        # Get and print device and general info
-        device: Device = await bsblan.device()
-        info: Info = await bsblan.info()
-        await print_device_info(device, info)
-
-        # Get and print static state
-        static_state: StaticState = await bsblan.static_values()
-        await print_static_state(static_state)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
 ```
+
+For more examples, including hot water control, multi-circuit support, and
+authentication setup, see the [Getting Started][docs-getting-started] guide.
 
 ## Changelog & Releases
 
@@ -159,12 +99,14 @@ make setup
 A `Makefile` is provided for common development tasks. Run `make help` to
 see all available targets:
 
-| Command         | Description                          |
-|-----------------|--------------------------------------|
-| `make setup`    | Install dev dependencies & git hooks |
-| `make lint`     | Run all pre-commit hooks             |
-| `make test`     | Run tests                            |
-| `make coverage` | Run tests with coverage report       |
+| Command            | Description                          |
+|--------------------|--------------------------------------|
+| `make setup`       | Install dev dependencies & git hooks |
+| `make lint`        | Run all pre-commit hooks             |
+| `make test`        | Run tests                            |
+| `make coverage`    | Run tests with coverage report       |
+| `make docs`        | Build documentation                  |
+| `make docs-serve`  | Serve documentation locally          |
 
 As this repository uses [prek][prek] (a faster, Rust-based drop-in replacement
 for pre-commit), all changes are linted and tested with each commit. You can
@@ -215,6 +157,9 @@ SOFTWARE.
 [bsblanmodule]: https://github.com/fredlcore/bsb_lan
 [build-shield]: https://github.com/liudger/python-bsblan/actions/workflows/tests.yaml/badge.svg
 [build]: https://github.com/liudger/python-bsblan/actions
+[docs]: https://liudger.github.io/python-bsblan
+[docs-getting-started]: https://liudger.github.io/python-bsblan/getting-started/
+[docs-shield]: https://img.shields.io/badge/docs-GitHub%20Pages-blue
 [buymeacoffee-shield]: https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg
 [buymeacoffee]: https://www.buymeacoffee.com/liudger
 [codecov-shield]: https://codecov.io/gh/liudger/python-bsblan/branch/main/graph/badge.svg?token=ypos87GGxv
