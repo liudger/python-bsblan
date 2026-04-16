@@ -8,6 +8,7 @@ help: ## Show this help message
 
 setup: ## Install dev dependencies and git hooks
 	uv sync --dev
+	npm ci
 	uv run prek install
 
 lint: ## Run all pre-commit hooks

@@ -18,16 +18,29 @@ Even better: You could submit a pull request with a fix / new feature!
 
 ## Development setup
 
-This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
+This project uses [uv](https://docs.astral.sh/uv/) for Python dependency
+management and [Node.js](https://nodejs.org/) for Prettier (formatting of
+JSON, Markdown, and YAML files).
+
+### Prerequisites
+
+- **Python 3.12+**
+- **uv** — install via `pip install uv` or see [uv docs](https://docs.astral.sh/uv/getting-started/installation/)
+- **Node.js** (LTS) — required for the Prettier pre-commit hook
+
+### Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/liudger/python-bsblan.git
 cd python-bsblan
 
-# Install dependencies (including dev dependencies)
-uv sync --dev
+# Install all dependencies and git hooks
+make setup
 ```
+
+This runs `uv sync --dev` (Python deps), `npm ci` (Prettier), and
+`uv run prek install` (pre-commit hooks).
 
 ## Coding standards
 
