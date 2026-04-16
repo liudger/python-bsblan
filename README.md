@@ -11,9 +11,7 @@
 [![Quality Gate Status][sonarcloud-shield]][sonarcloud]
 [![OpenSSF Scorecard][scorecard-shield]][scorecard]
 [![OpenSSF Best Practices][bestpractices-shield]][bestpractices]
-
 [![Documentation][docs-shield]][docs]
-[![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
 Asynchronous Python client for BSBLan.
 
@@ -154,6 +152,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+[![Buy me a coffee][buymeacoffee-shield]][buymeacoffee]
 
 [bsblanmodule]: https://github.com/fredlcore/bsb_lan
 [build-shield]: https://github.com/liudger/python-bsblan/actions/workflows/tests.yaml/badge.svg
