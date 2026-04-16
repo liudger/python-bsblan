@@ -9,12 +9,13 @@ on:
       - synchronize
       - reopened
 
-permissions:
-  pull-requests: write
+permissions: read-all
 
 jobs:
   auto-approve:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     if: >-
       github.actor == 'renovate[bot]' &&
       github.actor_id == '29139614' &&
