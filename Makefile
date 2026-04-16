@@ -1,4 +1,4 @@
-.PHONY: setup lint test coverage help
+.PHONY: setup lint test coverage docs docs-serve help
 
 .DEFAULT_GOAL := help
 
@@ -18,3 +18,9 @@ test: ## Run tests
 
 coverage: ## Run tests with coverage report
 	uv run pytest --cov=src/bsblan --cov-report=term-missing
+
+docs: ## Build documentation
+	uv run mkdocs build --strict
+
+docs-serve: ## Serve documentation locally
+	uv run mkdocs serve

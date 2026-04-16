@@ -35,7 +35,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/liudger/python-bsblan"
 Repository = "https://github.com/liudger/python-bsblan"
-Documentation = "https://github.com/liudger/python-bsblan"
+Documentation = "https://liudger.github.io/python-bsblan"
 "Bug Tracker" = "https://github.com/liudger/python-bsblan/issues"
 Changelog = "https://github.com/liudger/python-bsblan/releases"
 
@@ -210,4 +210,8 @@ dev = [
     "vulture==2.16",
     "yamllint==1.38.0",
     "zeroconf>=0.148.0",
+]
+docs = [
+    "mkdocs-material>=9.6",
+    "mkdocstrings[python]>=0.29",
 ]

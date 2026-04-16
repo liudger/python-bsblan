@@ -1,0 +1,33 @@
+# Client
+
+The main entry point for interacting with BSB-LAN devices.
+
+## BSBLAN
+
+::: bsblan.BSBLAN
+    options:
+      show_bases: false
+      members:
+        - __init__
+        - initialize
+        - get_available_circuits
+        - state
+        - sensor
+        - static_values
+        - device
+        - info
+        - time
+        - set_time
+        - thermostat
+        - hot_water_state
+        - hot_water_config
+        - hot_water_schedule
+        - set_hot_water
+        - set_hot_water_schedule
+        - reset_validation
+
+## BSBLANConfig
+
+::: bsblan.BSBLANConfig
+    options:
+      show_bases: false
