@@ -10,8 +10,8 @@ interactions with the project.
 ## Issues and feature requests
 
 You've found a bug in the source code, a mistake in the documentation or maybe
-you'd like a new feature? You can help us by submitting an issue to our
-[GitHub Repository][github]. Before you create an issue, make sure you search
+you'd like a new feature? You can help us by [submitting an issue][issues].
+Before you create an issue, make sure you search
 the archive, maybe your question was already answered.
 
 Even better: You could submit a pull request with a fix / new feature!
@@ -98,6 +98,6 @@ uv run pytest --cov=src/bsblan --cov-report=term-missing
    maintainer, or if you do not have permission to do that, you may request
    the maintainer to merge it for you.
 
-[github]: https://github.com/liudger/python-bsblan/issues
+[issues]: https://github.com/liudger/python-bsblan/issues
 [prs]: https://github.com/liudger/python-bsblan/pulls
 [coc]: https://github.com/liudger/python-bsblan/blob/main/.github/CODE_OF_CONDUCT.md
