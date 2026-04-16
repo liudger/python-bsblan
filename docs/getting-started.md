@@ -66,6 +66,8 @@ asyncio.run(main())
 ## Hot water control
 
 ```python
+from bsblan import SetHotWaterParam
+
 async with BSBLAN(config) as client:
     # Read hot water state
     hw_state = await client.hot_water_state()
@@ -75,7 +77,7 @@ async with BSBLAN(config) as client:
     hw_config = await client.hot_water_config()
 
     # Set hot water temperature
-    await client.set_hot_water(nominal_setpoint=55.0)
+    await client.set_hot_water(SetHotWaterParam(nominal_setpoint=55.0))
 ```
 
 ## Multi-circuit support
