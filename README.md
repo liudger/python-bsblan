@@ -176,7 +176,7 @@ SOFTWARE.
 [uv]: https://docs.astral.sh/uv/
 [uv-install]: https://docs.astral.sh/uv/getting-started/installation/
 [prek]: https://github.com/j178/prek
-[project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-yellow.svg
+[project-stage-shield]: https://img.shields.io/badge/project%20stage-stable-green.svg
 [pypi]: https://pypi.org/project/python-bsblan/
 [python-versions-shield]: https://img.shields.io/pypi/pyversions/python-bsblan
 [releases-shield]: https://img.shields.io/github/v/release/liudger/python-bsblan.svg
