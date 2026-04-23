@@ -26,6 +26,10 @@ Data models for BSB-LAN API responses.
 
 ::: bsblan.Sensor
 
+### HeatingTimeSwitchPrograms
+
+::: bsblan.HeatingTimeSwitchPrograms
+
 ## Hot water
 
 ### HotWaterState
@@ -45,6 +49,10 @@ Data models for BSB-LAN API responses.
 ::: bsblan.SetHotWaterParam
 
 ## Schedules
+
+### HeatingSchedule
+
+::: bsblan.HeatingSchedule
 
 ### DHWSchedule
 
