@@ -141,23 +141,10 @@ class DaySchedule:
 
 
 @dataclass
-class DHWSchedule:
-    """Weekly hot water schedule for setting time programs.
+class WeeklySchedule:
+    """Base weekly schedule with optional day schedules.
 
-    Use this dataclass to set DHW time programs via set_hot_water_schedule().
-    Each day can have up to 3 time slots.
-
-    Example:
-        >>> schedule = DHWSchedule(
-        ...     monday=DaySchedule(slots=[
-        ...         TimeSlot(time(6, 0), time(8, 0)),
-        ...         TimeSlot(time(17, 0), time(21, 0)),
-        ...     ]),
-        ...     tuesday=DaySchedule(slots=[
-        ...         TimeSlot(time(6, 0), time(8, 0)),
-        ...     ])
-        ... )
-        >>> await client.set_hot_water_schedule(schedule)
+    Each day can have up to 3 time slots (validated by DaySchedule).
 
     """
 
@@ -191,41 +178,35 @@ class DHWSchedule:
 
 
 @dataclass
-class HeatingSchedule:
+class DHWSchedule(WeeklySchedule):
+    """Weekly hot water schedule for setting time programs.
+
+    Use this dataclass to set DHW time programs via set_hot_water_schedule().
+    Each day can have up to 3 time slots.
+
+    Example:
+        >>> schedule = DHWSchedule(
+        ...     monday=DaySchedule(slots=[
+        ...         TimeSlot(time(6, 0), time(8, 0)),
+        ...         TimeSlot(time(17, 0), time(21, 0)),
+        ...     ]),
+        ...     tuesday=DaySchedule(slots=[
+        ...         TimeSlot(time(6, 0), time(8, 0)),
+        ...     ])
+        ... )
+        >>> await client.set_hot_water_schedule(schedule)
+
+    """
+
+
+@dataclass
+class HeatingSchedule(WeeklySchedule):
     """Weekly heating schedule for setting time programs.
 
     Use this dataclass to set heating time programs via set_heating_schedule().
     Each day can have up to 3 time slots.
 
     """
-
-    monday: DaySchedule | None = None
-    tuesday: DaySchedule | None = None
-    wednesday: DaySchedule | None = None
-    thursday: DaySchedule | None = None
-    friday: DaySchedule | None = None
-    saturday: DaySchedule | None = None
-    sunday: DaySchedule | None = None
-
-    def has_any_schedule(self) -> bool:
-        """Check if any day has a schedule set.
-
-        Returns:
-            bool: True if at least one day has a schedule.
-
-        """
-        return any(
-            day is not None
-            for day in [
-                self.monday,
-                self.tuesday,
-                self.wednesday,
-                self.thursday,
-                self.friday,
-                self.saturday,
-                self.sunday,
-            ]
-        )
 
 
 @dataclass
