@@ -191,6 +191,44 @@ class DHWSchedule:
 
 
 @dataclass
+class HeatingSchedule:
+    """Weekly heating schedule for setting time programs.
+
+    Use this dataclass to set heating time programs via set_heating_schedule().
+    Each day can have up to 3 time slots.
+
+    """
+
+    monday: DaySchedule | None = None
+    tuesday: DaySchedule | None = None
+    wednesday: DaySchedule | None = None
+    thursday: DaySchedule | None = None
+    friday: DaySchedule | None = None
+    saturday: DaySchedule | None = None
+    sunday: DaySchedule | None = None
+
+    def has_any_schedule(self) -> bool:
+        """Check if any day has a schedule set.
+
+        Returns:
+            bool: True if at least one day has a schedule.
+
+        """
+        return any(
+            day is not None
+            for day in [
+                self.monday,
+                self.tuesday,
+                self.wednesday,
+                self.thursday,
+                self.friday,
+                self.saturday,
+                self.sunday,
+            ]
+        )
+
+
+@dataclass
 class DHWTimeSwitchPrograms:
     """Dataclass for DHW time switch programs."""
 
@@ -552,6 +590,29 @@ class HotWaterSchedule(BaseModel):
     dhw_time_program_sunday: EntityInfo[str | int] | None = None
     # YESNO enum: resets all daily schedules to factory defaults when Yes (1)
     dhw_time_program_standard_values: EntityInfo[int] | None = None
+
+
+class HeatingTimeSwitchPrograms(BaseModel):
+    """Heating time switch programs for a specific heating circuit (READ).
+
+    The daily time programs (Monday-Sunday) use BSB-LAN dataType 9
+    (TIMEPROG) and return schedule strings like
+    ``"13:00-15:00 ##:##-##:## ##:##-##:##"`` where ``##:##`` marks
+    unused time slots.
+
+    ``standard_values`` is a YESNO enum (0=No, 1=Yes) that resets
+    all daily schedules back to the controller's factory defaults.
+
+    """
+
+    monday: EntityInfo[str | int] | None = None
+    tuesday: EntityInfo[str | int] | None = None
+    wednesday: EntityInfo[str | int] | None = None
+    thursday: EntityInfo[str | int] | None = None
+    friday: EntityInfo[str | int] | None = None
+    saturday: EntityInfo[str | int] | None = None
+    sunday: EntityInfo[str | int] | None = None
+    standard_values: EntityInfo[int] | None = None
 
 
 class DeviceTime(BaseModel):

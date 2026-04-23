@@ -491,6 +491,7 @@ class ErrorMsg:
     EMPTY_INCLUDE_LIST = (
         "Empty include list provided. Use None to fetch all parameters."
     )
+    NO_HEATING_SCHEDULE_PARAMS = "No heating schedule parameters available"
 
 
 # Handle both ASCII and Unicode degree symbols
@@ -654,4 +655,31 @@ class HotWaterParams:
         "566": "saturday",
         "567": "sunday",
         "576": "standard_values",
+    }
+
+
+class HeatingScheduleParams:
+    """Heating schedule parameter mappings per circuit."""
+
+    TIME_PROGRAMS: Final[dict[int, dict[str, str]]] = {
+        1: {
+            "501": "monday",
+            "502": "tuesday",
+            "503": "wednesday",
+            "504": "thursday",
+            "505": "friday",
+            "506": "saturday",
+            "507": "sunday",
+            "516": "standard_values",
+        },
+        2: {
+            "521": "monday",
+            "522": "tuesday",
+            "523": "wednesday",
+            "524": "thursday",
+            "525": "friday",
+            "526": "saturday",
+            "527": "sunday",
+            "536": "standard_values",
+        },
     }

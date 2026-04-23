@@ -22,6 +22,7 @@ from .constants import (
     APIConfig,
     CircuitConfig,
     ErrorMsg,
+    HeatingScheduleParams,
     HotWaterParams,
     Validation,
 )
@@ -38,6 +39,8 @@ from .models import (
     DeviceTime,
     DHWSchedule,
     EntityInfo,
+    HeatingSchedule,
+    HeatingTimeSwitchPrograms,
     HotWaterConfig,
     HotWaterSchedule,
     HotWaterState,
@@ -1379,6 +1382,91 @@ class BSBLAN:
             group_name="schedule",
             include=include,
         )
+
+    async def heating_schedule(
+        self,
+        include: list[str] | None = None,
+        circuit: int = 1,
+    ) -> HeatingTimeSwitchPrograms:
+        """Get heating time switch programs for a specific circuit.
+
+        Args:
+            include: Optional list of day names to fetch. If None,
+                fetches all schedule parameters. Valid names include:
+                monday, tuesday, wednesday, thursday,
+                friday, saturday, sunday, standard_values.
+            circuit: The heating circuit number (1 or 2). Defaults to 1.
+
+        Returns:
+            HeatingTimeSwitchPrograms: Heating schedule information.
+
+        """
+        self._validate_circuit(circuit)
+        time_program_params = HeatingScheduleParams.TIME_PROGRAMS[circuit]
+
+        filtered_params = time_program_params
+        if include is not None:
+            if not include:
+                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
+            filtered_params = {
+                param_id: name
+                for param_id, name in time_program_params.items()
+                if name in include
+            }
+            if not filtered_params:
+                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
+
+        params = self._extract_params_summary(filtered_params)
+        data = await self._request(params={"Parameter": params["string_par"]})
+        mapped_data = {
+            name: data[param_id]
+            for param_id, name in filtered_params.items()
+            if param_id in data
+        }
+
+        if not mapped_data:
+            raise BSBLANError(ErrorMsg.NO_HEATING_SCHEDULE_PARAMS)
+
+        return HeatingTimeSwitchPrograms.model_validate(mapped_data)
+
+    async def set_heating_schedule(
+        self,
+        schedule: HeatingSchedule,
+        circuit: int = 1,
+    ) -> None:
+        """Set heating time switch programs for a specific circuit.
+
+        This method allows setting weekly heating schedules using a type-safe
+        interface with TimeSlot and DaySchedule objects.
+
+        Args:
+            schedule: HeatingSchedule object containing the weekly schedule.
+            circuit: The heating circuit number (1 or 2). Defaults to 1.
+
+        Raises:
+            BSBLANError: If no schedule is provided.
+
+        """
+        self._validate_circuit(circuit)
+
+        if not schedule.has_any_schedule():
+            raise BSBLANError(ErrorMsg.NO_SCHEDULE)
+
+        day_param_map = {
+            v: k
+            for k, v in HeatingScheduleParams.TIME_PROGRAMS[circuit].items()
+            if v != "standard_values"
+        }
+
+        for day_name, param_id in day_param_map.items():
+            day_schedule: DaySchedule | None = getattr(schedule, day_name)
+            if day_schedule is not None:
+                state = {
+                    "Parameter": param_id,
+                    "Value": day_schedule.to_bsblan_format(),
+                    "Type": "1",
+                }
+                await self._set_device_state(state)
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
