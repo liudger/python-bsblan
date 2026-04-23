@@ -19,6 +19,8 @@ The main entry point for interacting with BSB-LAN devices.
         - time
         - set_time
         - thermostat
+        - heating_schedule
+        - set_heating_schedule
         - hot_water_state
         - hot_water_config
         - hot_water_schedule

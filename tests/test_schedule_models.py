@@ -6,7 +6,7 @@ from datetime import time
 
 import pytest
 
-from bsblan.models import DaySchedule, DHWSchedule, TimeSlot
+from bsblan.models import DaySchedule, DHWSchedule, HeatingSchedule, TimeSlot
 
 
 class TestTimeSlot:
@@ -226,4 +226,35 @@ class TestDHWSchedule:
         assert schedule.saturday is not None
         assert schedule.sunday is not None
         assert schedule.monday is None
+        assert schedule.has_any_schedule() is True
+
+
+class TestHeatingSchedule:
+    """Test cases for HeatingSchedule dataclass."""
+
+    def test_empty_heating_schedule(self) -> None:
+        """Test creating an empty heating schedule."""
+        schedule = HeatingSchedule()
+        assert schedule.monday is None
+        assert schedule.tuesday is None
+        assert schedule.has_any_schedule() is False
+
+    def test_heating_schedule_has_any_schedule_true(self) -> None:
+        """Test has_any_schedule returns True when a day is set."""
+        schedule = HeatingSchedule(
+            monday=DaySchedule(slots=[TimeSlot(time(6, 0), time(8, 0))])
+        )
+        assert schedule.has_any_schedule() is True
+
+    def test_heating_schedule_weekend_only(self) -> None:
+        """Test setting only weekend days."""
+        weekend = DaySchedule(
+            slots=[
+                TimeSlot(time(8, 0), time(10, 0)),
+                TimeSlot(time(18, 0), time(22, 0)),
+            ]
+        )
+        schedule = HeatingSchedule(saturday=weekend, sunday=weekend)
+        assert schedule.saturday is not None
+        assert schedule.sunday is not None
         assert schedule.has_any_schedule() is True
