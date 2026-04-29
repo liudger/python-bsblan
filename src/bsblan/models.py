@@ -326,13 +326,13 @@ class EntityInfo(BaseModel, Generic[T]):
     unit: str
     desc: str
     value: T | None = None
-    data_type: int = Field(alias="dataType", default=0)
+    data_type: int = Field(validation_alias="dataType", default=0)
     error: int = 0
     readonly: int = 0
     readwrite: int = 0
     precision: float | None = None
-    data_type_name: str = Field(default="", alias="dataType_name")
-    data_type_family: str = Field(default="", alias="dataType_family")
+    data_type_name: str = Field(default="", validation_alias="dataType_name")
+    data_type_family: str = Field(default="", validation_alias="dataType_family")
 
     @model_validator(mode="before")
     @classmethod
