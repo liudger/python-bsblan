@@ -152,13 +152,10 @@ class BSBLAN:
     async def get_available_circuits(self) -> list[int]:
         """Detect which heating circuits are available on the device.
 
-        Uses a two-step probe for each circuit (1, 2):
-        1. Query the operating mode parameter — the response must be
-           non-empty and contain actual data.
-        2. Query the status parameter (8000/8001) — an inactive
-           circuit returns ``value="0"`` with ``desc="---"``.
-
-        A circuit is only considered available when both checks pass.
+        Uses the configured operating mode probe parameters from
+        CircuitConfig.PROBE_PARAMS as the only discovery signal. Status
+        parameters are not queried during discovery to keep setup lightweight
+        and avoid excluding valid circuits when status data is unavailable.
 
         This is useful for integration setup flows (e.g., Home Assistant
         config flow) to discover how many circuits the user's controller
@@ -179,46 +176,23 @@ class BSBLAN:
                 response = await self._request(
                     params={"Parameter": param_id},
                 )
-                # A circuit exists if the response contains the param_id key
-                # with actual data (not an empty dict)
-                if not response.get(param_id):
-                    continue
-
-                # Secondary check: query the status parameter.
-                # Inactive circuits either:
-                # - return value="0" and desc="---"
-                # - return an empty dict {} (param not supported)
-                status_id = CircuitConfig.STATUS_PARAMS[circuit]
-                status_resp = await self._request(
-                    params={"Parameter": status_id},
-                )
-                status_data = status_resp.get(status_id, {})
-
-                # Empty response means the parameter doesn't exist
-                if not status_data or not isinstance(status_data, dict):
-                    logger.debug(
-                        "Circuit %d has no status data (not supported)",
-                        circuit,
-                    )
-                    continue
-
-                # value="0" + desc="---" means inactive
-                if (
-                    status_data.get("desc") == CircuitConfig.INACTIVE_MARKER
-                    and str(status_data.get("value", "")) == "0"
-                ):
-                    logger.debug(
-                        "Circuit %d has status '---' (inactive)",
-                        circuit,
-                    )
-                    continue
-
-                available.append(circuit)
             except BSBLANError:
                 logger.debug(
-                    "Circuit %d not available (request failed)",
+                    "Circuit %d not available (operating mode request failed)",
                     circuit,
                 )
+                continue
+
+            # A circuit exists if the response contains the operating mode key
+            # with actual data (not an empty dict).
+            if not response.get(param_id):
+                logger.debug(
+                    "Circuit %d has no operating mode data (not supported)",
+                    circuit,
+                )
+                continue
+
+            available.append(circuit)
         return sorted(available)
 
     async def _setup_api_validator(self) -> None:
