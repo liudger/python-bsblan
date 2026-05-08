@@ -13,7 +13,7 @@ import pytest
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
-from bsblan.constants import ErrorMsg, build_api_config
+from bsblan.constants import CircuitConfig, ErrorMsg, build_api_config
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -544,26 +544,20 @@ async def test_get_available_circuits_two_circuits(
         # HC1 operating mode
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
-        # HC1 status - active
-        if param_id == "8000":
-            return {
-                "8000": {
-                    "value": "114",
-                    "desc": "Heating mode Comfort",
-                }
-            }
         # HC2 operating mode
         if param_id == "1000":
             return {"1000": {"value": "1", "unit": "", "desc": "Automatic"}}
-        # HC2 status - active
-        if param_id == "8001":
-            return {"8001": {"value": "114", "desc": "Heating mode Comfort"}}
-        return {}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
 
-    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+    request_mock = AsyncMock(side_effect=mock_request)
+    bsblan._request = request_mock  # type: ignore[method-assign]
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1, 2]
+    assert [
+        call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+    ] == ["700", "1000"]
 
 
 @pytest.mark.asyncio
@@ -580,33 +574,27 @@ async def test_get_available_circuits_only_one(
         param_id = params.get("Parameter", "")
         if param_id == "700":
             return {"700": {"value": "3", "unit": "", "desc": "Comfort"}}
-        if param_id == "8000":
-            return {
-                "8000": {
-                    "value": "114",
-                    "desc": "Heating mode Comfort",
-                }
-            }
         # HC2 operating mode - return empty
         if param_id == "1000":
             return {param_id: {}}
-        return {}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
 
-    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+    request_mock = AsyncMock(side_effect=mock_request)
+    bsblan._request = request_mock  # type: ignore[method-assign]
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1]
+    assert [
+        call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+    ] == ["700", "1000"]
 
 
 @pytest.mark.asyncio
-async def test_get_available_circuits_inactive_by_status(
+async def test_get_available_circuits_does_not_probe_status_params(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
-    """Test that circuits with status '---' are detected as inactive.
-
-    This is the real-world scenario: the device returns a valid operating
-    mode for all circuits, but status param shows '---' for HC2.
-    """
+    """Test discovery only queries probe params, not status params."""
     bsblan = mock_bsblan_circuit
 
     async def mock_request(
@@ -617,61 +605,20 @@ async def test_get_available_circuits_inactive_by_status(
         # All circuits return valid operating mode
         if param_id in {"700", "1000"}:
             return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
-        # HC1 status - active
-        if param_id == "8000":
-            return {
-                "8000": {
-                    "value": "114",
-                    "desc": "Heating mode Comfort",
-                }
-            }
-        # HC2 status - inactive (value=0, desc=---)
-        if param_id == "8001":
-            return {"8001": {"value": "0", "desc": "---"}}
-        return {}
+        msg = f"Unexpected status parameter probe: {param_id}"
+        raise AssertionError(msg)
 
-    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+    request_mock = AsyncMock(side_effect=mock_request)
+    bsblan._request = request_mock  # type: ignore[method-assign]
 
     circuits = await bsblan.get_available_circuits()
-    assert circuits == [1]
-
-
-@pytest.mark.asyncio
-async def test_get_available_circuits_inactive_empty_status(
-    mock_bsblan_circuit: BSBLAN,
-) -> None:
-    """Test that circuits with empty status response are inactive.
-
-    Some controllers return an empty dict for status params of circuits
-    that don't exist (e.g., HC2 status 8001 returns {}).
-    """
-    bsblan = mock_bsblan_circuit
-
-    async def mock_request(
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        params = kwargs.get("params", {})
-        param_id = params.get("Parameter", "")
-        # All circuits return valid operating mode
-        if param_id in {"700", "1000"}:
-            return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
-        # HC1 status - active
-        if param_id == "8000":
-            return {
-                "8000": {
-                    "value": "114",
-                    "desc": "Heating mode Comfort",
-                }
-            }
-        # HC2 status - empty response (param not supported)
-        if param_id == "8001":
-            return {}
-        return {}
-
-    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
-
-    circuits = await bsblan.get_available_circuits()
-    assert circuits == [1]
+    assert circuits == [1, 2]
+    assert {
+        call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+    } == {
+        "700",
+        "1000",
+    }
 
 
 @pytest.mark.asyncio
@@ -681,27 +628,19 @@ async def test_get_available_circuits_request_failure(
     """Test circuit detection when some requests fail."""
     bsblan = mock_bsblan_circuit
 
-    call_count = 0
-
     async def mock_request(
         **kwargs: Any,
     ) -> dict[str, Any]:
-        nonlocal call_count
-        call_count += 1
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
-        if param_id == "8000":
-            return {
-                "8000": {
-                    "value": "114",
-                    "desc": "Heating mode Comfort",
-                }
-            }
         # HC2 fail with connection error
-        msg = "Connection failed"
-        raise BSBLANError(msg)
+        if param_id == "1000":
+            msg = "Connection failed"
+            raise BSBLANError(msg)
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
 
     bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
 
@@ -723,15 +662,11 @@ async def test_get_available_circuits_param_not_in_response(
         param_id = params.get("Parameter", "")
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
-        if param_id == "8000":
-            return {
-                "8000": {
-                    "value": "114",
-                    "desc": "Heating mode Comfort",
-                }
-            }
         # Returns a response but without the expected param key
-        return {"other_key": {"value": "1"}}
+        if param_id == "1000":
+            return {"other_key": {"value": "1"}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
 
     bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
 
@@ -740,37 +675,31 @@ async def test_get_available_circuits_param_not_in_response(
 
 
 @pytest.mark.asyncio
-async def test_get_available_circuits_status_failure_excludes_circuit(
+async def test_get_available_circuits_all_probes_missing(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
-    """Test that a circuit is excluded if the status request fails.
-
-    If the operating mode returns valid data but the status request fails,
-    the circuit should be excluded (fail-safe).
-    """
+    """Test no circuits are detected when operating mode probes are missing."""
     bsblan = mock_bsblan_circuit
+    expected_params = list(CircuitConfig.PROBE_PARAMS.values())
 
     async def mock_request(
         **kwargs: Any,
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
-        if param_id == "700":
-            return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
-        # Status request fails
-        if param_id == "8000":
-            msg = "Connection failed"
-            raise BSBLANError(msg)
-        # HC2 return empty
-        if param_id == "1000":
-            return {param_id: {}}
-        return {}
+        if param_id in expected_params:
+            return {}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
 
-    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+    request_mock = AsyncMock(side_effect=mock_request)
+    bsblan._request = request_mock  # type: ignore[method-assign]
 
-    # HC1 status request fails -> entire circuit probe fails -> excluded
     circuits = await bsblan.get_available_circuits()
     assert circuits == []
+    assert [
+        call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+    ] == expected_params
 
 
 @pytest.mark.asyncio
