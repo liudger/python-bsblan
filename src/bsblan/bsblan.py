@@ -543,9 +543,9 @@ class BSBLAN:
         """Return whether cached metadata says writes are allowed."""
         return self._device is None or self._device.is_bus_writable
 
-    async def _refresh_device_if_initialized(self) -> None:
-        """Fetch device metadata when initialization should have provided it."""
-        if self._device is None and self._initialized:
+    async def _ensure_device_metadata(self) -> None:
+        """Fetch device metadata if it has not been loaded yet."""
+        if self._device is None:
             await self.device()
 
     def _set_api_version(self) -> None:
@@ -1084,7 +1084,7 @@ class BSBLAN:
             DeviceTime: The current time information from the BSB-LAN device.
 
         """
-        await self._refresh_device_if_initialized()
+        await self._ensure_device_metadata()
         self._validate_time_sync_supported()
 
         # Get only parameter 0 for time
@@ -1104,7 +1104,7 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the time format is invalid.
 
         """
-        await self._refresh_device_if_initialized()
+        await self._ensure_device_metadata()
         self._validate_time_sync_supported()
         self._validate_time_format(time_value)
         state: dict[str, object] = {

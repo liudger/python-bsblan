@@ -142,6 +142,38 @@ async def test_time_refreshes_device_when_initialized() -> None:
 
 
 @pytest.mark.asyncio
+async def test_set_time_fetches_device_metadata_before_sync() -> None:
+    """Test direct clients fetch metadata before deciding time sync support."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        request_mock = AsyncMock(
+            return_value=json.loads(load_fixture("pps_device.json"))
+        )
+        bsblan._request = request_mock  # type: ignore[method-assign]
+
+        with pytest.raises(BSBLANError, match=ErrorMsg.TIME_SYNC_NOT_SUPPORTED):
+            await bsblan.set_time("01.01.2024 12:30:45")
+
+    request_mock.assert_awaited_once_with(base_path="/JI")
+
+
+@pytest.mark.asyncio
+async def test_time_fetches_device_metadata_before_sync() -> None:
+    """Test direct time reads fetch metadata before querying parameter 0."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        request_mock = AsyncMock(
+            return_value=json.loads(load_fixture("pps_device.json"))
+        )
+        bsblan._request = request_mock  # type: ignore[method-assign]
+
+        with pytest.raises(BSBLANError, match=ErrorMsg.TIME_SYNC_NOT_SUPPORTED):
+            await bsblan.time()
+
+    request_mock.assert_awaited_once_with(base_path="/JI")
+
+
+@pytest.mark.asyncio
 async def test_pps_state_uses_climate_params(pps_bsblan: BSBLAN) -> None:
     """Test PPS climate state reads use and normalize PPS parameter values."""
     request_mock = AsyncMock(return_value=json.loads(load_fixture("pps_state.json")))
