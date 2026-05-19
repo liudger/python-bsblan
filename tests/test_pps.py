@@ -67,8 +67,8 @@ def test_bsb_device_capabilities() -> None:
     assert device.supports_time_sync
 
 
-def test_device_with_read_only_bus_disables_time_sync() -> None:
-    """Test read-only bus metadata disables time sync."""
+def test_bsb_device_with_buswritable_zero_supports_time_sync() -> None:
+    """Test BSB time sync does not depend on global bus write metadata."""
     device = Device(
         name="BSB-LAN",
         version="5.1.0",
@@ -79,7 +79,7 @@ def test_device_with_read_only_bus_disables_time_sync() -> None:
     )
 
     assert not device.is_bus_writable
-    assert not device.supports_time_sync
+    assert device.supports_time_sync
 
 
 def test_pps_api_config_uses_climate_params(pps_bsblan: BSBLAN) -> None:
