@@ -19,6 +19,8 @@ from yarl import URL
 
 from .constants import (
     API_VERSIONS,
+    PPS_HEATING_PARAMS,
+    PPS_STATIC_VALUES_PARAMS,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -100,6 +102,7 @@ class BSBLAN:
     _firmware_version: str | None = None
     _api_version: str | None = None
     _api_data: APIConfig | None = None
+    _device: Device | None = None
     _initialized: bool = False
     _api_validator: APIValidator = field(init=False)
     _temperature_unit: str = "°C"
@@ -170,6 +173,9 @@ class BSBLAN:
                 # circuits == [1, 2] for a dual-circuit controller
 
         """
+        if self._uses_pps_bus:
+            return await self._get_available_pps_circuits()
+
         available: list[int] = []
         for circuit, param_id in CircuitConfig.PROBE_PARAMS.items():
             try:
@@ -195,6 +201,20 @@ class BSBLAN:
             available.append(circuit)
         return sorted(available)
 
+    async def _get_available_pps_circuits(self) -> list[int]:
+        """Detect the single PPS room-unit climate circuit."""
+        param_id = "15000"
+        try:
+            response = await self._request(params={"Parameter": param_id})
+        except BSBLANError:
+            logger.debug("PPS climate circuit not available")
+            return []
+
+        if not response.get(param_id):
+            logger.debug("PPS climate circuit has no operating mode data")
+            return []
+        return [1]
+
     async def _setup_api_validator(self) -> None:
         """Set up the API validator without validating sections.
 
@@ -208,8 +228,20 @@ class BSBLAN:
         if self._api_data is None:
             self._api_data = self._copy_api_config()
 
+        self._apply_bus_specific_api_config()
+
         # Initialize the API validator (but don't validate sections yet)
         self._api_validator = APIValidator(self._api_data)
+
+    def _apply_bus_specific_api_config(self) -> None:
+        """Apply bus-specific parameter maps to the current API config."""
+        if self._api_data is None or not self._uses_pps_bus:
+            return
+
+        self._api_data["heating"] = PPS_HEATING_PARAMS.copy()
+        self._api_data["staticValues"] = PPS_STATIC_VALUES_PARAMS.copy()
+        self._api_data["heating_circuit2"] = {}
+        self._api_data["staticValues_circuit2"] = {}
 
     async def _ensure_section_validated(
         self, section: SectionLiteral, include: list[str] | None = None
@@ -247,8 +279,7 @@ class BSBLAN:
             logger.debug("Lazy loading section: %s", section)
             response_data = await self._validate_api_section(section, include)
 
-            # Extract temperature unit from heating section validation
-            # (parameter 710 - target_temperature is always in heating section)
+            # Extract temperature unit from the target_temperature parameter.
             if section == "heating" and response_data:
                 self._extract_temperature_unit_from_response(response_data)
 
@@ -444,17 +475,16 @@ class BSBLAN:
     ) -> None:
         """Extract temperature unit from heating section response data.
 
-        Gets the unit from parameter 710 (target_temperature) which is always
+        Gets the unit from the target_temperature parameter, which is always
         present in the heating section.
 
         Args:
             response_data: The response data from heating section validation
 
         """
-        # Look for parameter 710 (target_temperature) in the response
+        # Look for target_temperature in the response.
         for param_id, param_data in response_data.items():
-            # Check if this is parameter 710 and has unit information
-            if param_id == "710" and isinstance(param_data, dict):
+            if param_id in {"710", "15004"} and isinstance(param_data, dict):
                 unit = param_data.get("unit", "")
                 if unit in ("&deg;C", "°C"):
                     self._temperature_unit = "°C"
@@ -463,16 +493,15 @@ class BSBLAN:
                 else:
                     # Keep default if unit is empty or unknown
                     logger.debug(
-                        "Unknown or empty temperature unit from parameter 710: '%s'. "
-                        "Using default (°C)",
+                        "Unknown or empty temperature unit from heating target: "
+                        "'%s'. Using default (°C)",
                         unit,
                     )
                 logger.debug("Temperature unit set to: %s", self._temperature_unit)
                 return
 
-        # If we didn't find parameter 710, log a warning
         logger.warning(
-            "Could not find parameter 710 in heating section response. "
+            "Could not find target temperature in heating section response. "
             "Using default temperature unit (°C)"
         )
 
@@ -493,6 +522,31 @@ class BSBLAN:
             self._firmware_version = device.version
             logger.debug("BSBLAN version: %s", self._firmware_version)
             self._set_api_version()
+
+    @property
+    def device_info(self) -> Device | None:
+        """Return cached device metadata from the last /JI response."""
+        return self._device
+
+    @property
+    def supports_time_sync(self) -> bool:
+        """Return whether the normal BSB/LPB time sync command is safe."""
+        return self._device is None or self._device.supports_time_sync
+
+    @property
+    def _uses_pps_bus(self) -> bool:
+        """Return whether cached metadata identifies the device as PPS."""
+        return self._device is not None and self._device.is_pps_bus
+
+    @property
+    def _is_bus_writable(self) -> bool:
+        """Return whether cached metadata says writes are allowed."""
+        return self._device is None or self._device.is_bus_writable
+
+    async def _refresh_device_if_initialized(self) -> None:
+        """Fetch device metadata when initialization should have provided it."""
+        if self._device is None and self._initialized:
+            await self.device()
 
     def _set_api_version(self) -> None:
         """Set the API version based on the firmware version.
@@ -572,8 +626,8 @@ class BSBLAN:
         Args:
             circuit: The heating circuit number (1 or 2).
 
-        Note: Temperature unit is extracted during heating section validation
-        from the response (parameter 710), so no extra API call is needed here.
+        Note: Temperature unit is extracted during heating section validation,
+        so no extra API call is needed here.
 
         """
         if circuit in self._circuit_temp_initialized:
@@ -593,9 +647,19 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the circuit number is invalid.
 
         """
-        if circuit not in CircuitConfig.VALID:
+        if circuit not in CircuitConfig.VALID or (self._uses_pps_bus and circuit != 1):
             msg = ErrorMsg.INVALID_CIRCUIT.format(circuit)
             raise BSBLANInvalidParameterError(msg)
+
+    def _validate_bus_write_supported(self) -> None:
+        """Validate that cached metadata permits writes."""
+        if not self._is_bus_writable:
+            raise BSBLANError(ErrorMsg.BUS_WRITE_NOT_SUPPORTED)
+
+    def _validate_time_sync_supported(self) -> None:
+        """Validate that normal parameter 0 time sync is safe."""
+        if not self.supports_time_sync:
+            raise BSBLANError(ErrorMsg.TIME_SYNC_NOT_SUPPORTED)
 
     @property
     def get_temperature_unit(self) -> str:
@@ -878,7 +942,25 @@ class BSBLAN:
         params = self._extract_params_summary(section_params)
         data = await self._request(params={"Parameter": params["string_par"]})
         data = dict(zip(params["list"], list(data.values()), strict=True))
+        if section == "heating" and self._uses_pps_bus:
+            self._normalize_pps_state_data(data)
         return model_class.model_validate(data)
+
+    def _normalize_pps_state_data(self, data: dict[str, Any]) -> None:
+        """Normalize PPS climate values to the library's State model."""
+        hvac_mode = data.get("hvac_mode")
+        if not isinstance(hvac_mode, dict):
+            return
+
+        try:
+            raw_mode = int(hvac_mode["value"])
+        except (KeyError, TypeError, ValueError):
+            return
+
+        hvac_mode["value"] = Validation.PPS_HVAC_MODE_FROM_BSBLAN.get(
+            raw_mode,
+            raw_mode,
+        )
 
     async def state(
         self,
@@ -974,7 +1056,8 @@ class BSBLAN:
 
         """
         device_info = await self._request(base_path="/JI")
-        return Device.model_validate(device_info)
+        self._device = Device.model_validate(device_info)
+        return self._device
 
     async def info(self, include: list[str] | None = None) -> Info:
         """Get information about the current heating system config.
@@ -1001,6 +1084,9 @@ class BSBLAN:
             DeviceTime: The current time information from the BSB-LAN device.
 
         """
+        await self._refresh_device_if_initialized()
+        self._validate_time_sync_supported()
+
         # Get only parameter 0 for time
         data = await self._request(params={"Parameter": "0"})
         # Create the data dictionary in the expected format
@@ -1018,6 +1104,8 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the time format is invalid.
 
         """
+        await self._refresh_device_if_initialized()
+        self._validate_time_sync_supported()
         self._validate_time_format(time_value)
         state: dict[str, object] = {
             "Parameter": "0",
@@ -1050,6 +1138,8 @@ class BSBLAN:
 
         """
         self._validate_circuit(circuit)
+        if self._uses_pps_bus:
+            self._validate_bus_write_supported()
         await self._initialize_temperature_range(circuit)
 
         self._validate_single_parameter(
@@ -1082,7 +1172,7 @@ class BSBLAN:
             dict[str, Any]: The prepared state for the thermostat.
 
         """
-        param_ids = CircuitConfig.THERMOSTAT_PARAMS[circuit]
+        param_ids = self._thermostat_params(circuit)
         state: dict[str, Any] = {}
         if target_temperature is not None:
             await self._validate_target_temperature(
@@ -1098,14 +1188,23 @@ class BSBLAN:
             )
         if hvac_mode is not None:
             self._validate_hvac_mode(hvac_mode)
+            hvac_value = str(hvac_mode)
+            if self._uses_pps_bus:
+                hvac_value = Validation.PPS_HVAC_MODE_TO_BSBLAN[hvac_mode]
             state.update(
                 {
                     "Parameter": param_ids["hvac_mode"],
-                    "Value": str(hvac_mode),
+                    "Value": hvac_value,
                     "Type": "1",
                 },
             )
         return state
+
+    def _thermostat_params(self, circuit: int) -> dict[str, str]:
+        """Return thermostat write parameters for the active bus type."""
+        if self._uses_pps_bus:
+            return {"target_temperature": "15004", "hvac_mode": "15000"}
+        return CircuitConfig.THERMOSTAT_PARAMS[circuit]
 
     async def _validate_target_temperature(
         self,
@@ -1157,7 +1256,10 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the HVAC mode is invalid.
 
         """
-        if hvac_mode not in Validation.HVAC_MODES:
+        valid_modes = (
+            Validation.PPS_HVAC_MODES if self._uses_pps_bus else Validation.HVAC_MODES
+        )
+        if hvac_mode not in valid_modes:
             raise BSBLANInvalidParameterError(str(hvac_mode))
 
     def _validate_time_format(self, time_value: str) -> None:

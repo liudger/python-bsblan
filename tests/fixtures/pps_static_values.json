@@ -1,0 +1,16 @@
+{
+  "15006": {
+    "name": "Frost Protection Setpoint",
+    "value": "8.0",
+    "unit": "°C",
+    "desc": "",
+    "dataType": 0
+  },
+  "15007": {
+    "name": "Setpoint Maximum",
+    "value": "30.0",
+    "unit": "°C",
+    "desc": "",
+    "dataType": 0
+  }
+}
