@@ -624,13 +624,13 @@ class Device(BaseModel):
 
     @property
     def is_bus_writable(self) -> bool:
-        """Return whether BSB-LAN reports the bus as writable."""
+        """Return whether BSB-LAN reports global bus writes as enabled."""
         return self.buswritable is None or bool(self.buswritable)
 
     @property
     def supports_time_sync(self) -> bool:
         """Return whether normal BSB/LPB time synchronization is supported."""
-        return not self.is_pps_bus and self.is_bus_writable
+        return not self.is_pps_bus
 
 
 class Info(BaseModel):
