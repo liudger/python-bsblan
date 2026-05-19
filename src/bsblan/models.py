@@ -611,6 +611,26 @@ class Device(BaseModel):
     version: str
     MAC: str  # pylint: disable=invalid-name
     uptime: int
+    bus: str | None = None
+    buswritable: int | bool | None = None
+    busaddr: int | None = None
+    busdest: int | None = None
+    busdevices: list[Any] | None = None
+
+    @property
+    def is_pps_bus(self) -> bool:
+        """Return whether the device is connected to a PPS bus."""
+        return self.bus is not None and self.bus.upper() == "PPS"
+
+    @property
+    def is_bus_writable(self) -> bool:
+        """Return whether BSB-LAN reports the bus as writable."""
+        return self.buswritable is None or bool(self.buswritable)
+
+    @property
+    def supports_time_sync(self) -> bool:
+        """Return whether normal BSB/LPB time synchronization is supported."""
+        return not self.is_pps_bus and self.is_bus_writable
 
 
 class Info(BaseModel):

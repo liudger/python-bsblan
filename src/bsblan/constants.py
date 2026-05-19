@@ -114,6 +114,19 @@ BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     "1014": "min_temp",
 }
 
+# PPS bus supports one room-unit style climate circuit. These parameters are
+# exposed by BSB-LAN in the 15000+ range and mirror the circuit 1 climate model.
+PPS_HEATING_PARAMS: Final[dict[str, str]] = {
+    "15000": "hvac_mode",
+    "15004": "target_temperature",
+    "15008": "current_temperature",
+}
+
+PPS_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
+    "15006": "min_temp",
+    "15007": "max_temp",
+}
+
 V1_STATIC_VALUES_CIRCUIT2_EXTENSIONS: Final[dict[str, str]] = {
     "1030": "max_temp",
 }
@@ -207,6 +220,17 @@ class Validation:
     """Validation-related constants for BSBLAN."""
 
     HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
+    PPS_HVAC_MODES: Final[set[int]] = {0, 1, 3}
+    PPS_HVAC_MODE_TO_BSBLAN: Final[dict[int, str]] = {
+        0: "2",  # off
+        1: "0",  # auto
+        3: "1",  # manual/comfort
+    }
+    PPS_HVAC_MODE_FROM_BSBLAN: Final[dict[int, int]] = {
+        0: 1,  # auto
+        1: 3,  # manual/comfort
+        2: 0,  # off
+    }
     MIN_YEAR: Final[int] = 1900
     MAX_YEAR: Final[int] = 2100
 
@@ -492,6 +516,8 @@ class ErrorMsg:
         "Empty include list provided. Use None to fetch all parameters."
     )
     NO_HEATING_SCHEDULE_PARAMS = "No heating schedule parameters available"
+    TIME_SYNC_NOT_SUPPORTED = "Time synchronization is not supported by this device"
+    BUS_WRITE_NOT_SUPPORTED = "Writing parameters is not supported by this device"
 
 
 # Handle both ASCII and Unicode degree symbols

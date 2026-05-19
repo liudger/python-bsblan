@@ -40,3 +40,8 @@ async def test_device(aresponses: ResponsesMockServer) -> None:
         assert device.version == "1.0.38-20200730234859"
         assert device.MAC == "00:80:41:19:69:90"
         assert device.uptime == 969402857
+        assert device.bus == "BSB"
+        assert device.buswritable == 1
+        assert device.busaddr == 66
+        assert device.busdest == 0
+        assert device.supports_time_sync

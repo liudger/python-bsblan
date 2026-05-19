@@ -1,0 +1,23 @@
+{
+  "15000": {
+    "name": "Operating Mode",
+    "value": "0",
+    "unit": "",
+    "desc": "Automatic",
+    "dataType": 1
+  },
+  "15004": {
+    "name": "Comfort Setpoint",
+    "value": "20.5",
+    "unit": "°C",
+    "desc": "",
+    "dataType": 0
+  },
+  "15008": {
+    "name": "Room Temperature",
+    "value": "19.5",
+    "unit": "°C",
+    "desc": "",
+    "dataType": 0
+  }
+}
