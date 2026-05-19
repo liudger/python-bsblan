@@ -11,8 +11,13 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.exceptions import BSBLANInvalidParameterError
-from bsblan.models import DeviceTime, EntityInfo
+from bsblan.models import Device, DeviceTime, EntityInfo
 from tests import load_fixture
+
+
+def set_bsb_device_metadata(bsblan: BSBLAN) -> None:
+    """Seed cached BSB device metadata for time tests."""
+    bsblan._device = Device.model_validate(json.loads(load_fixture("device.json")))
 
 
 @pytest.mark.asyncio
@@ -28,6 +33,7 @@ async def test_get_time(mock_bsblan: BSBLAN) -> None:
 
     assert isinstance(mock_bsblan._request, AsyncMock)
     mock_bsblan._request.return_value = time_response
+    set_bsb_device_metadata(mock_bsblan)
 
     # Test getting device time
     device_time = await mock_bsblan.time()
@@ -54,6 +60,7 @@ async def test_set_time(mock_bsblan: BSBLAN) -> None:
     """
     # Test setting time
     assert isinstance(mock_bsblan._request, AsyncMock)
+    set_bsb_device_metadata(mock_bsblan)
     await mock_bsblan.set_time("01.01.2024 12:30:45")
 
     # Verify the request was made correctly
@@ -77,6 +84,7 @@ async def test_set_time_different_format(mock_bsblan: BSBLAN) -> None:
     """
     # Test setting time with correct format
     assert isinstance(mock_bsblan._request, AsyncMock)
+    set_bsb_device_metadata(mock_bsblan)
     await mock_bsblan.set_time("13.08.2025 10:25:55")
 
     # Verify the request was made correctly
@@ -121,6 +129,7 @@ async def test_set_time_invalid_formats(mock_bsblan: BSBLAN) -> None:
         "",  # Empty string
         "invalid format",  # Completely wrong format
     ]
+    set_bsb_device_metadata(mock_bsblan)
 
     for invalid_format in invalid_formats:
         with pytest.raises(BSBLANInvalidParameterError):
@@ -138,6 +147,7 @@ async def test_set_time_valid_formats(mock_bsblan: BSBLAN) -> None:
 
     """
     assert isinstance(mock_bsblan._request, AsyncMock)
+    set_bsb_device_metadata(mock_bsblan)
 
     # Test various valid formats
     valid_formats = [
@@ -162,6 +172,8 @@ async def test_set_time_leap_year_validation(mock_bsblan: BSBLAN) -> None:
         mock_bsblan (BSBLAN): The mock BSBLAN instance.
 
     """
+    set_bsb_device_metadata(mock_bsblan)
+
     # 2024 is a leap year, so Feb 29 should be valid
     await mock_bsblan.set_time("29.02.2024 12:30:45")
 
