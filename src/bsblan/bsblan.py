@@ -279,9 +279,25 @@ class BSBLAN:
             logger.debug("Lazy loading section: %s", section)
             response_data = await self._validate_api_section(section, include)
 
-            # Extract temperature unit from the target_temperature parameter.
-            if section == "heating" and response_data:
+            if response_data and self._should_extract_temperature_unit(
+                section, include, response_data
+            ):
                 self._extract_temperature_unit_from_response(response_data)
+
+    def _should_extract_temperature_unit(
+        self,
+        section: SectionLiteral,
+        include: list[str] | None,
+        response_data: dict[str, Any],
+    ) -> bool:
+        """Return whether the validation response should update temperature unit."""
+        if section != "heating":
+            return False
+
+        if include is None or "target_temperature" in include:
+            return True
+
+        return any(param_id in response_data for param_id in ("710", "15004"))
 
     async def _ensure_hot_water_group_validated(
         self,
@@ -530,8 +546,8 @@ class BSBLAN:
 
     @property
     def supports_time_sync(self) -> bool:
-        """Return whether the normal BSB/LPB time sync command is safe."""
-        return self._device is None or self._device.supports_time_sync
+        """Return cached support for the normal BSB/LPB time sync command."""
+        return self._device is not None and self._device.supports_time_sync
 
     @property
     def _uses_pps_bus(self) -> bool:
@@ -983,8 +999,9 @@ class BSBLAN:
             State: The current state of the BSBLAN device.
 
         Note:
-            The hvac_mode.value is returned as a raw integer from the device:
-            0=off, 1=auto, 2=eco, 3=heat.
+            For BSB/LPB devices, hvac_mode.value is returned as a raw integer:
+            0=off, 1=auto, 2=eco, 3=heat. PPS devices normalize their raw
+            operating modes to the same library values, but do not support eco.
 
         Example:
             # Fetch only hvac_mode and current_temperature
@@ -1126,7 +1143,9 @@ class BSBLAN:
         Args:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer value.
-                Valid values: 0=off, 1=auto, 2=eco, 3=heat.
+                For BSB/LPB, valid values are 0=off, 1=auto, 2=eco, 3=heat.
+                For PPS, valid values are 0=off, 1=auto, and 3=heat/manual;
+                they are translated to PPS raw values before posting.
             circuit: The heating circuit number (1 or 2). Defaults to 1.
 
         Example:
@@ -1250,7 +1269,8 @@ class BSBLAN:
         """Validate the HVAC mode.
 
         Args:
-            hvac_mode (int): The HVAC mode to validate (0-3).
+            hvac_mode (int): The HVAC mode to validate. BSB/LPB accepts 0-3;
+                PPS accepts 0, 1, and 3.
 
         Raises:
             BSBLANInvalidParameterError: If the HVAC mode is invalid.
