@@ -74,7 +74,9 @@ Supported PPS climate operations:
 - `state()` for `hvac_mode`, `target_temperature`, and `current_temperature`
 - `static_values()` for `min_temp` and `max_temp`
 - `thermostat()` for target temperature and HVAC mode
-- `get_available_circuits()`, which returns the single PPS climate circuit
+- `get_available_circuits()`, which returns `[1]` when the single PPS
+  climate circuit is available, otherwise `[]`; PPS devices only ever expose
+  circuit `1`
 
 PPS devices currently have these limitations:
 
