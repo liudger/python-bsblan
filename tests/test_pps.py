@@ -82,6 +82,20 @@ def test_bsb_device_with_buswritable_zero_supports_time_sync() -> None:
     assert device.supports_time_sync
 
 
+def test_device_without_bus_metadata_keeps_bsb_defaults() -> None:
+    """Test older /JI responses without bus metadata keep standard behavior."""
+    device = Device(
+        name="BSB-LAN",
+        version="1.0.38-20200730234859",
+        MAC="00:80:41:19:69:90",
+        uptime=1,
+    )
+
+    assert not device.is_pps_bus
+    assert device.is_bus_writable
+    assert device.supports_time_sync
+
+
 def test_client_time_sync_support_requires_device_metadata() -> None:
     """Test clients report time sync support only after device metadata loads."""
     bsblan = BSBLAN(BSBLANConfig(host="example.com"))
