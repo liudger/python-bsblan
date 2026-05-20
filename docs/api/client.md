@@ -10,6 +10,8 @@ The main entry point for interacting with BSB-LAN devices.
       members:
         - __init__
         - initialize
+        - device_info
+        - supports_time_sync
         - get_available_circuits
         - state
         - sensor
