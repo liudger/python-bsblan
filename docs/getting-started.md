@@ -63,6 +63,40 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+## PPS bus support
+
+PPS bus devices are detected from the device metadata returned by BSB-LAN. The
+client provides minimal climate support for PPS devices through the same climate
+methods used by BSB/LPB devices.
+
+Supported PPS climate operations:
+
+- `state()` for `hvac_mode`, `target_temperature`, and `current_temperature`
+- `static_values()` for `min_temp` and `max_temp`
+- `thermostat()` for target temperature and HVAC mode
+- `get_available_circuits()`, which returns the single PPS climate circuit
+
+PPS devices currently have these limitations:
+
+- Only circuit `1` is supported.
+- `time()` and `set_time()` are not supported for PPS devices.
+- `thermostat(hvac_mode=2)` is not supported on PPS devices. Valid PPS modes
+    are `0` (off), `1` (auto), and `3` (heat/manual).
+- Hot water and schedule helpers are intended for BSB/LPB devices.
+
+Check `supports_time_sync` before showing or calling time synchronization in
+applications:
+
+```python
+async with BSBLAN(config) as client:
+    device = client.device_info or await client.device()
+    print(f"Bus type: {device.bus or 'unknown'}")
+
+    if client.supports_time_sync:
+        device_time = await client.time()
+        print(device_time.time.value)
+```
+
 ## Hot water control
 
 ```python
