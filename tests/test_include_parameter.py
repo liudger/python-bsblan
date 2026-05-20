@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -276,6 +277,36 @@ async def test_state_with_include_multiple_params(monkeypatch: Any) -> None:
         assert state.hvac_mode.value == 3
         assert state.current_temperature is not None
         assert state.current_temperature.value == 19.3
+
+
+@pytest.mark.asyncio
+async def test_state_include_skips_temperature_unit_warning(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: Any,
+) -> None:
+    """Test include filters do not warn when target temperature is omitted."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "5.1.0")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        bsblan._api_validator = APIValidator(API_V3)
+
+        state_data = json.loads(load_fixture("state.json"))
+        partial_response = {"700": state_data["700"]}
+        request_mock: AsyncMock = AsyncMock(
+            side_effect=[partial_response, partial_response]
+        )
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        with caplog.at_level(logging.WARNING, logger="bsblan.bsblan"):
+            state: State = await bsblan.state(include=["hvac_mode"])
+
+        assert state.hvac_mode is not None
+        assert "Could not find target temperature" not in caplog.text
+        assert bsblan.get_temperature_unit == "°C"
 
 
 @pytest.mark.asyncio

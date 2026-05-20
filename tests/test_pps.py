@@ -82,6 +82,14 @@ def test_bsb_device_with_buswritable_zero_supports_time_sync() -> None:
     assert device.supports_time_sync
 
 
+def test_client_time_sync_support_requires_device_metadata() -> None:
+    """Test clients report time sync support only after device metadata loads."""
+    bsblan = BSBLAN(BSBLANConfig(host="example.com"))
+
+    assert bsblan.device_info is None
+    assert not bsblan.supports_time_sync
+
+
 def test_pps_api_config_uses_climate_params(pps_bsblan: BSBLAN) -> None:
     """Test PPS devices use the 15000+ climate parameter map."""
     assert pps_bsblan.device_info is not None
