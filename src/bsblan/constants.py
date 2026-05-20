@@ -270,6 +270,10 @@ class HeatingCircuitStatus(IntEnum):
     FAULT_ERROR = 0x02
     STANDBY_1 = 0x19
     OFF = 0x76
+    DAY_ECO = 0x77
+    SETBACK_REDUCED = 0x78
+    SETBACK_FROST_PROTECTION = 0x79
+    ROOM_TEMPERATURE_LIMIT = 0x7A
     STANDBY_2 = 0x8C
     COOLING_OFF = 0x8A
     COOLING_LOCKED = 0x92
@@ -295,9 +299,6 @@ class HeatingCircuitStatus(IntEnum):
     SWITCHOFF_OPTIMIZATION = 0x73
     HEATING_REDUCED = 0x74
     FLOW_FROST_PROTECTION = 0x75
-    DAY_ECO = 0x77
-    SETBACK_REDUCED = 0x78
-    SETBACK_FROST_PROTECTION = 0x79
     RESERVED_HEATING_2 = 0x89
 
     # Preheating states
@@ -391,6 +392,10 @@ _STATUS_TO_CATEGORY: dict[HeatingCircuitStatus, HVACActionCategory] = {
     HeatingCircuitStatus.LOCKED_HEATING_MODE: HVACActionCategory.OFF,
     HeatingCircuitStatus.LOCKED_GENERATOR: HVACActionCategory.OFF,
     HeatingCircuitStatus.LOCKED_BUFFER: HVACActionCategory.OFF,
+    HeatingCircuitStatus.DAY_ECO: HVACActionCategory.OFF,
+    HeatingCircuitStatus.SETBACK_REDUCED: HVACActionCategory.OFF,
+    HeatingCircuitStatus.SETBACK_FROST_PROTECTION: HVACActionCategory.OFF,
+    HeatingCircuitStatus.ROOM_TEMPERATURE_LIMIT: HVACActionCategory.OFF,
     # Heating states
     HeatingCircuitStatus.MANUAL_CONTROL: HVACActionCategory.HEATING,
     HeatingCircuitStatus.OVERRUN: HVACActionCategory.HEATING,
@@ -407,9 +412,6 @@ _STATUS_TO_CATEGORY: dict[HeatingCircuitStatus, HVACActionCategory] = {
     HeatingCircuitStatus.SWITCHOFF_OPTIMIZATION: HVACActionCategory.HEATING,
     HeatingCircuitStatus.HEATING_REDUCED: HVACActionCategory.HEATING,
     HeatingCircuitStatus.FLOW_FROST_PROTECTION: HVACActionCategory.HEATING,
-    HeatingCircuitStatus.DAY_ECO: HVACActionCategory.HEATING,
-    HeatingCircuitStatus.SETBACK_REDUCED: HVACActionCategory.HEATING,
-    HeatingCircuitStatus.SETBACK_FROST_PROTECTION: HVACActionCategory.HEATING,
     HeatingCircuitStatus.RESERVED_HEATING_2: HVACActionCategory.HEATING,
     # Preheating states
     HeatingCircuitStatus.SWITCHON_OPTIMIZATION_QUICK_HEATUP: (
