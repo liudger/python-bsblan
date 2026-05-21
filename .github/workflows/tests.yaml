@@ -83,12 +83,14 @@ jobs:
           uv run python -m coverage combine coverage*/.coverage*
           uv run python -m coverage xml -i
       - name: 🚀 Upload coverage report
-        if: env.HAS_CODECOV_TOKEN == 'true'
+        if: env.HAS_CODECOV_TOKEN == 'true' || github.event_name == 'pull_request'
         uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         with:
+          fail_ci_if_error: true
+          files: coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: ℹ️ Skip Codecov upload (missing token)
-        if: env.HAS_CODECOV_TOKEN != 'true'
+        if: env.HAS_CODECOV_TOKEN != 'true' && github.event_name != 'pull_request'
         run: echo "CODECOV_TOKEN is not set; skipping Codecov upload."
       - name: SonarQube Cloud Scan
         if: env.HAS_SONAR_TOKEN == 'true' && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
