@@ -397,6 +397,24 @@ async def test_thermostat_circuit2_no_params(
     assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
 
 
+@pytest.mark.asyncio
+async def test_thermostat_circuit2_rejects_cooling_temperature(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test cooling target writes are only mapped for circuit 1."""
+    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+        "min": 8.0,
+        "max": 28.0,
+    }
+    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+
+    with pytest.raises(BSBLANInvalidParameterError):
+        await mock_bsblan_circuit.thermostat(
+            target_temperature_high="24",
+            circuit=2,
+        )
+
+
 # --- Temperature range initialization tests ---
 
 

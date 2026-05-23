@@ -29,6 +29,7 @@ BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     "700": "hvac_mode",
     "710": "target_temperature",
     "900": "hvac_mode_changeover",
+    "902": "target_temperature_high",
     # -------
     "8000": "hvac_action",
     "8740": "current_temperature",
@@ -154,7 +155,11 @@ class CircuitConfig:
         2: "staticValues_circuit2",
     }
     THERMOSTAT_PARAMS: Final[dict[int, dict[str, str]]] = {
-        1: {"target_temperature": "710", "hvac_mode": "700"},
+        1: {
+            "target_temperature": "710",
+            "target_temperature_high": "902",
+            "hvac_mode": "700",
+        },
         2: {"target_temperature": "1010", "hvac_mode": "1000"},
     }
     PROBE_PARAMS: Final[dict[int, str]] = {

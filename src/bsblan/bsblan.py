@@ -1137,6 +1137,7 @@ class BSBLAN:
         target_temperature: str | None = None,
         hvac_mode: int | None = None,
         circuit: int = 1,
+        target_temperature_high: str | float | None = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan.
 
@@ -1147,10 +1148,14 @@ class BSBLAN:
                 For PPS, valid values are 0=off, 1=auto, and 3=heat/manual;
                 they are translated to PPS raw values before posting.
             circuit: The heating circuit number (1 or 2). Defaults to 1.
+            target_temperature_high: The cooling comfort setpoint to set.
 
         Example:
             # Set HC1 temperature
             await client.thermostat(target_temperature="21.0")
+
+            # Set HC1 cooling comfort setpoint
+            await client.thermostat(target_temperature_high="24.0")
 
             # Set HC2 mode
             await client.thermostat(hvac_mode=1, circuit=2)
@@ -1164,6 +1169,7 @@ class BSBLAN:
         self._validate_single_parameter(
             target_temperature,
             hvac_mode,
+            target_temperature_high,
             error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
@@ -1171,6 +1177,7 @@ class BSBLAN:
             target_temperature,
             hvac_mode,
             circuit,
+            target_temperature_high,
         )
         await self._set_device_state(state)
 
@@ -1179,6 +1186,7 @@ class BSBLAN:
         target_temperature: str | None,
         hvac_mode: int | None,
         circuit: int = 1,
+        target_temperature_high: str | float | None = None,
     ) -> dict[str, Any]:
         """Prepare the thermostat state for setting.
 
@@ -1186,6 +1194,7 @@ class BSBLAN:
             target_temperature (str | None): The target temperature to set.
             hvac_mode (int | None): The HVAC mode to set as raw integer.
             circuit: The heating circuit number (1 or 2).
+            target_temperature_high: The cooling comfort setpoint to set.
 
         Returns:
             dict[str, Any]: The prepared state for the thermostat.
@@ -1202,6 +1211,19 @@ class BSBLAN:
                 {
                     "Parameter": param_ids["target_temperature"],
                     "Value": target_temperature,
+                    "Type": "1",
+                },
+            )
+        if target_temperature_high is not None:
+            self._validate_target_temperature_high(target_temperature_high)
+            param_id = param_ids.get("target_temperature_high")
+            if param_id is None:
+                parameter_name = "target_temperature_high"
+                raise BSBLANInvalidParameterError(parameter_name)
+            state.update(
+                {
+                    "Parameter": param_id,
+                    "Value": str(target_temperature_high),
                     "Type": "1",
                 },
             )
@@ -1224,6 +1246,16 @@ class BSBLAN:
         if self._uses_pps_bus:
             return {"target_temperature": "15004", "hvac_mode": "15000"}
         return CircuitConfig.THERMOSTAT_PARAMS[circuit]
+
+    def _validate_target_temperature_high(
+        self,
+        target_temperature_high: str | float,
+    ) -> None:
+        """Validate the cooling target temperature value."""
+        try:
+            float(target_temperature_high)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(str(target_temperature_high)) from err
 
     async def _validate_target_temperature(
         self,

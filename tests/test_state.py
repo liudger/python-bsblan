@@ -59,6 +59,12 @@ async def test_state(monkeypatch: Any) -> None:
         assert state.target_temperature.desc == ""
         assert state.target_temperature.unit == "°C"
 
+        # Cooling target temperature assertions
+        assert state.target_temperature_high is not None
+        assert state.target_temperature_high.value == 21.0
+        assert state.target_temperature_high.desc == ""
+        assert state.target_temperature_high.unit == "°C"
+
     # HVAC mode changeover assertions
     assert state.hvac_mode_changeover is not None
     assert state.hvac_mode_changeover.value == 2
@@ -81,5 +87,68 @@ async def test_state(monkeypatch: Any) -> None:
 
     # Verify API call
     request_mock.assert_called_once_with(
-        params={"Parameter": "700,710,900,8000,8740,770"}
+        params={"Parameter": "700,710,900,902,8000,8740,770"}
     )
+
+
+@pytest.mark.asyncio
+async def test_state_with_cooling_include(monkeypatch: Any) -> None:
+    """Test fetching only the cooling target temperature."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+
+        api_validator = APIValidator(API_V3)
+        api_validator.validated_sections.add("heating")
+        bsblan._api_validator = api_validator
+
+        state_data = json.loads(load_fixture("state.json"))
+        request_mock: AsyncMock = AsyncMock(return_value={"902": state_data["902"]})
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        state: State = await bsblan.state(include=["target_temperature_high"])
+
+        assert state.target_temperature_high is not None
+        assert state.target_temperature_high.value == 21.0
+        assert state.target_temperature is None
+        request_mock.assert_awaited_once_with(params={"Parameter": "902"})
+
+
+@pytest.mark.asyncio
+async def test_state_without_cooling_strips_target_temperature_high(
+    monkeypatch: Any,
+) -> None:
+    """Test unsupported cooling setpoint is stripped during validation."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        bsblan._api_data = {
+            section: params.copy() for section, params in API_V3.items()
+        }
+        bsblan._api_validator = APIValidator(bsblan._api_data)
+
+        state_data = json.loads(load_fixture("state.json"))
+        validation_response = {"700": state_data["700"]}
+        fetch_response = {"700": state_data["700"]}
+        request_mock: AsyncMock = AsyncMock(
+            side_effect=[validation_response, fetch_response]
+        )
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        state: State = await bsblan.state(
+            include=["hvac_mode", "target_temperature_high"]
+        )
+
+        assert state.hvac_mode is not None
+        assert state.target_temperature_high is None
+        assert bsblan.get_parameter_id("target_temperature_high") is None
+        assert [
+            call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+        ] == ["700,902", "700"]

@@ -118,6 +118,26 @@ async def test_change_temperature(
 
 
 @pytest.mark.asyncio
+async def test_change_cooling_temperature(
+    mock_bsblan: BSBLAN,
+    mock_aresponses: ResponsesMockServer,
+) -> None:
+    """Test changing BSBLAN cooling setpoint."""
+    expected_data = {
+        "Parameter": "902",
+        "Value": "32.0",
+        "Type": "1",
+    }
+    mock_aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan.thermostat(target_temperature_high=32.0)
+
+
+@pytest.mark.asyncio
 async def test_change_hvac_mode(
     mock_bsblan: BSBLAN,
     mock_aresponses: ResponsesMockServer,
@@ -142,6 +162,13 @@ async def test_invalid_temperature(mock_bsblan: BSBLAN) -> None:
     """Test setting an invalid temperature."""
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan.thermostat(target_temperature="35")
+
+
+@pytest.mark.asyncio
+async def test_invalid_cooling_temperature(mock_bsblan: BSBLAN) -> None:
+    """Test setting an invalid cooling temperature."""
+    with pytest.raises(BSBLANInvalidParameterError):
+        await mock_bsblan.thermostat(target_temperature_high="invalid")
 
 
 @pytest.mark.asyncio
@@ -190,4 +217,17 @@ async def test_no_parameters(mock_bsblan: BSBLAN) -> None:
     """Test calling thermostat without parameters."""
     with pytest.raises(BSBLANError) as exc_info:
         await mock_bsblan.thermostat()
+    assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
+
+
+@pytest.mark.asyncio
+async def test_cooling_temperature_with_other_parameter_raises(
+    mock_bsblan: BSBLAN,
+) -> None:
+    """Test cooling setpoint respects one-parameter-per-call rule."""
+    with pytest.raises(BSBLANError) as exc_info:
+        await mock_bsblan.thermostat(
+            target_temperature="20",
+            target_temperature_high="24",
+        )
     assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER

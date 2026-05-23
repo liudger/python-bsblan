@@ -21,17 +21,17 @@ from bsblan.constants import (
     [
         (
             "v1",
-            {"700", "710", "714", "730"},  # hvac_mode, target_temp, min_temp, v1_max
+            {"700", "710", "902", "714", "730"},
             {"770", "716"},  # v3_boost, v3_max_temp
         ),
         (
             "v3",
-            {"700", "710", "714", "770", "716"},  # base + v3 extensions
+            {"700", "710", "902", "714", "770", "716"},
             {"730"},  # v1_max_temp
         ),
         (
             "v5",  # Unknown version
-            {"700", "710", "714"},  # only base parameters
+            {"700", "710", "902", "714"},  # only base parameters
             {"770", "730", "716"},  # no extensions
         ),
     ],
@@ -136,6 +136,15 @@ def test_hot_water_parameter_groups_total_count() -> None:
         + len(HotWaterParams.SCHEDULE)
     )
     assert total_grouped == len(BASE_HOT_WATER_PARAMS)
+
+
+def test_cooling_target_uses_single_base_parameter() -> None:
+    """Test cooling setpoint uses 902, not duplicate decimal parameters."""
+    config = build_api_config("v3")
+
+    assert config["heating"]["902"] == "target_temperature_high"
+    assert "902.1" not in config["heating"]
+    assert "902.2" not in config["heating"]
 
 
 @pytest.mark.parametrize("version", ["v1", "v3"])

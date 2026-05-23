@@ -36,6 +36,19 @@
     "readwrite": 0,
     "unit": ""
   },
+  "902": {
+    "name": "Cooling circuit 1 - Comfort setpoint",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
+    "error": 0,
+    "value": "21.0",
+    "desc": "",
+    "precision": 0.1,
+    "dataType": 0,
+    "readonly": 0,
+    "readwrite": 0,
+    "unit": "°C"
+  },
   "8000": {
     "name": "Status heating circuit 1",
     "dataType_name": "ENUM",
