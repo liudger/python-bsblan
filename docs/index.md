@@ -7,6 +7,7 @@ Asynchronous Python client for [BSB-LAN](https://github.com/fredlcore/bsb_lan) d
 - Async/await support using `aiohttp`
 - Read heating state, sensor data, and device information
 - Control thermostat settings and hot water parameters
+- Detect optional cooling setpoints for heat/cool range controls
 - Fully typed with PEP 561 support
 - Automatic API version detection (v1/v3)
 - Lazy loading with per-section validation
