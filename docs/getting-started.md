@@ -63,6 +63,29 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+## Cooling setpoint support
+
+Some BSB/LPB controllers expose a cooling comfort setpoint for heating circuit
+1. The client maps BSB-LAN parameter `902` to `target_temperature_high`; the
+duplicate decimal parameters `902.1` and `902.2` are not used.
+
+Cooling support is optional. During section validation, unsupported parameters
+are removed from the active API map, so integrations can detect support by
+checking whether `state.target_temperature_high` is present.
+
+```python
+async with BSBLAN(config) as client:
+    state = await client.state(include=["target_temperature_high"])
+
+    if state.target_temperature_high is not None:
+        print(f"Cooling setpoint: {state.target_temperature_high.value}")
+        await client.thermostat(target_temperature_high="24.0")
+```
+
+BSB-LAN writes one parameter at a time. If an application exposes a heat/cool
+temperature range, write `target_temperature` and `target_temperature_high` with
+separate `thermostat()` calls.
+
 ## PPS bus support
 
 PPS bus devices are detected from the device metadata returned by BSB-LAN. The
