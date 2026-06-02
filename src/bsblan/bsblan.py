@@ -15,6 +15,7 @@ import backoff
 from aiohttp.hdrs import METH_POST
 from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
+from packaging.version import InvalidVersion
 from yarl import URL
 
 from .constants import (
@@ -581,7 +582,10 @@ class BSBLAN:
         if not self._firmware_version:
             raise BSBLANError(ErrorMsg.FIRMWARE_VERSION)
 
-        firmware_version = pkg_version.parse(self._firmware_version)
+        try:
+            firmware_version = pkg_version.parse(self._firmware_version)
+        except InvalidVersion as exc:
+            raise BSBLANVersionError(ErrorMsg.VERSION) from exc
         if firmware_version < pkg_version.parse("3.0.0"):
             raise BSBLANVersionError(ErrorMsg.VERSION)
         self._api_version = SUPPORTED_API_VERSION
