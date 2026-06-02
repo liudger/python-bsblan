@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "./.github/hooks/run_validation_after_edits.sh",
+        "timeout": 1800
+      }
+    ]
+  }
+}

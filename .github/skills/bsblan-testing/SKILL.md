@@ -39,7 +39,16 @@ Test fixtures (JSON responses) are in `tests/fixtures/`. Common fixtures:
 - `hot_water_state.json` - Hot water state
 - `sensor.json` - Sensor readings
 
-Load fixtures using the `load_fixture` helper from `conftest.py`.
+Load fixtures using `load_fixture(filename: str) -> str` from `tests/__init__.py`.
+
+```python
+import json
+
+from tests import load_fixture
+
+raw = load_fixture("device.json")
+data = json.loads(raw)  # parsed dict[str, Any]
+```
 
 ## Coverage Requirements
 
@@ -84,6 +93,8 @@ CI enforces:
 - Patch coverage = 100% (Codecov checks new/modified lines)
 
 If CI fails with coverage issues, check the Codecov report in the PR for uncovered lines.
+If a line is genuinely untestable (for example defensive guards), mark it with
+`# pragma: no cover` and justify that choice in the PR description.
 
 ## Running Tests
 
@@ -124,6 +135,41 @@ mock_bsblan._request.assert_awaited_with(
     base_path="/JS",
     data={"Parameter": "1610", "Value": "60.0", "Type": "1"},
 )
+```
+
+### Fixture Setup and Registration
+
+Define shared fixtures in `tests/conftest.py` so pytest auto-discovers them.
+Use the `mock_bsblan` pattern for naming and setup:
+
+```python
+@pytest.fixture
+async def mock_bsblan(
+    aresponses: ResponsesMockServer,
+    monkeypatch: Any,
+) -> AsyncGenerator[BSBLAN, Any]:
+    ...
+```
+
+Add new JSON payloads in `tests/fixtures/` with descriptive, snake_case names
+that match the behavior under test.
+
+### Mocking HTTP Response Handling
+
+Use `monkeypatch` with `AsyncMock` to return fixture payloads when testing
+response parsing logic (not only outgoing request arguments):
+
+```python
+import json
+from unittest.mock import AsyncMock
+
+from tests import load_fixture
+
+request_mock = AsyncMock(return_value=json.loads(load_fixture("state.json")))
+monkeypatch.setattr(bsblan, "_request", request_mock)
+
+state = await bsblan.state()
+assert state.current_temperature is not None
 ```
 
 ## Testing Lazy Loading

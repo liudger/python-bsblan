@@ -1,13 +1,33 @@
 ---
+name: Code Review
 agent: agent
-description: Review code changes for python-bsblan library
+description: Review python-bsblan changes with findings first and repo quality gates
+argument-hint: "Scope to review (staged changes, PR #, or file paths)"
 ---
 
-# Code Review Checklist
+# Code Review
 
-Review the changes against the python-bsblan coding standards.
+Review the requested scope for regressions, correctness issues, and missing
+tests.
 
-## Checklist
+Prioritize findings over summaries and order findings by severity.
+Use this output format:
+
+1. Findings
+- Severity (`high`, `medium`, `low`), location, and impact.
+- Include precise file references and actionable fixes.
+
+2. Open Questions / Assumptions
+- Unknowns that block confidence in the review.
+
+3. Change Summary
+- Brief recap only after findings.
+
+Reference these standards while reviewing:
+- [CONTRIBUTING](../CONTRIBUTING.md)
+- [Copilot instructions](../copilot-instructions.md)
+
+## Review Checks
 
 ### Code Quality
 - [ ] Type hints on all functions
@@ -17,24 +37,29 @@ Review the changes against the python-bsblan coding standards.
 
 ### Testing
 - [ ] Tests added for new functionality
-- [ ] Test coverage 95%+ total
-- [ ] Patch coverage 100%
+- [ ] Total coverage remains 95%+
+- [ ] Patch coverage for changed code is 100%
 
 ### Patterns
-- [ ] Uses `pydantic` `BaseModel` for validation and serialization
+- [ ] Response models use `pydantic` `BaseModel`
+- [ ] Set-parameter models use `@dataclass`
 - [ ] Uses `aiohttp` for async HTTP
 - [ ] Follows existing parameter naming conventions
-- [ ] Error handling uses custom exceptions (`BSBLANError`, `BSBLANConnectionError`)
+- [ ] Error handling uses custom exceptions (`BSBLANError`,
+	  `BSBLANConnectionError`)
 
 ### Prek
 - [ ] Ruff passes (linting + formatting)
-- [ ] MyPy passes (type checking)
+- [ ] ty passes (type checking)
 - [ ] Pylint passes (code analysis)
 - [ ] Pytest passes (tests)
 
-## Run Validation
+## Validation Commands
 
 ```bash
 uv run prek run --all-files
 uv run pytest --cov=src/bsblan --cov-report=term-missing
 ```
+
+If no findings are discovered, explicitly say so and list any residual testing
+gaps.
