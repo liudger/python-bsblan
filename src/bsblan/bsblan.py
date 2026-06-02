@@ -633,8 +633,19 @@ class BSBLAN:
 
         # Prefer heating_protective_setpoint (714/1014) as the true lower bound
         # for standard circuits. Fall back to min_temp for PPS circuits (15006)
-        # which have no separate protective setpoint.
-        min_source = static_values.heating_protective_setpoint or static_values.min_temp
+        # which have no separate protective setpoint. Skip sources whose value is
+        # inactive (BSB-LAN may return "---" which becomes value=None).
+        min_source = next(
+            (
+                source
+                for source in (
+                    static_values.heating_protective_setpoint,
+                    static_values.min_temp,
+                )
+                if source is not None and source.value is not None
+            ),
+            None,
+        )
         if min_source is not None:
             temp_range["min"] = min_source.value
             logger.debug(
@@ -645,8 +656,18 @@ class BSBLAN:
 
         # Prefer comfort_setpoint_max (716/1016) as the upper bound for standard
         # circuits. Fall back to max_temp for PPS circuits (15007) which expose
-        # only a generic max.
-        max_source = static_values.comfort_setpoint_max or static_values.max_temp
+        # only a generic max. Skip sources whose value is inactive.
+        max_source = next(
+            (
+                source
+                for source in (
+                    static_values.comfort_setpoint_max,
+                    static_values.max_temp,
+                )
+                if source is not None and source.value is not None
+            ),
+            None,
+        )
         if max_source is not None:
             temp_range["max"] = max_source.value
             logger.debug(

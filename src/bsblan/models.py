@@ -481,11 +481,13 @@ class StaticState(BaseModel):
 
     # 712/1012: room temperature reduced (eco/night) setpoint
     temp_reduced_setpoint: EntityInfo[float] | None = None
-    # 714/1014: frost-protection lower bound; also used by PPS as min_temp (15006)
+    # PPS-only lower bound (15006)
     min_temp: EntityInfo[float] | None = None
-    # 716/1016: comfort setpoint max upper bound; PPS uses max_temp (15007)
+    # 716/1016: comfort setpoint max upper bound
     comfort_setpoint_max: EntityInfo[float] | None = None
+    # PPS-only upper bound (15007)
     max_temp: EntityInfo[float] | None = None
+    # 714/1014: frost-protection lower bound
     heating_protective_setpoint: EntityInfo[float] | None = None
     cooling_comfort_setpoint_min: EntityInfo[float] | None = None
     cooling_reduced_setpoint: EntityInfo[float] | None = None
