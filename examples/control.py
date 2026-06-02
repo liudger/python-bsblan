@@ -192,6 +192,22 @@ def print_device_info(device: Device, info: Info) -> None:
     print_attributes("Device Information", attributes)
 
 
+def _first_temperature_attribute(static_state: StaticState) -> Any:
+    """Return the first available temperature attribute for unit detection."""
+    for attribute in (
+        static_state.heating_protective_setpoint,
+        static_state.temp_reduced_setpoint,
+        static_state.comfort_setpoint_max,
+        static_state.min_temp,
+        static_state.max_temp,
+        static_state.cooling_comfort_setpoint_min,
+        static_state.cooling_reduced_setpoint,
+    ):
+        if attribute is not None:
+            return attribute
+    return None
+
+
 def print_static_state(static_state: StaticState) -> None:
     """Print static state information, including heating and cooling bounds.
 
@@ -203,7 +219,7 @@ def print_static_state(static_state: StaticState) -> None:
         "Reduced Setpoint (eco/night)": get_attribute(
             static_state.temp_reduced_setpoint
         ),
-        "Max Temperature (heating)": get_attribute(static_state.comfort_setpoint_max),
+        "Comfort Setpoint Max": get_attribute(static_state.comfort_setpoint_max),
         "Heating Protective Setpoint": get_attribute(
             static_state.heating_protective_setpoint
         ),
@@ -214,7 +230,7 @@ def print_static_state(static_state: StaticState) -> None:
             static_state.cooling_reduced_setpoint
         ),
         "Temperature Unit": get_attribute(
-            static_state.heating_protective_setpoint, "unit"
+            _first_temperature_attribute(static_state), "unit"
         ),
     }
     print_attributes("Static State", attributes)
