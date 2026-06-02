@@ -36,7 +36,7 @@ async def mock_bsblan_circuit() -> AsyncGenerator[BSBLAN, None]:
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
         bsblan._api_data = build_api_config("v3")
-        bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+        bsblan._circuit_temp_ranges[1] = {"min": 17.0, "max": 23.0}
         bsblan._circuit_temp_initialized.add(1)
 
         api_validator = APIValidator(bsblan._api_data)
@@ -144,6 +144,8 @@ async def test_state_circuit2(monkeypatch: Any) -> None:
         assert state.hvac_mode.desc == "Automatic"
         assert state.current_temperature is not None
         assert state.current_temperature.value == 18.5
+        assert state.target_temperature_high is not None
+        assert state.target_temperature_high.value == 24.0
 
 
 @pytest.mark.asyncio
@@ -224,9 +226,15 @@ async def test_static_values_circuit2(monkeypatch: Any) -> None:
 
         assert isinstance(static, StaticState)
         assert static.min_temp is not None
-        assert static.min_temp.value == 8.0
+        assert static.min_temp.value == 16.0
         assert static.max_temp is not None
         assert static.max_temp.value == 28.0
+        assert static.heating_protective_setpoint is not None
+        assert static.heating_protective_setpoint.value == 8.0
+        assert static.cooling_comfort_setpoint_min is not None
+        assert static.cooling_comfort_setpoint_min.value == 18.0
+        assert static.cooling_reduced_setpoint is not None
+        assert static.cooling_reduced_setpoint.value == 26.0
 
 
 # --- Thermostat tests ---
@@ -240,7 +248,7 @@ async def test_thermostat_circuit2_temperature(
     """Test setting temperature on circuit 2."""
     # Set up HC2 temp range
     mock_bsblan_circuit._circuit_temp_ranges[2] = {
-        "min": 8.0,
+        "min": 16.0,
         "max": 28.0,
     }
     mock_bsblan_circuit._circuit_temp_initialized.add(2)
@@ -270,7 +278,7 @@ async def test_thermostat_circuit2_hvac_mode(
     """Test setting HVAC mode on circuit 2."""
     # Set up HC2 temp range
     mock_bsblan_circuit._circuit_temp_ranges[2] = {
-        "min": 8.0,
+        "min": 16.0,
         "max": 28.0,
     }
     mock_bsblan_circuit._circuit_temp_initialized.add(2)
@@ -315,7 +323,7 @@ async def test_thermostat_circuit2_invalid_temperature(
 ) -> None:
     """Test setting out-of-range temperature on circuit 2."""
     mock_bsblan_circuit._circuit_temp_ranges[2] = {
-        "min": 8.0,
+        "min": 16.0,
         "max": 28.0,
     }
     mock_bsblan_circuit._circuit_temp_initialized.add(2)
@@ -387,7 +395,7 @@ async def test_thermostat_circuit2_no_params(
 ) -> None:
     """Test that multi-parameter error still works with circuit."""
     mock_bsblan_circuit._circuit_temp_ranges[2] = {
-        "min": 8.0,
+        "min": 16.0,
         "max": 28.0,
     }
     mock_bsblan_circuit._circuit_temp_initialized.add(2)
@@ -398,19 +406,50 @@ async def test_thermostat_circuit2_no_params(
 
 
 @pytest.mark.asyncio
-async def test_thermostat_circuit2_rejects_cooling_temperature(
+async def test_thermostat_circuit2_cooling_temperature(
+    mock_bsblan_circuit: BSBLAN,
+    aresponses: ResponsesMockServer,
+) -> None:
+    """Test setting cooling temperature on circuit 2."""
+    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+        "min": 16.0,
+        "max": 28.0,
+        "cooling_min": 18.0,
+        "cooling_max": 26.0,
+    }
+    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+
+    expected_data = {
+        "Parameter": "1202",
+        "Value": "24",
+        "Type": "1",
+    }
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan_circuit.thermostat(
+        target_temperature_high="24",
+        circuit=2,
+    )
+
+
+@pytest.mark.asyncio
+async def test_thermostat_circuit2_invalid_cooling_temperature(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
-    """Test cooling target writes are only mapped for circuit 1."""
+    """Test setting out-of-range cooling temperature on circuit 2."""
     mock_bsblan_circuit._circuit_temp_ranges[2] = {
-        "min": 8.0,
-        "max": 28.0,
+        "cooling_min": 18.0,
+        "cooling_max": 26.0,
     }
     mock_bsblan_circuit._circuit_temp_initialized.add(2)
 
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan_circuit.thermostat(
-            target_temperature_high="24",
+            target_temperature_high="17",
             circuit=2,
         )
 
@@ -451,15 +490,17 @@ async def test_circuit2_temp_range_initialization(
         await bsblan._initialize_temperature_range(circuit=2)
 
         assert 2 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[2]["min"] == 8.0
+        assert bsblan._circuit_temp_ranges[2]["min"] == 16.0
         assert bsblan._circuit_temp_ranges[2]["max"] == 28.0
+        assert bsblan._circuit_temp_ranges[2]["cooling_min"] == 18.0
+        assert bsblan._circuit_temp_ranges[2]["cooling_max"] == 26.0
 
 
 @pytest.mark.asyncio
-async def test_circuit1_temp_range_unchanged(
+async def test_circuit1_temp_range_uses_reduced_lower_bound(
     monkeypatch: Any,
 ) -> None:
-    """Test that HC1 temp range still uses legacy fields."""
+    """Test that HC1 temp range uses the reduced setpoint lower bound."""
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
@@ -485,8 +526,11 @@ async def test_circuit1_temp_range_unchanged(
         await bsblan._initialize_temperature_range(circuit=1)
 
         assert 1 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[1]["min"] == 8.0
-        assert bsblan._circuit_temp_ranges[1]["max"] == 20.0
+        assert bsblan._circuit_temp_ranges[1]["min"] == 17.0
+        assert bsblan._circuit_temp_ranges[1]["max"] == 23.0
+
+        with pytest.raises(BSBLANInvalidParameterError):
+            await bsblan._validate_target_temperature("16.5", circuit=1)
 
 
 @pytest.mark.asyncio
@@ -540,7 +584,7 @@ async def test_thermostat_circuit2_lazy_temp_init(
 
         # Verify it was initialized
         assert 2 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[2]["min"] == 8.0
+        assert bsblan._circuit_temp_ranges[2]["min"] == 16.0
         assert bsblan._circuit_temp_ranges[2]["max"] == 28.0
 
 
@@ -573,6 +617,7 @@ async def test_get_available_circuits_two_circuits(
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1, 2]
+    assert bsblan._available_circuits == {1, 2}
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
     ] == ["700", "1000"]
@@ -603,6 +648,7 @@ async def test_get_available_circuits_only_one(
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1]
+    assert bsblan._available_circuits == {1}
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
     ] == ["700", "1000"]
@@ -715,9 +761,32 @@ async def test_get_available_circuits_all_probes_missing(
 
     circuits = await bsblan.get_available_circuits()
     assert circuits == []
+    assert bsblan._available_circuits == set()
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
     ] == expected_params
+
+
+@pytest.mark.asyncio
+async def test_temperature_range_skips_unavailable_discovered_circuit(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test temp range init skips circuits known unavailable from discovery."""
+    bsblan = mock_bsblan_circuit
+    bsblan._available_circuits = {1}
+    request_mock = AsyncMock(return_value={})
+    bsblan._request = request_mock  # type: ignore[method-assign]
+
+    await bsblan._initialize_temperature_range(circuit=2)
+
+    assert 2 in bsblan._circuit_temp_initialized
+    assert bsblan._circuit_temp_ranges[2] == {
+        "min": None,
+        "max": None,
+        "cooling_min": None,
+        "cooling_max": None,
+    }
+    request_mock.assert_not_awaited()
 
 
 @pytest.mark.asyncio

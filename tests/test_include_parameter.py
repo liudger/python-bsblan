@@ -392,11 +392,11 @@ async def test_static_values_with_include(monkeypatch: Any) -> None:
         bsblan._api_validator = api_validator
 
         partial_response = {
-            "714": {
-                "name": "Min temp",
+            "712": {
+                "name": "Room temp reduced setpoint",
                 "unit": "°C",
                 "desc": "",
-                "value": "8.0",
+                "value": "17.0",
                 "dataType": 0,
                 "error": 0,
                 "readonly": 0,

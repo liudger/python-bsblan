@@ -41,7 +41,8 @@ def fresh_api_validator() -> APIValidator:
             "710": "target_temperature",
         },
         "staticValues": {
-            "714": "min_temp",
+            "712": "min_temp",
+            "714": "heating_protective_setpoint",
             "716": "max_temp",
         },
         "hot_water": {

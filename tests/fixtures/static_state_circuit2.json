@@ -1,16 +1,37 @@
 {
-  "min_temp": {
+  "1012": {
+    "name": "Room temp reduced setpoint",
+    "unit": "°C",
+    "desc": "",
+    "value": "16.0",
+    "dataType": 0
+  },
+  "1014": {
     "name": "Room temp protective setpoint cooling circuit 2",
     "unit": "°C",
     "desc": "",
     "value": "8.0",
     "dataType": 0
   },
-  "max_temp": {
+  "1016": {
     "name": "Comfort setpoint max",
     "unit": "°C",
     "desc": "",
     "value": "28.0",
+    "dataType": 0
+  },
+  "1205": {
+    "name": "Comfort setpoint min cooling circuit 2",
+    "unit": "°C",
+    "desc": "",
+    "value": "18.0",
+    "dataType": 0
+  },
+  "1203": {
+    "name": "Room temp reduced setpoint",
+    "unit": "°C",
+    "desc": "",
+    "value": "26.0",
     "dataType": 0
   }
 }

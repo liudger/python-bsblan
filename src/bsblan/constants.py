@@ -10,7 +10,10 @@ MIN_CIRCUIT: Final[int] = 1
 MAX_CIRCUIT: Final[int] = 2
 
 
-# API Versions
+# API version
+SUPPORTED_API_VERSION: Final[str] = "v3"
+
+
 class APIConfig(TypedDict):
     """Type for API configuration."""
 
@@ -24,7 +27,7 @@ class APIConfig(TypedDict):
     staticValues_circuit2: dict[str, str]
 
 
-# Base parameters that exist in all API versions
+# Supported BSB-LAN v3 API parameters
 BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     "700": "hvac_mode",
     "710": "target_temperature",
@@ -33,10 +36,15 @@ BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     # -------
     "8000": "hvac_action",
     "8740": "current_temperature",
+    "770": "room1_temp_setpoint_boost",
 }
 
 BASE_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
-    "714": "min_temp",
+    "712": "min_temp",
+    "714": "heating_protective_setpoint",
+    "716": "max_temp",
+    "905": "cooling_comfort_setpoint_min",
+    "903": "cooling_reduced_setpoint",
 }
 
 BASE_DEVICE_PARAMS: Final[dict[str, str]] = {
@@ -85,34 +93,25 @@ BASE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
     "576": "dhw_time_program_standard_values",
 }
 
-# V1-specific parameters
-V1_STATIC_VALUES_EXTENSIONS: Final[dict[str, str]] = {
-    "730": "max_temp",  # V1 uses 730 for max_temp
-}
-
-# V3-specific additional parameters
-V3_HEATING_EXTENSIONS: Final[dict[str, str]] = {
-    "770": "room1_temp_setpoint_boost",
-    # Future V3 extensions like 701, 701.1, 701.2 can be added here
-}
-
-V3_STATIC_VALUES_EXTENSIONS: Final[dict[str, str]] = {
-    "716": "max_temp",  # V3 uses 716 for max_temp
-}
-
 # --- Heating Circuit 2 parameters (1000-series) ---
 # These mirror HC1 (700-series) with an offset of +300
 BASE_HEATING_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     "1000": "hvac_mode",
     "1010": "target_temperature",
     "1200": "hvac_mode_changeover",
+    "1202": "target_temperature_high",
     # -------
     "8001": "hvac_action",
     "8770": "current_temperature",
+    "1070": "room1_temp_setpoint_boost",
 }
 
 BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
-    "1014": "min_temp",
+    "1012": "min_temp",
+    "1014": "heating_protective_setpoint",
+    "1016": "max_temp",
+    "1205": "cooling_comfort_setpoint_min",
+    "1203": "cooling_reduced_setpoint",
 }
 
 # PPS bus supports one room-unit style climate circuit. These parameters are
@@ -126,18 +125,6 @@ PPS_HEATING_PARAMS: Final[dict[str, str]] = {
 PPS_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
     "15006": "min_temp",
     "15007": "max_temp",
-}
-
-V1_STATIC_VALUES_CIRCUIT2_EXTENSIONS: Final[dict[str, str]] = {
-    "1030": "max_temp",
-}
-
-V3_HEATING_CIRCUIT2_EXTENSIONS: Final[dict[str, str]] = {
-    "1070": "room1_temp_setpoint_boost",
-}
-
-V3_STATIC_VALUES_CIRCUIT2_EXTENSIONS: Final[dict[str, str]] = {
-    "1016": "max_temp",
 }
 
 
@@ -160,7 +147,11 @@ class CircuitConfig:
             "target_temperature_high": "902",
             "hvac_mode": "700",
         },
-        2: {"target_temperature": "1010", "hvac_mode": "1000"},
+        2: {
+            "target_temperature": "1010",
+            "target_temperature_high": "1202",
+            "hvac_mode": "1000",
+        },
     }
     PROBE_PARAMS: Final[dict[int, str]] = {
         1: "700",
@@ -173,16 +164,23 @@ class CircuitConfig:
     INACTIVE_MARKER: Final[str] = "---"
 
 
-def build_api_config(version: str) -> APIConfig:
-    """Build API configuration dynamically based on version.
+def build_api_config(version: str = SUPPORTED_API_VERSION) -> APIConfig:
+    """Build the supported v3 API configuration.
 
     Args:
-        version: The API version ("v1" or "v3")
+        version: The API version to build. Only ``"v3"`` is supported.
 
     Returns:
-        APIConfig: The complete API configuration for the specified version
+        APIConfig: The complete API configuration.
+
+    Raises:
+        ValueError: If a version other than ``"v3"`` is requested.
 
     """
+    if version != SUPPORTED_API_VERSION:
+        msg = f"Only API version {SUPPORTED_API_VERSION} is supported"
+        raise ValueError(msg)
+
     config: APIConfig = {
         "heating": BASE_HEATING_PARAMS.copy(),
         "staticValues": BASE_STATIC_VALUES_PARAMS.copy(),
@@ -193,31 +191,11 @@ def build_api_config(version: str) -> APIConfig:
         "heating_circuit2": BASE_HEATING_CIRCUIT2_PARAMS.copy(),
         "staticValues_circuit2": BASE_STATIC_VALUES_CIRCUIT2_PARAMS.copy(),
     }
-
-    if version == "v1":
-        config["staticValues"].update(V1_STATIC_VALUES_EXTENSIONS)
-        config["staticValues_circuit2"].update(
-            V1_STATIC_VALUES_CIRCUIT2_EXTENSIONS,
-        )
-    elif version == "v3":
-        config["heating"].update(V3_HEATING_EXTENSIONS)
-        config["staticValues"].update(V3_STATIC_VALUES_EXTENSIONS)
-        config["heating_circuit2"].update(V3_HEATING_CIRCUIT2_EXTENSIONS)
-        config["staticValues_circuit2"].update(
-            V3_STATIC_VALUES_CIRCUIT2_EXTENSIONS,
-        )
-
     return config
 
 
-# Pre-built API configurations
-API_V1: Final[APIConfig] = build_api_config("v1")
-API_V3: Final[APIConfig] = build_api_config("v3")
-
-API_VERSIONS: Final[dict[str, APIConfig]] = {
-    "v1": API_V1,
-    "v3": API_V3,
-}
+# Pre-built API configuration
+API_V3: Final[APIConfig] = build_api_config()
 
 
 # Validation constants

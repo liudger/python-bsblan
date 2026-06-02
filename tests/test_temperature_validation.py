@@ -9,7 +9,7 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_VERSIONS, APIConfig
+from bsblan.constants import API_V3, APIConfig
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -79,15 +79,70 @@ async def test_validate_target_temperature_valid() -> None:
 
 
 @pytest.mark.asyncio
+async def test_validate_target_temperature_high_no_range() -> None:
+    """Test cooling target validation when no cooling bounds are available."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    async def mock_init_temp_range(circuit: int = 1) -> None:
+        pass
+
+    bsblan._initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
+
+    await bsblan._validate_target_temperature_high("32.0")
+
+
+@pytest.mark.asyncio
+async def test_validate_target_temperature_high_invalid_value() -> None:
+    """Test cooling target validation with invalid non-numeric value."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._circuit_temp_ranges[1] = {"cooling_min": 18.0, "cooling_max": 26.0}
+    bsblan._circuit_temp_initialized.add(1)
+
+    with pytest.raises(BSBLANInvalidParameterError):
+        await bsblan._validate_target_temperature_high("invalid")
+
+
+@pytest.mark.asyncio
+async def test_validate_target_temperature_high_out_of_range() -> None:
+    """Test cooling target validation with value outside cooling bounds."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._circuit_temp_ranges[1] = {"cooling_min": 18.0, "cooling_max": 26.0}
+    bsblan._circuit_temp_initialized.add(1)
+
+    with pytest.raises(BSBLANInvalidParameterError):
+        await bsblan._validate_target_temperature_high("17.5")
+
+    with pytest.raises(BSBLANInvalidParameterError):
+        await bsblan._validate_target_temperature_high("26.5")
+
+
+@pytest.mark.asyncio
+async def test_validate_target_temperature_high_valid() -> None:
+    """Test cooling target validation with value inside cooling bounds."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._circuit_temp_ranges[1] = {"cooling_min": 18.0, "cooling_max": 26.0}
+    bsblan._circuit_temp_initialized.add(1)
+
+    await bsblan._validate_target_temperature_high("21.0")
+
+
+@pytest.mark.asyncio
 async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> None:
     """Test warning when min_temp is not available from device (line 332)."""
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v1"
+        client._api_version = "v3"
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_VERSIONS["v1"]
+        source_config = API_V3
         client._api_data = cast(
             "APIConfig",
             {
@@ -119,9 +174,9 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v1"
+        client._api_version = "v3"
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_VERSIONS["v1"]
+        source_config = API_V3
         client._api_data = cast(
             "APIConfig",
             {
@@ -153,9 +208,9 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v1"
+        client._api_version = "v3"
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_VERSIONS["v1"]
+        source_config = API_V3
         client._api_data = cast(
             "APIConfig",
             {

@@ -281,6 +281,22 @@ async def test_pps_thermostat_temperature_writes_comfort_setpoint(
 
 
 @pytest.mark.asyncio
+async def test_pps_thermostat_rejects_cooling_temperature(
+    pps_bsblan: BSBLAN,
+) -> None:
+    """Test PPS climate rejects cooling target writes."""
+    pps_bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._circuit_temp_initialized.add(1)
+    request_mock = AsyncMock(return_value={"status": "ok"})
+    pps_bsblan._request = request_mock  # type: ignore[method-assign]
+
+    with pytest.raises(BSBLANInvalidParameterError, match="target_temperature_high"):
+        await pps_bsblan.thermostat(target_temperature_high="24.0")
+
+    request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_pps_thermostat_rejects_unsupported_eco_mode(
     pps_bsblan: BSBLAN,
 ) -> None:
@@ -336,6 +352,7 @@ async def test_pps_circuit_discovery_returns_single_climate(
     circuits = await pps_bsblan.get_available_circuits()
 
     assert circuits == [1]
+    assert pps_bsblan._available_circuits == {1}
     request_mock.assert_awaited_once_with(params={"Parameter": "15000"})
 
 
@@ -351,6 +368,8 @@ async def test_pps_circuit_discovery_returns_empty_without_mode(
     circuits = await pps_bsblan.get_available_circuits()
 
     assert circuits == []
+    assert pps_bsblan._available_circuits == set()
+    assert pps_bsblan._available_circuits == set()
 
 
 @pytest.mark.asyncio

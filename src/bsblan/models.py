@@ -481,6 +481,9 @@ class StaticState(BaseModel):
 
     min_temp: EntityInfo[float] | None = None
     max_temp: EntityInfo[float] | None = None
+    heating_protective_setpoint: EntityInfo[float] | None = None
+    cooling_comfort_setpoint_min: EntityInfo[float] | None = None
+    cooling_reduced_setpoint: EntityInfo[float] | None = None
 
 
 class Sensor(BaseModel):

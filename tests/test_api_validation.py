@@ -17,7 +17,7 @@ import pytest
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_VERSIONS,
+    API_V3,
     APIConfig,
     ErrorMsg,
 )
@@ -195,9 +195,9 @@ async def test_validate_section_already_validated(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v1"
+        client._api_version = "v3"
         # Deep copy to avoid modifying the shared constant
-        source_config = API_VERSIONS["v1"]
+        source_config = API_V3
         client._api_data = cast(
             "APIConfig",
             {
@@ -229,9 +229,9 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v1"
+        client._api_version = "v3"
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_VERSIONS["v1"]
+        source_config = API_V3
         client._api_data = cast(
             "APIConfig",
             {

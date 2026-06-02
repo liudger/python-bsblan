@@ -48,7 +48,8 @@ def validator() -> APIValidator:
             # Add other parameters as needed
         },
         "staticValues": {
-            "714": "min_temp",
+            "712": "min_temp",
+            "714": "heating_protective_setpoint",
             "716": "max_temp",
             # Add other parameters as needed
         },

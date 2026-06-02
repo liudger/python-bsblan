@@ -41,6 +41,12 @@ async def test_sensor(monkeypatch: Any) -> None:
         static: StaticState = await bsblan.static_values()
         assert isinstance(static, StaticState)
         assert static.min_temp is not None
-        assert static.min_temp.value == 8.0
+        assert static.min_temp.value == 17.0
         assert static.max_temp is not None
-        assert static.max_temp.value == 20.0
+        assert static.max_temp.value == 23.0
+        assert static.heating_protective_setpoint is not None
+        assert static.heating_protective_setpoint.value == 8.0
+        assert static.cooling_comfort_setpoint_min is not None
+        assert static.cooling_comfort_setpoint_min.value == 18.0
+        assert static.cooling_reduced_setpoint is not None
+        assert static.cooling_reduced_setpoint.value == 26.0

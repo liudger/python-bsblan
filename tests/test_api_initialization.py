@@ -7,7 +7,7 @@ import pytest
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_VERSIONS,
+    API_V3,
 )
 from bsblan.exceptions import BSBLANError
 
@@ -24,14 +24,14 @@ async def test_request_no_session() -> None:
 
 
 @pytest.mark.asyncio
-async def test_api_data_initialized_from_versions() -> None:
+async def test_api_data_initialized_from_default_config() -> None:
     """Test that API data is initialized via _setup_api_validator."""
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
         # Set up client with minimal state
-        client._api_version = "v1"
+        client._api_version = "v3"
         client._api_data = None  # This should be initialized
 
         # Call _setup_api_validator which should initialize _api_data
@@ -39,8 +39,8 @@ async def test_api_data_initialized_from_versions() -> None:
 
         # Verify API data was initialized (should be a copy, not the same object)
         assert client._api_data is not None
-        # Verify it started with the same keys as API_VERSIONS["v1"]
-        assert set(client._api_data.keys()) == set(API_VERSIONS["v1"].keys())
+        # Verify it started with the same keys as API_V3
+        assert set(client._api_data.keys()) == set(API_V3.keys())
 
 
 @pytest.mark.asyncio
