@@ -369,7 +369,6 @@ async def test_pps_circuit_discovery_returns_empty_without_mode(
 
     assert circuits == []
     assert pps_bsblan._available_circuits == set()
-    assert pps_bsblan._available_circuits == set()
 
 
 @pytest.mark.asyncio

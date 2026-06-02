@@ -50,6 +50,19 @@ async def test_set_api_version_rejects_legacy_firmware() -> None:
 
 
 @pytest.mark.asyncio
+async def test_set_api_version_invalid_firmware_string() -> None:
+    """Test non-PEP440 firmware strings raise BSBLANVersionError."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Firmware strings with build metadata are not PEP 440 compliant
+    bsblan._firmware_version = "1.0.38-not-a-version"
+
+    with pytest.raises(BSBLANVersionError):
+        bsblan._set_api_version()
+
+
+@pytest.mark.asyncio
 async def test_set_api_version_v3() -> None:
     """Test setting API version with v3 compatible firmware."""
     config = BSBLANConfig(host="example.com")

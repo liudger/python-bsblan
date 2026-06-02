@@ -86,7 +86,7 @@ async def test_state(monkeypatch: Any) -> None:
     assert state.room1_temp_setpoint_boost.unit == "°C"
 
     # Verify API call
-    request_mock.assert_called_once_with(
+    request_mock.assert_awaited_once_with(
         params={"Parameter": "700,710,900,902,8000,8740,770"}
     )
 
