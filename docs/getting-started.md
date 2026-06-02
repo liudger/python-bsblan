@@ -63,11 +63,25 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+## Temperature bounds
+
+For heating comfort setpoint writes (`target_temperature`), `min_temp` maps to
+the reduced setpoint (`712` for circuit 1, `1012` for circuit 2). The protective
+setpoints (`714` and `1014`) are exposed separately and are not used as the
+comfort setpoint lower bound. The upper heating bound is `716` for circuit 1 and
+`1016` for circuit 2 when the device exposes those parameters.
+
 ## Cooling setpoint support
 
-Some BSB/LPB controllers expose a cooling comfort setpoint for heating circuit
-1. The client maps BSB-LAN parameter `902` to `target_temperature_high`; the
-duplicate decimal parameters `902.1` and `902.2` are not used.
+Some BSB/LPB controllers expose a cooling comfort setpoint for each heating
+circuit. The client maps BSB-LAN parameter `902` for circuit 1 and `1202` for
+circuit 2 to `target_temperature_high`; the duplicate decimal parameters
+`902.1` and `902.2` are not used.
+
+When available, cooling setpoint validation uses `905`/`1205` (comfort setpoint
+minimum) as the lower bound and `903`/`1203` (room temperature reduced setpoint)
+as the upper bound. Parameters `908` and `1208` are flow setpoints and are not
+used for room setpoint validation.
 
 Cooling support is optional. During section validation, unsupported parameters
 are removed from the active API map, so integrations can detect support by

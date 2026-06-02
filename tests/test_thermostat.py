@@ -42,7 +42,7 @@ async def mock_bsblan() -> AsyncGenerator[BSBLAN, None]:
         bsblan = BSBLAN(config, session=session)
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
-        bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+        bsblan._circuit_temp_ranges[1] = {"min": 17.0, "max": 23.0}
         bsblan._circuit_temp_initialized.add(1)
         yield bsblan
 

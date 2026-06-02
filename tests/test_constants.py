@@ -5,7 +5,6 @@ import pytest
 import bsblan
 import bsblan.constants
 from bsblan.constants import (
-    API_V1,
     API_V3,
     BASE_HOT_WATER_PARAMS,
     HeatingCircuitStatus,
@@ -16,33 +15,22 @@ from bsblan.constants import (
 )
 
 
-@pytest.mark.parametrize(
-    ("version", "expected_includes", "expected_excludes"),
-    [
-        (
-            "v1",
-            {"700", "710", "902", "714", "730"},
-            {"770", "716"},  # v3_boost, v3_max_temp
-        ),
-        (
-            "v3",
-            {"700", "710", "902", "714", "770", "716"},
-            {"730"},  # v1_max_temp
-        ),
-        (
-            "v5",  # Unknown version
-            {"700", "710", "902", "714"},  # only base parameters
-            {"770", "730", "716"},  # no extensions
-        ),
-    ],
-)
-def test_build_api_config_versions(
-    version: str,
-    expected_includes: set[str],
-    expected_excludes: set[str],
-) -> None:
-    """Test building API config for different versions."""
-    config = build_api_config(version)
+def test_build_api_config_defaults_to_v3() -> None:
+    """Test building the supported v3 API config by default."""
+    config = build_api_config()
+
+    expected_includes = {
+        "700",
+        "710",
+        "770",
+        "902",
+        "712",
+        "714",
+        "716",
+        "905",
+        "903",
+    }
+    expected_excludes = {"730"}  # summer/winter limit, not comfort max
 
     # Check expected parameters are included
     for param_id in expected_includes:
@@ -52,36 +40,32 @@ def test_build_api_config_versions(
             | config["device"]
             | config["sensor"]
             | config["hot_water"]
-        ), f"Parameter {param_id} missing in {version} config"
+        ), f"Parameter {param_id} missing in the v3 config"
 
     # Check excluded parameters are not included
     for param_id in expected_excludes:
         assert param_id not in (config["heating"] | config["staticValues"]), (
-            f"Parameter {param_id} should not be in {version} config"
+            f"Parameter {param_id} should not be in the v3 config"
         )
 
+    assert build_api_config("v3") == config
 
-@pytest.mark.parametrize(
-    ("api_config", "should_have", "should_not_have"),
-    [
-        (API_V1, {"730"}, {"770", "716"}),  # V1 has 730, not 770/716
-        (API_V3, {"770", "716"}, {"730"}),  # V3 has 770/716, not 730
-    ],
-)
-def test_pre_built_api_configurations(
-    api_config: dict[str, dict[str, str]],
-    should_have: set[str],
-    should_not_have: set[str],
-) -> None:
-    """Test that pre-built API configurations are correct."""
-    all_params = set(api_config["heating"].keys()) | set(
-        api_config["staticValues"].keys()
-    )
 
-    for param_id in should_have:
+@pytest.mark.parametrize("version", ["v1", "v5"])
+def test_build_api_config_rejects_unsupported_versions(version: str) -> None:
+    """Test that only API v3 can be built."""
+    with pytest.raises(ValueError, match="Only API version v3 is supported"):
+        build_api_config(version)
+
+
+def test_pre_built_api_configuration() -> None:
+    """Test that the pre-built API configuration is correct."""
+    all_params = set(API_V3["heating"].keys()) | set(API_V3["staticValues"].keys())
+
+    for param_id in ("770", "716"):
         assert param_id in all_params
 
-    for param_id in should_not_have:
+    for param_id in ("730",):
         assert param_id not in all_params
 
 
@@ -140,17 +124,29 @@ def test_hot_water_parameter_groups_total_count() -> None:
 
 def test_cooling_target_uses_single_base_parameter() -> None:
     """Test cooling setpoint uses 902, not duplicate decimal parameters."""
-    config = build_api_config("v3")
+    config = build_api_config()
 
     assert config["heating"]["902"] == "target_temperature_high"
+    assert config["heating_circuit2"]["1202"] == "target_temperature_high"
+    assert config["staticValues"]["712"] == "min_temp"
+    assert config["staticValues"]["714"] == "heating_protective_setpoint"
+    assert config["staticValues"]["716"] == "max_temp"
+    assert config["staticValues"]["905"] == "cooling_comfort_setpoint_min"
+    assert config["staticValues"]["903"] == "cooling_reduced_setpoint"
+    assert config["staticValues_circuit2"]["1012"] == "min_temp"
+    assert config["staticValues_circuit2"]["1014"] == ("heating_protective_setpoint")
+    assert config["staticValues_circuit2"]["1016"] == "max_temp"
+    assert config["staticValues_circuit2"]["1205"] == ("cooling_comfort_setpoint_min")
+    assert config["staticValues_circuit2"]["1203"] == "cooling_reduced_setpoint"
+    assert "908" not in config["staticValues"]
+    assert "1208" not in config["staticValues_circuit2"]
     assert "902.1" not in config["heating"]
     assert "902.2" not in config["heating"]
 
 
-@pytest.mark.parametrize("version", ["v1", "v3"])
-def test_api_config_structure(version: str) -> None:
+def test_api_config_structure() -> None:
     """Test that API config has required structure."""
-    config = build_api_config(version)
+    config = build_api_config()
 
     # Check all required sections exist
     required_sections = {

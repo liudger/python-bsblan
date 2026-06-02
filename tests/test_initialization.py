@@ -16,20 +16,18 @@ from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
     ErrorMsg,
 )
-from bsblan.exceptions import BSBLANError
+from bsblan.exceptions import BSBLANError, BSBLANVersionError
 
 
 @pytest.mark.asyncio
-async def test_copy_api_config_v1() -> None:
-    """Test _copy_api_config with v1 version."""
+async def test_copy_api_config_rejects_unsupported_version() -> None:
+    """Test _copy_api_config rejects unsupported API versions."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v1"
 
-        api_data = bsblan._copy_api_config()
-
-        # Verify API data was created
-        assert api_data is not None
+        with pytest.raises(BSBLANVersionError):
+            bsblan._copy_api_config()
 
 
 @pytest.mark.asyncio

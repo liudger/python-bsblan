@@ -7,8 +7,9 @@
     "8740": "current_temperature"
   },
   "staticValues": {
-    "714": "min_temp",
-    "730": "max_temp"
+    "712": "min_temp",
+    "714": "heating_protective_setpoint",
+    "716": "max_temp"
   },
   "device": {
     "6224": "device_identification",

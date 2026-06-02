@@ -43,6 +43,8 @@ async def test_initialize_temperature_range_celsius() -> None:
         # Verify temperature range was set correctly
         assert bsblan._circuit_temp_ranges[1]["min"] == 10.0
         assert bsblan._circuit_temp_ranges[1]["max"] == 30.0
+        assert bsblan._circuit_temp_ranges[1]["cooling_min"] is None
+        assert bsblan._circuit_temp_ranges[1]["cooling_max"] is None
         assert 1 in bsblan._circuit_temp_initialized
 
 
@@ -65,6 +67,8 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
         # Verify temperature range was set correctly
         assert bsblan._circuit_temp_ranges[1]["min"] == 50.0
         assert bsblan._circuit_temp_ranges[1]["max"] == 86.0
+        assert bsblan._circuit_temp_ranges[1]["cooling_min"] is None
+        assert bsblan._circuit_temp_ranges[1]["cooling_max"] is None
         assert 1 in bsblan._circuit_temp_initialized
 
 
@@ -94,6 +98,8 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
         # Verify temperature range was set correctly
         assert bsblan._circuit_temp_ranges[1]["min"] == 10.0
         assert bsblan._circuit_temp_ranges[1]["max"] == 30.0
+        assert bsblan._circuit_temp_ranges[1]["cooling_min"] is None
+        assert bsblan._circuit_temp_ranges[1]["cooling_max"] is None
         assert 1 in bsblan._circuit_temp_initialized
 
 

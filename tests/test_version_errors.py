@@ -37,16 +37,16 @@ async def test_set_api_version_unsupported() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_api_version_v1() -> None:
-    """Test setting API version with v1 compatible firmware."""
+async def test_set_api_version_rejects_legacy_firmware() -> None:
+    """Test legacy firmware that previously mapped to v1 is unsupported."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Set firmware version to v1 compatible
+    # Set firmware version to legacy v1-compatible firmware
     bsblan._firmware_version = "1.0.0"
-    bsblan._set_api_version()
 
-    assert bsblan._api_version == "v1"
+    with pytest.raises(BSBLANVersionError):
+        bsblan._set_api_version()
 
 
 @pytest.mark.asyncio
@@ -90,7 +90,9 @@ async def test_setup_api_validator_no_api_version() -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # API version is None by default
+    # Force API version to None to test the defensive error path
+    bsblan._api_version = None
+
     with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
         await bsblan._setup_api_validator()
 
@@ -105,7 +107,7 @@ async def test_set_api_version_v5() -> None:
     bsblan._firmware_version = "5.0.16"
     bsblan._set_api_version()
 
-    assert bsblan._api_version == "v3"  # BSB-LAN 5.x uses v3 API with extensions
+    assert bsblan._api_version == "v3"
 
 
 @pytest.mark.asyncio
@@ -118,7 +120,7 @@ async def test_set_api_version_v5_early() -> None:
     bsblan._firmware_version = "5.0.0"
     bsblan._set_api_version()
 
-    assert bsblan._api_version == "v3"  # BSB-LAN 5.x uses v3 API with extensions
+    assert bsblan._api_version == "v3"
 
 
 @pytest.mark.asyncio
@@ -193,11 +195,11 @@ async def test_set_api_version_v5_edge_cases() -> None:
 
 @pytest.mark.asyncio
 async def test_unsupported_version_still_fails() -> None:
-    """Test that unsupported versions between 1.2.0 and 3.0.0 still fail."""
+    """Test that unsupported versions before 3.0.0 still fail."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Test that version 2.0.0 still fails (gap between v1 and v3)
+    # Test that version 2.0.0 still fails
     bsblan._firmware_version = "2.0.0"
 
     with pytest.raises(BSBLANVersionError):

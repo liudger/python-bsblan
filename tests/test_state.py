@@ -148,7 +148,11 @@ async def test_state_without_cooling_strips_target_temperature_high(
 
         assert state.hvac_mode is not None
         assert state.target_temperature_high is None
-        assert bsblan.get_parameter_id("target_temperature_high") is None
+        assert bsblan._api_data is not None
+        assert "902" not in bsblan._api_data["heating"]
+        assert bsblan._api_data["heating_circuit2"]["1202"] == (
+            "target_temperature_high"
+        )
         assert [
             call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
         ] == ["700,902", "700"]
