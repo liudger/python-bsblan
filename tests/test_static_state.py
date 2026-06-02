@@ -43,8 +43,8 @@ async def test_sensor(monkeypatch: Any) -> None:
         assert static.temp_reduced_setpoint is not None
         assert static.temp_reduced_setpoint.value == 17.0
         assert static.min_temp is None
-        assert static.max_temp is not None
-        assert static.max_temp.value == 23.0
+        assert static.comfort_setpoint_max is not None
+        assert static.comfort_setpoint_max.value == 23.0
         assert static.heating_protective_setpoint is not None
         assert static.heating_protective_setpoint.value == 8.0
         assert static.cooling_comfort_setpoint_min is not None

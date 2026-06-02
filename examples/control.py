@@ -203,7 +203,7 @@ def print_static_state(static_state: StaticState) -> None:
         "Reduced Setpoint (eco/night)": get_attribute(
             static_state.temp_reduced_setpoint
         ),
-        "Max Temperature (heating)": get_attribute(static_state.max_temp),
+        "Max Temperature (heating)": get_attribute(static_state.comfort_setpoint_max),
         "Heating Protective Setpoint": get_attribute(
             static_state.heating_protective_setpoint
         ),

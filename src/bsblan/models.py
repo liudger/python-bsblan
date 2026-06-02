@@ -483,6 +483,8 @@ class StaticState(BaseModel):
     temp_reduced_setpoint: EntityInfo[float] | None = None
     # 714/1014: frost-protection lower bound; also used by PPS as min_temp (15006)
     min_temp: EntityInfo[float] | None = None
+    # 716/1016: comfort setpoint max upper bound; PPS uses max_temp (15007)
+    comfort_setpoint_max: EntityInfo[float] | None = None
     max_temp: EntityInfo[float] | None = None
     heating_protective_setpoint: EntityInfo[float] | None = None
     cooling_comfort_setpoint_min: EntityInfo[float] | None = None
