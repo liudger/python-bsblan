@@ -9,7 +9,7 @@
   "staticValues": {
     "712": "temp_reduced_setpoint",
     "714": "heating_protective_setpoint",
-    "716": "max_temp"
+    "716": "comfort_setpoint_max"
   },
   "device": {
     "6224": "device_identification",

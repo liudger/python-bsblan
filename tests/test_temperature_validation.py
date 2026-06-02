@@ -192,6 +192,7 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         static_values_mock = AsyncMock()
         static_values_mock.return_value.min_temp = AsyncMock()
         static_values_mock.return_value.min_temp.value = "10"
+        static_values_mock.return_value.comfort_setpoint_max = None
         static_values_mock.return_value.max_temp = None
         monkeypatch.setattr(client, "static_values", static_values_mock)
 

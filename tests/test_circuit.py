@@ -227,8 +227,8 @@ async def test_static_values_circuit2(monkeypatch: Any) -> None:
         assert isinstance(static, StaticState)
         assert static.temp_reduced_setpoint is not None
         assert static.temp_reduced_setpoint.value == 16.0
-        assert static.max_temp is not None
-        assert static.max_temp.value == 28.0
+        assert static.comfort_setpoint_max is not None
+        assert static.comfort_setpoint_max.value == 28.0
         assert static.heating_protective_setpoint is not None
         assert static.heating_protective_setpoint.value == 8.0
         assert static.cooling_comfort_setpoint_min is not None

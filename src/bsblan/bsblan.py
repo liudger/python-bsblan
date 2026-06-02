@@ -643,8 +643,12 @@ class BSBLAN:
                 temp_range["min"],
             )
 
-        if static_values.max_temp is not None:
-            temp_range["max"] = static_values.max_temp.value
+        # Prefer comfort_setpoint_max (716/1016) as the upper bound for standard
+        # circuits. Fall back to max_temp for PPS circuits (15007) which expose
+        # only a generic max.
+        max_source = static_values.comfort_setpoint_max or static_values.max_temp
+        if max_source is not None:
+            temp_range["max"] = max_source.value
             logger.debug(
                 "Circuit %d max temp initialized: %s",
                 circuit,
