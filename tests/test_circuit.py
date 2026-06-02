@@ -225,8 +225,8 @@ async def test_static_values_circuit2(monkeypatch: Any) -> None:
         static: StaticState = await bsblan.static_values(circuit=2)
 
         assert isinstance(static, StaticState)
-        assert static.min_temp is not None
-        assert static.min_temp.value == 16.0
+        assert static.temp_reduced_setpoint is not None
+        assert static.temp_reduced_setpoint.value == 16.0
         assert static.max_temp is not None
         assert static.max_temp.value == 28.0
         assert static.heating_protective_setpoint is not None
@@ -490,7 +490,7 @@ async def test_circuit2_temp_range_initialization(
         await bsblan._initialize_temperature_range(circuit=2)
 
         assert 2 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[2]["min"] == 16.0
+        assert bsblan._circuit_temp_ranges[2]["min"] == 8.0
         assert bsblan._circuit_temp_ranges[2]["max"] == 28.0
         assert bsblan._circuit_temp_ranges[2]["cooling_min"] == 18.0
         assert bsblan._circuit_temp_ranges[2]["cooling_max"] == 26.0
@@ -526,11 +526,11 @@ async def test_circuit1_temp_range_uses_reduced_lower_bound(
         await bsblan._initialize_temperature_range(circuit=1)
 
         assert 1 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[1]["min"] == 17.0
+        assert bsblan._circuit_temp_ranges[1]["min"] == 8.0
         assert bsblan._circuit_temp_ranges[1]["max"] == 23.0
 
         with pytest.raises(BSBLANInvalidParameterError):
-            await bsblan._validate_target_temperature("16.5", circuit=1)
+            await bsblan._validate_target_temperature("7.5", circuit=1)
 
 
 @pytest.mark.asyncio
@@ -584,7 +584,7 @@ async def test_thermostat_circuit2_lazy_temp_init(
 
         # Verify it was initialized
         assert 2 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[2]["min"] == 16.0
+        assert bsblan._circuit_temp_ranges[2]["min"] == 8.0
         assert bsblan._circuit_temp_ranges[2]["max"] == 28.0
 
 

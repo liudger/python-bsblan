@@ -128,12 +128,12 @@ def test_cooling_target_uses_single_base_parameter() -> None:
 
     assert config["heating"]["902"] == "target_temperature_high"
     assert config["heating_circuit2"]["1202"] == "target_temperature_high"
-    assert config["staticValues"]["712"] == "min_temp"
+    assert config["staticValues"]["712"] == "temp_reduced_setpoint"
     assert config["staticValues"]["714"] == "heating_protective_setpoint"
     assert config["staticValues"]["716"] == "max_temp"
     assert config["staticValues"]["905"] == "cooling_comfort_setpoint_min"
     assert config["staticValues"]["903"] == "cooling_reduced_setpoint"
-    assert config["staticValues_circuit2"]["1012"] == "min_temp"
+    assert config["staticValues_circuit2"]["1012"] == "temp_reduced_setpoint"
     assert config["staticValues_circuit2"]["1014"] == ("heating_protective_setpoint")
     assert config["staticValues_circuit2"]["1016"] == "max_temp"
     assert config["staticValues_circuit2"]["1205"] == ("cooling_comfort_setpoint_min")

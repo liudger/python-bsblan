@@ -40,7 +40,7 @@ BASE_HEATING_PARAMS: Final[dict[str, str]] = {
 }
 
 BASE_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
-    "712": "min_temp",
+    "712": "temp_reduced_setpoint",
     "714": "heating_protective_setpoint",
     "716": "max_temp",
     "905": "cooling_comfort_setpoint_min",
@@ -107,7 +107,7 @@ BASE_HEATING_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
 }
 
 BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
-    "1012": "min_temp",
+    "1012": "temp_reduced_setpoint",
     "1014": "heating_protective_setpoint",
     "1016": "max_temp",
     "1205": "cooling_comfort_setpoint_min",

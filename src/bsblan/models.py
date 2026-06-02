@@ -479,6 +479,9 @@ class State(BaseModel):
 class StaticState(BaseModel):
     """Class for entities that are not changing."""
 
+    # 712/1012: room temperature reduced (eco/night) setpoint
+    temp_reduced_setpoint: EntityInfo[float] | None = None
+    # 714/1014: frost-protection lower bound; also used by PPS as min_temp (15006)
     min_temp: EntityInfo[float] | None = None
     max_temp: EntityInfo[float] | None = None
     heating_protective_setpoint: EntityInfo[float] | None = None

@@ -631,8 +631,12 @@ class BSBLAN:
             )
             return temp_range
 
-        if static_values.min_temp is not None:
-            temp_range["min"] = static_values.min_temp.value
+        # Prefer heating_protective_setpoint (714/1014) as the true lower bound
+        # for standard circuits. Fall back to min_temp for PPS circuits (15006)
+        # which have no separate protective setpoint.
+        min_source = static_values.heating_protective_setpoint or static_values.min_temp
+        if min_source is not None:
+            temp_range["min"] = min_source.value
             logger.debug(
                 "Circuit %d min temp initialized: %s",
                 circuit,

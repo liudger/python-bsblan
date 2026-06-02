@@ -153,7 +153,9 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         client._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to return data without min_temp
+        # Mock static_values without protective or pps min temp
         static_values_mock = AsyncMock()
+        static_values_mock.return_value.heating_protective_setpoint = None
         static_values_mock.return_value.min_temp = None
         static_values_mock.return_value.max_temp = AsyncMock()
         static_values_mock.return_value.max_temp.value = "30"
@@ -162,7 +164,7 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         # This should log a warning
         await client._initialize_temperature_range()
 
-        # min_temp should remain None
+        # min should remain None when neither protective nor pps min is available
         temp_range = client._circuit_temp_ranges.get(1, {})
         assert temp_range.get("min") is None
 
