@@ -7,7 +7,7 @@
     "8740": "current_temperature"
   },
   "staticValues": {
-    "712": "min_temp",
+    "712": "temp_reduced_setpoint",
     "714": "heating_protective_setpoint",
     "716": "max_temp"
   },

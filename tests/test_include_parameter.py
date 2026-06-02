@@ -407,9 +407,12 @@ async def test_static_values_with_include(monkeypatch: Any) -> None:
         request_mock: AsyncMock = AsyncMock(return_value=partial_response)
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
-        static: StaticState = await bsblan.static_values(include=["min_temp"])
+        static: StaticState = await bsblan.static_values(
+            include=["temp_reduced_setpoint"]
+        )
 
-        assert static.min_temp is not None
+        assert static.temp_reduced_setpoint is not None
+        assert static.min_temp is None
         assert static.max_temp is None
 
 
