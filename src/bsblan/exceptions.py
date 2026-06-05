@@ -41,6 +41,22 @@ class BSBLANVersionError(BSBLANError):
 
     message: str = "The BSBLAN device has an unsupported version."
 
+    def __init__(
+        self,
+        message: str | None = None,
+        *,
+        version: str | None = None,
+    ) -> None:
+        """Initialize a new instance of the BSBLANVersionError class.
+
+        Args:
+            message: Optional custom error message.
+            version: The unsupported firmware version, if known.
+
+        """
+        self.version = version
+        super().__init__(message)
+
 
 class BSBLANInvalidParameterError(BSBLANError):
     """Raised when an invalid parameter is provided."""

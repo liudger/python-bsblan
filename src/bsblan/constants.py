@@ -11,7 +11,34 @@ MAX_CIRCUIT: Final[int] = 2
 
 
 # API version
+# "v3" is the full configuration for BSB-LAN firmware >= 3.0.0.
+# "v2" is a reduced "basic" configuration for the legacy 2.x firmware branch:
+# a single heating circuit plus essential heating, hot water and sensor params.
 SUPPORTED_API_VERSION: Final[str] = "v3"
+BASIC_API_VERSION: Final[str] = "v2"
+SUPPORTED_API_VERSIONS: Final[tuple[str, ...]] = (
+    BASIC_API_VERSION,
+    SUPPORTED_API_VERSION,
+)
+
+# Firmware version thresholds (BSB-LAN adapter firmware, from /JI).
+# Firmware below MIN_SUPPORTED_FIRMWARE is rejected outright. Firmware in the
+# [MIN_SUPPORTED_FIRMWARE, V3_FIRMWARE_MINIMUM) range maps to the basic "v2"
+# config, and firmware >= V3_FIRMWARE_MINIMUM maps to the full "v3" config.
+# The firmware version is only used as a fallback when the JSON-API version
+# (from /JV) is not available (very old firmware that predates that endpoint).
+MIN_SUPPORTED_FIRMWARE: Final[str] = "2.0.0"
+V3_FIRMWARE_MINIMUM: Final[str] = "3.0.0"
+
+# JSON-API version thresholds (from /JV, distinct from adapter firmware).
+# The /JV endpoint reports the BSB-LAN JSON-API version (e.g. "2.0"), which is
+# the documented, firmware-independent compatibility signal. When available it
+# is the primary signal for selecting the API config: a JSON-API version below
+# MIN_SUPPORTED_JSON_API is rejected, the [MIN_SUPPORTED_JSON_API,
+# V3_JSON_API_MINIMUM) range maps to the basic "v2" config, and a version
+# >= V3_JSON_API_MINIMUM maps to the full "v3" config.
+MIN_SUPPORTED_JSON_API: Final[str] = "1.0"
+V3_JSON_API_MINIMUM: Final[str] = "2.0"
 
 
 class APIConfig(TypedDict):
@@ -114,6 +141,24 @@ BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     "1203": "cooling_reduced_setpoint",
 }
 
+# --- Basic "v2" parameters (legacy 2.x firmware) ---
+# A deliberately minimal, single-circuit set covering core heating control and
+# the min/max bounds needed for a thermostat. Cooling, boost and circuit 2 are
+# intentionally excluded because they are not reliably available on the legacy
+# firmware branch. Hot water, sensor and device params reuse the shared base
+# sets and are filtered per-section against what the device actually exposes.
+BASIC_HEATING_PARAMS: Final[dict[str, str]] = {
+    "700": "hvac_mode",
+    "710": "target_temperature",
+    "8000": "hvac_action",
+    "8740": "current_temperature",
+}
+
+BASIC_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
+    "714": "heating_protective_setpoint",
+    "716": "comfort_setpoint_max",
+}
+
 # PPS bus supports one room-unit style climate circuit. These parameters are
 # exposed by BSB-LAN in the 15000+ range and mirror the circuit 1 climate model.
 PPS_HEATING_PARAMS: Final[dict[str, str]] = {
@@ -165,21 +210,37 @@ class CircuitConfig:
 
 
 def build_api_config(version: str = SUPPORTED_API_VERSION) -> APIConfig:
-    """Build the supported v3 API configuration.
+    """Build the API configuration for a supported version.
 
     Args:
-        version: The API version to build. Only ``"v3"`` is supported.
+        version: The API version to build. ``"v3"`` returns the full
+            configuration; ``"v2"`` returns the reduced single-circuit basic
+            configuration for legacy 2.x firmware.
 
     Returns:
         APIConfig: The complete API configuration.
 
     Raises:
-        ValueError: If a version other than ``"v3"`` is requested.
+        ValueError: If a version other than ``"v2"`` or ``"v3"`` is requested.
 
     """
-    if version != SUPPORTED_API_VERSION:
-        msg = f"Only API version {SUPPORTED_API_VERSION} is supported"
+    if version not in SUPPORTED_API_VERSIONS:
+        supported = ", ".join(SUPPORTED_API_VERSIONS)
+        msg = f"Only API versions {supported} are supported"
         raise ValueError(msg)
+
+    if version == BASIC_API_VERSION:
+        # Basic single-circuit config for legacy 2.x firmware. Circuit 2 and
+        # cooling are intentionally empty/omitted.
+        return {
+            "heating": BASIC_HEATING_PARAMS.copy(),
+            "staticValues": BASIC_STATIC_VALUES_PARAMS.copy(),
+            "device": BASE_DEVICE_PARAMS.copy(),
+            "sensor": BASE_SENSOR_PARAMS.copy(),
+            "hot_water": BASE_HOT_WATER_PARAMS.copy(),
+            "heating_circuit2": {},
+            "staticValues_circuit2": {},
+        }
 
     config: APIConfig = {
         "heating": BASE_HEATING_PARAMS.copy(),
@@ -194,7 +255,8 @@ def build_api_config(version: str = SUPPORTED_API_VERSION) -> APIConfig:
     return config
 
 
-# Pre-built API configuration
+# Pre-built API configurations
+API_V2: Final[APIConfig] = build_api_config(BASIC_API_VERSION)
 API_V3: Final[APIConfig] = build_api_config()
 
 

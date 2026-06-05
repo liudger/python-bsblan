@@ -644,6 +644,17 @@ class Device(BaseModel):
         return not self.is_pps_bus
 
 
+class ApiVersion(BaseModel):
+    """Object holding the BSB-LAN JSON-API version reported by /JV.
+
+    This is the JSON-API version (e.g. ``"2.0"``), which is distinct from the
+    adapter firmware version reported by /JI. It is the documented,
+    firmware-independent signal used to select a compatible API configuration.
+    """
+
+    api_version: str
+
+
 class Info(BaseModel):
     """Object holding the heatingSystem info.
 

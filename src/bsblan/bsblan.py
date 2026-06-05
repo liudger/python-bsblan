@@ -19,10 +19,17 @@ from packaging.version import InvalidVersion
 from yarl import URL
 
 from .constants import (
+    API_V2,
     API_V3,
+    BASIC_API_VERSION,
+    MIN_SUPPORTED_FIRMWARE,
+    MIN_SUPPORTED_JSON_API,
     PPS_HEATING_PARAMS,
     PPS_STATIC_VALUES_PARAMS,
     SUPPORTED_API_VERSION,
+    SUPPORTED_API_VERSIONS,
+    V3_FIRMWARE_MINIMUM,
+    V3_JSON_API_MINIMUM,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -38,6 +45,7 @@ from .exceptions import (
     BSBLANVersionError,
 )
 from .models import (
+    ApiVersion,
     DaySchedule,
     Device,
     DeviceTime,
@@ -102,6 +110,7 @@ class BSBLAN:
     session: ClientSession | None = None
     _close_session: bool = False
     _firmware_version: str | None = None
+    _json_api_version: str | None = None
     _api_version: str | None = SUPPORTED_API_VERSION
     _api_data: APIConfig | None = None
     _device: Device | None = None
@@ -544,12 +553,53 @@ class BSBLAN:
             device = await self.device()
             self._firmware_version = device.version
             logger.debug("BSBLAN version: %s", self._firmware_version)
+            await self._fetch_json_api_version()
             self._set_api_version()
+
+    async def _fetch_json_api_version(self) -> None:
+        """Fetch the BSB-LAN JSON-API version from the /JV endpoint.
+
+        The JSON-API version (e.g. ``"2.0"``) is the documented,
+        firmware-independent compatibility signal. Older firmware may not
+        expose the /JV endpoint; in that case the value is left as ``None`` and
+        the firmware version is used as a fallback for selecting the API config.
+        """
+        if self._json_api_version is not None:
+            return
+        try:
+            response = await self._request(base_path="/JV")
+            api_version = ApiVersion.model_validate(response)
+        except (BSBLANError, ValueError, KeyError) as exc:
+            # /JV is unavailable or returned an unexpected payload; fall back to
+            # firmware-version based detection.
+            logger.debug("JSON-API version unavailable from /JV: %s", exc)
+            return
+        self._json_api_version = api_version.api_version
+        logger.debug("BSBLAN JSON-API version: %s", self._json_api_version)
 
     @property
     def device_info(self) -> Device | None:
         """Return cached device metadata from the last /JI response."""
         return self._device
+
+    @property
+    def api_version(self) -> str | None:
+        """Return the resolved API configuration version (``"v2"`` or ``"v3"``).
+
+        The value is populated during initialization. ``"v3"`` indicates full
+        support and ``"v2"`` the basic single-circuit configuration.
+        """
+        return self._api_version
+
+    @property
+    def json_api_version(self) -> str | None:
+        """Return the BSB-LAN JSON-API version reported by ``/JV``.
+
+        This is the firmware-independent JSON-API version (e.g. ``"2.0"``).
+        Returns ``None`` when the device does not expose the ``/JV`` endpoint,
+        in which case the firmware version is used to resolve ``api_version``.
+        """
+        return self._json_api_version
 
     @property
     def supports_time_sync(self) -> bool:
@@ -572,23 +622,70 @@ class BSBLAN:
             await self.device()
 
     def _set_api_version(self) -> None:
-        """Set the API version based on the firmware version.
+        """Set the API version used to select the configuration.
+
+        The BSB-LAN JSON-API version (from /JV) is the documented,
+        firmware-independent compatibility signal and is preferred when
+        available. When the device does not expose /JV (very old firmware), the
+        adapter firmware version (from /JI) is used as a fallback.
 
         Raises:
-            BSBLANError: If the firmware version is not set.
-            BSBLANVersionError: If the firmware version is not supported.
+            BSBLANError: If neither the JSON-API version nor the firmware
+                version is available.
+            BSBLANVersionError: If the reported version is not supported.
 
         """
+        if self._json_api_version is not None:
+            self._api_version = self._resolve_api_version(
+                self._json_api_version,
+                minimum=MIN_SUPPORTED_JSON_API,
+                v3_minimum=V3_JSON_API_MINIMUM,
+            )
+            return
+
         if not self._firmware_version:
             raise BSBLANError(ErrorMsg.FIRMWARE_VERSION)
 
+        self._api_version = self._resolve_api_version(
+            self._firmware_version,
+            minimum=MIN_SUPPORTED_FIRMWARE,
+            v3_minimum=V3_FIRMWARE_MINIMUM,
+        )
+
+    def _resolve_api_version(
+        self,
+        reported: str,
+        *,
+        minimum: str,
+        v3_minimum: str,
+    ) -> str:
+        """Map a reported version string to a supported API config version.
+
+        Args:
+            reported: The version string reported by the device.
+            minimum: The lowest supported version; anything below is rejected.
+            v3_minimum: The threshold at or above which the full "v3" config is
+                used; below it the basic "v2" config is used.
+
+        Returns:
+            ``"v2"`` for the basic single-circuit config or ``"v3"`` for the
+            full config.
+
+        Raises:
+            BSBLANVersionError: If the reported version cannot be parsed or is
+                below ``minimum``.
+
+        """
         try:
-            firmware_version = pkg_version.parse(self._firmware_version)
+            parsed = pkg_version.parse(reported)
         except InvalidVersion as exc:
-            raise BSBLANVersionError(ErrorMsg.VERSION) from exc
-        if firmware_version < pkg_version.parse("3.0.0"):
-            raise BSBLANVersionError(ErrorMsg.VERSION)
-        self._api_version = SUPPORTED_API_VERSION
+            raise BSBLANVersionError(ErrorMsg.VERSION, version=reported) from exc
+        if parsed < pkg_version.parse(minimum):
+            raise BSBLANVersionError(ErrorMsg.VERSION, version=reported)
+        if parsed < pkg_version.parse(v3_minimum):
+            # Legacy / basic capability: single-circuit support only.
+            return BASIC_API_VERSION
+        return SUPPORTED_API_VERSION
 
     async def _fetch_temperature_range(
         self,
@@ -768,9 +865,11 @@ class BSBLAN:
         """
         if self._api_version is None:
             raise BSBLANError(ErrorMsg.API_VERSION)
-        if self._api_version != SUPPORTED_API_VERSION:
+        if self._api_version not in SUPPORTED_API_VERSIONS:
             raise BSBLANVersionError(ErrorMsg.VERSION)
-        source_config: APIConfig = API_V3
+        source_config: APIConfig = (
+            API_V2 if self._api_version == BASIC_API_VERSION else API_V3
+        )
         return cast(
             "APIConfig",
             {

@@ -171,17 +171,28 @@ def print_device_time(device_time: DeviceTime) -> None:
     print_attributes("Device Time", attributes)
 
 
-def print_device_info(device: Device, info: Info) -> None:
+def print_device_info(
+    device: Device,
+    info: Info,
+    api_version: str | None = None,
+    json_api_version: str | None = None,
+) -> None:
     """Print device and general information.
 
     Args:
         device (Device): The device information from the BSBLan device.
         info (Info): The general information from the BSBLan device.
+        api_version (str | None): The resolved API configuration version
+            (``"v2"`` or ``"v3"``).
+        json_api_version (str | None): The BSB-LAN JSON-API version reported by
+            the ``/JV`` endpoint, if available.
 
     """
     attributes = {
         "Device Name": device.name or "N/A",
         "Version": device.version or "N/A",
+        "API Version (config)": format_optional(api_version),
+        "JSON-API Version (/JV)": format_optional(json_api_version),
         "Device Identification": get_attribute(info.device_identification),
         "Bus Type": format_optional(device.bus),
         "Bus Writable Flag": format_optional(device.buswritable),
@@ -339,7 +350,12 @@ async def main() -> None:
         # Get and print device and general info, including bus metadata
         device: Device = bsblan.device_info or await bsblan.device()
         info: Info = await bsblan.info()
-        print_device_info(device, info)
+        print_device_info(
+            device,
+            info,
+            api_version=bsblan.api_version,
+            json_api_version=bsblan.json_api_version,
+        )
 
         # Get and print state
         state: State = await bsblan.state()

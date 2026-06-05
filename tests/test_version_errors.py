@@ -29,11 +29,23 @@ async def test_set_api_version_unsupported() -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Set firmware version to an unsupported value (between 1.2.0 and 3.0.0)
-    bsblan._firmware_version = "2.0.0"
+    # Set firmware version below the supported floor (< 2.0.0)
+    bsblan._firmware_version = "1.9.0"
 
     with pytest.raises(BSBLANVersionError):
         bsblan._set_api_version()
+
+
+@pytest.mark.asyncio
+async def test_set_api_version_v2_basic() -> None:
+    """Test legacy 2.x firmware maps to the basic v2 config."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._firmware_version = "2.2.3"
+    bsblan._set_api_version()
+
+    assert bsblan._api_version == "v2"
 
 
 @pytest.mark.asyncio
@@ -89,6 +101,7 @@ async def test_fetch_firmware_version() -> None:
     # Mock device method to return our test device
     with (
         patch.object(bsblan, "device", AsyncMock(return_value=device)),
+        patch.object(bsblan, "_fetch_json_api_version", AsyncMock()),
         patch.object(bsblan, "_set_api_version"),
     ):
         await bsblan._fetch_firmware_version()
@@ -208,12 +221,209 @@ async def test_set_api_version_v5_edge_cases() -> None:
 
 @pytest.mark.asyncio
 async def test_unsupported_version_still_fails() -> None:
-    """Test that unsupported versions before 3.0.0 still fail."""
+    """Test that firmware below the supported floor (< 2.0.0) still fails."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Test that version 2.0.0 still fails
-    bsblan._firmware_version = "2.0.0"
+    # Test that version 1.9.9 still fails
+    bsblan._firmware_version = "1.9.9"
 
     with pytest.raises(BSBLANVersionError):
         bsblan._set_api_version()
+
+
+@pytest.mark.asyncio
+async def test_legacy_2x_maps_to_basic_v2() -> None:
+    """Test that legacy 2.x firmware maps to the basic v2 config."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # 2.0.0 is the lower bound of basic support
+    bsblan._firmware_version = "2.0.0"
+    bsblan._set_api_version()
+    assert bsblan._api_version == "v2"
+
+    # 2.9.9 still maps to basic v2 (below the 3.0.0 v3 threshold)
+    bsblan._firmware_version = "2.9.9"
+    bsblan._set_api_version()
+    assert bsblan._api_version == "v2"
+
+
+@pytest.mark.asyncio
+async def test_json_api_version_v3() -> None:
+    """Test JSON-API version >= 2.0 maps to the full v3 config."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._json_api_version = "2.0"
+    bsblan._set_api_version()
+
+    assert bsblan._api_version == "v3"
+
+
+@pytest.mark.asyncio
+async def test_json_api_version_basic_v2() -> None:
+    """Test JSON-API version in [1.0, 2.0) maps to the basic v2 config."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._json_api_version = "1.5"
+    bsblan._set_api_version()
+
+    assert bsblan._api_version == "v2"
+
+
+@pytest.mark.asyncio
+async def test_json_api_version_unsupported() -> None:
+    """Test JSON-API version below the supported floor raises."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._json_api_version = "0.9"
+
+    with pytest.raises(BSBLANVersionError):
+        bsblan._set_api_version()
+
+
+@pytest.mark.asyncio
+async def test_json_api_version_invalid_string() -> None:
+    """Test a non-PEP440 JSON-API version raises BSBLANVersionError."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._json_api_version = "not-a-version"
+
+    with pytest.raises(BSBLANVersionError):
+        bsblan._set_api_version()
+
+
+@pytest.mark.asyncio
+async def test_json_api_version_takes_precedence_over_firmware() -> None:
+    """Test the JSON-API version is preferred over the firmware version."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Firmware would map to v2, but a modern JSON-API version wins.
+    bsblan._firmware_version = "2.2.3"
+    bsblan._json_api_version = "2.0"
+    bsblan._set_api_version()
+
+    assert bsblan._api_version == "v3"
+
+
+@pytest.mark.asyncio
+async def test_api_version_property() -> None:
+    """Test the public api_version property reflects the resolved version."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._json_api_version = "2.0"
+    bsblan._set_api_version()
+
+    assert bsblan.api_version == "v3"
+
+
+@pytest.mark.asyncio
+async def test_json_api_version_property() -> None:
+    """Test the public json_api_version property exposes the /JV version."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    # Defaults to None until /JV is fetched.
+    assert bsblan.json_api_version is None
+
+    bsblan._json_api_version = "2.0"
+    assert bsblan.json_api_version == "2.0"
+
+
+@pytest.mark.asyncio
+async def test_version_error_exposes_version() -> None:
+    """Test BSBLANVersionError stores the unsupported version on the exception."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._firmware_version = "1.9.0"
+
+    with pytest.raises(BSBLANVersionError) as exc_info:
+        bsblan._set_api_version()
+
+    assert exc_info.value.version == "1.9.0"
+
+
+@pytest.mark.asyncio
+async def test_fetch_json_api_version_success() -> None:
+    """Test fetching the JSON-API version from the /JV endpoint."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    with patch.object(
+        bsblan, "_request", AsyncMock(return_value={"api_version": "2.0"})
+    ) as mock_request:
+        await bsblan._fetch_json_api_version()
+
+    assert bsblan._json_api_version == "2.0"
+    mock_request.assert_awaited_once_with(base_path="/JV")
+
+
+@pytest.mark.asyncio
+async def test_fetch_json_api_version_falls_back_on_error() -> None:
+    """Test a missing /JV endpoint leaves the JSON-API version unset."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    with patch.object(bsblan, "_request", AsyncMock(side_effect=BSBLANError("404"))):
+        await bsblan._fetch_json_api_version()
+
+    assert bsblan._json_api_version is None
+
+
+@pytest.mark.asyncio
+async def test_fetch_json_api_version_falls_back_on_malformed_payload() -> None:
+    """Test a malformed /JV payload leaves the JSON-API version unset."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    with patch.object(
+        bsblan, "_request", AsyncMock(return_value={"unexpected": "data"})
+    ):
+        await bsblan._fetch_json_api_version()
+
+    assert bsblan._json_api_version is None
+
+
+@pytest.mark.asyncio
+async def test_fetch_json_api_version_cached() -> None:
+    """Test the JSON-API version is not re-fetched when already known."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    bsblan._json_api_version = "2.0"
+
+    with patch.object(bsblan, "_request", AsyncMock()) as mock_request:
+        await bsblan._fetch_json_api_version()
+
+    mock_request.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_fetch_firmware_version_queries_json_api() -> None:
+    """Test firmware fetch also fetches the JSON-API version."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+
+    device = Device(
+        name="Test Device", version="2.2.3", MAC="00:11:22:33:44:55", uptime=1000
+    )
+
+    with (
+        patch.object(bsblan, "device", AsyncMock(return_value=device)),
+        patch.object(
+            bsblan, "_request", AsyncMock(return_value={"api_version": "2.0"})
+        ),
+    ):
+        await bsblan._fetch_firmware_version()
+
+    assert bsblan._firmware_version == "2.2.3"
+    assert bsblan._json_api_version == "2.0"
+    # JSON-API version wins over the legacy firmware mapping.
+    assert bsblan._api_version == "v3"

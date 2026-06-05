@@ -63,6 +63,26 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+## Firmware compatibility
+
+On the first request the client lazily runs `initialize()`, which detects the
+device's capabilities and selects a matching configuration:
+
+- **Full support (`v3`)** — BSB-LAN firmware 3.x and newer (including 4.x and
+  5.x). All features are available, including multiple heating circuits, hot
+  water control, schedules, sensors, and cooling setpoints.
+- **Basic support (`v2`)** — the legacy 2.x firmware branch. A reduced,
+  single-circuit configuration covering essential heating, hot water, and
+  sensor parameters.
+
+Detection prefers the BSB-LAN JSON-API version reported by the `/JV` endpoint,
+which is independent of the adapter firmware version. When a device does not
+expose `/JV` (very old firmware), the firmware version from `/JI` is used as a
+fallback. Firmware older than the 2.x branch raises `BSBLANVersionError`.
+
+Basic 2.x support is best-effort and may not cover every parameter your heating
+system exposes.
+
 ## Temperature bounds
 
 For heating comfort setpoint writes (`target_temperature`), `min_temp` maps to

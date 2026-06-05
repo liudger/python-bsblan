@@ -5,6 +5,7 @@ import pytest
 import bsblan
 import bsblan.constants
 from bsblan.constants import (
+    API_V2,
     API_V3,
     BASE_HOT_WATER_PARAMS,
     HeatingCircuitStatus,
@@ -51,10 +52,38 @@ def test_build_api_config_defaults_to_v3() -> None:
     assert build_api_config("v3") == config
 
 
+def test_build_api_config_v2_is_basic_single_circuit() -> None:
+    """Test the basic v2 config is single-circuit and excludes cooling/boost."""
+    config = build_api_config("v2")
+
+    # Core heating control is present.
+    assert config["heating"] == {
+        "700": "hvac_mode",
+        "710": "target_temperature",
+        "8000": "hvac_action",
+        "8740": "current_temperature",
+    }
+    # Min/max bounds for the thermostat are present.
+    assert config["staticValues"] == {
+        "714": "heating_protective_setpoint",
+        "716": "comfort_setpoint_max",
+    }
+    # Cooling and boost params are excluded.
+    for excluded in ("900", "902", "770", "905", "903", "712"):
+        assert excluded not in config["heating"]
+        assert excluded not in config["staticValues"]
+    # Only a single circuit is supported.
+    assert config["heating_circuit2"] == {}
+    assert config["staticValues_circuit2"] == {}
+    # Hot water and sensors reuse the shared base sets.
+    assert config["hot_water"] == BASE_HOT_WATER_PARAMS
+    assert config == API_V2
+
+
 @pytest.mark.parametrize("version", ["v1", "v5"])
 def test_build_api_config_rejects_unsupported_versions(version: str) -> None:
-    """Test that only API v3 can be built."""
-    with pytest.raises(ValueError, match="Only API version v3 is supported"):
+    """Test that only API v2 and v3 can be built."""
+    with pytest.raises(ValueError, match="Only API versions v2, v3 are supported"):
         build_api_config(version)
 
 
