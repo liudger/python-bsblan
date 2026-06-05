@@ -76,6 +76,10 @@ Data models for BSB-LAN API responses.
 
 ::: bsblan.Device
 
+### ApiVersion
+
+::: bsblan.ApiVersion
+
 ### Info
 
 ::: bsblan.Info

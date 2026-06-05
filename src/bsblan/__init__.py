@@ -8,8 +8,14 @@ from .constants import (
     HVACActionCategory,
     get_hvac_action_category,
 )
-from .exceptions import BSBLANAuthError, BSBLANConnectionError, BSBLANError
+from .exceptions import (
+    BSBLANAuthError,
+    BSBLANConnectionError,
+    BSBLANError,
+    BSBLANVersionError,
+)
 from .models import (
+    ApiVersion,
     DaySchedule,
     Device,
     DeviceTime,
@@ -34,10 +40,12 @@ __all__ = [
     "BSBLAN",
     "UNIT_DEVICE_CLASS_MAP",
     "UNIT_STATE_CLASS_MAP",
+    "ApiVersion",
     "BSBLANAuthError",
     "BSBLANConfig",
     "BSBLANConnectionError",
     "BSBLANError",
+    "BSBLANVersionError",
     "DHWSchedule",
     "DHWTimeSwitchPrograms",
     "DaySchedule",
