@@ -1073,6 +1073,50 @@ class BSBLAN:
         string_params = ",".join(map(str, params))
         return {"string_par": string_params, "list": list(params.values())}
 
+    def _apply_include_filter(
+        self, params: dict[str, str], include: list[str] | None
+    ) -> dict[str, str]:
+        """Filter a parameter map down to the requested parameter names.
+
+        Args:
+            params (dict[str, str]): Mapping of parameter ID to parameter name.
+            include (list[str] | None): Parameter names to keep. If None, the
+                mapping is returned unchanged.
+
+        Returns:
+            dict[str, str]: The filtered mapping (unchanged when include is None).
+
+        Raises:
+            BSBLANError: If include is an empty list, or if none of the requested
+                names match the available parameters.
+
+        """
+        if include is None:
+            return params
+        if not include:
+            raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
+        filtered = {
+            param_id: name for param_id, name in params.items() if name in include
+        }
+        if not filtered:
+            raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
+        return filtered
+
+    async def _request_named_params(self, params: dict[str, str]) -> dict[str, Any]:
+        """Request parameters and key the response by parameter name.
+
+        Args:
+            params (dict[str, str]): Mapping of parameter ID to parameter name.
+
+        Returns:
+            dict[str, Any]: The device response re-keyed from parameter ID to
+                parameter name, positionally matching the request order.
+
+        """
+        summary = self._extract_params_summary(params)
+        data = await self._request(params={"Parameter": summary["string_par"]})
+        return dict(zip(summary["list"], list(data.values()), strict=True))
+
     async def _fetch_section_data(
         self,
         section: SectionLiteral,
@@ -1109,21 +1153,10 @@ class BSBLAN:
             msg = ErrorMsg.EMPTY_SECTION_PARAMS.format(section)
             raise BSBLANError(msg)
 
-        # Filter parameters if include list is specified
-        if include is not None:
-            if not include:
-                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
-            section_params = {
-                param_id: name
-                for param_id, name in section_params.items()
-                if name in include
-            }
-            if not section_params:
-                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
+        # Filter to requested parameter names (if an include list was given)
+        section_params = self._apply_include_filter(section_params, include)
 
-        params = self._extract_params_summary(section_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
+        data = await self._request_named_params(section_params)
         if section == "heating" and self._uses_pps_bus:
             self._normalize_pps_state_data(data)
         return model_class.model_validate(data)
@@ -1565,23 +1598,12 @@ class BSBLAN:
         }
 
         # Apply include filter if specified
-        if include is not None:
-            if not include:
-                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
-            filtered_params = {
-                param_id: name
-                for param_id, name in filtered_params.items()
-                if name in include
-            }
-            if not filtered_params:
-                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
+        filtered_params = self._apply_include_filter(filtered_params, include)
 
         if not filtered_params:
             raise BSBLANError(error_msg)
 
-        params = self._extract_params_summary(filtered_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        data = dict(zip(params["list"], list(data.values()), strict=True))
+        data = await self._request_named_params(filtered_params)
         return model_class.model_validate(data)
 
     async def hot_water_state(self, include: list[str] | None = None) -> HotWaterState:
