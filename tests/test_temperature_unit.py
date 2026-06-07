@@ -20,7 +20,7 @@ async def test_temperature_unit_getter() -> None:
     assert bsblan.get_temperature_unit == "°C"
 
     # Test with custom unit set
-    bsblan._temperature_unit = "°F"
+    bsblan._temperature._temperature_unit = "°F"
     assert bsblan.get_temperature_unit == "°F"
 
 
@@ -41,11 +41,11 @@ async def test_initialize_temperature_range_celsius() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._circuit_temp_ranges[1]["min"] == 10.0
-        assert bsblan._circuit_temp_ranges[1]["max"] == 30.0
-        assert bsblan._circuit_temp_ranges[1]["cooling_min"] is None
-        assert bsblan._circuit_temp_ranges[1]["cooling_max"] is None
-        assert 1 in bsblan._circuit_temp_initialized
+        assert bsblan._temperature._circuit_temp_ranges[1]["min"] == 10.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["max"] == 30.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["cooling_min"] is None
+        assert bsblan._temperature._circuit_temp_ranges[1]["cooling_max"] is None
+        assert 1 in bsblan._temperature._circuit_temp_initialized
 
 
 @pytest.mark.asyncio
@@ -65,11 +65,11 @@ async def test_initialize_temperature_range_fahrenheit() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._circuit_temp_ranges[1]["min"] == 50.0
-        assert bsblan._circuit_temp_ranges[1]["max"] == 86.0
-        assert bsblan._circuit_temp_ranges[1]["cooling_min"] is None
-        assert bsblan._circuit_temp_ranges[1]["cooling_max"] is None
-        assert 1 in bsblan._circuit_temp_initialized
+        assert bsblan._temperature._circuit_temp_ranges[1]["min"] == 50.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["max"] == 86.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["cooling_min"] is None
+        assert bsblan._temperature._circuit_temp_ranges[1]["cooling_max"] is None
+        assert 1 in bsblan._temperature._circuit_temp_initialized
 
 
 @pytest.mark.asyncio
@@ -96,11 +96,11 @@ async def test_initialize_temperature_range_alternate_celsius_format() -> None:
         await bsblan._initialize_temperature_range()
 
         # Verify temperature range was set correctly
-        assert bsblan._circuit_temp_ranges[1]["min"] == 10.0
-        assert bsblan._circuit_temp_ranges[1]["max"] == 30.0
-        assert bsblan._circuit_temp_ranges[1]["cooling_min"] is None
-        assert bsblan._circuit_temp_ranges[1]["cooling_max"] is None
-        assert 1 in bsblan._circuit_temp_initialized
+        assert bsblan._temperature._circuit_temp_ranges[1]["min"] == 10.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["max"] == 30.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["cooling_min"] is None
+        assert bsblan._temperature._circuit_temp_ranges[1]["cooling_max"] is None
+        assert 1 in bsblan._temperature._circuit_temp_initialized
 
 
 @pytest.mark.asyncio
@@ -117,7 +117,7 @@ async def test_extract_temperature_unit_from_response_celsius() -> None:
 
     bsblan._extract_temperature_unit_from_response(response_data)
 
-    assert bsblan._temperature_unit == "°C"
+    assert bsblan._temperature._temperature_unit == "°C"
 
 
 @pytest.mark.asyncio
@@ -134,7 +134,7 @@ async def test_extract_temperature_unit_from_response_fahrenheit() -> None:
 
     bsblan._extract_temperature_unit_from_response(response_data)
 
-    assert bsblan._temperature_unit == "°F"
+    assert bsblan._temperature._temperature_unit == "°F"
 
 
 @pytest.mark.asyncio
@@ -150,7 +150,7 @@ async def test_extract_temperature_unit_from_response_html_entity() -> None:
 
     bsblan._extract_temperature_unit_from_response(response_data)
 
-    assert bsblan._temperature_unit == "°C"
+    assert bsblan._temperature._temperature_unit == "°C"
 
 
 @pytest.mark.asyncio
@@ -160,7 +160,7 @@ async def test_extract_temperature_unit_from_response_missing_param() -> None:
     bsblan = BSBLAN(config)
 
     # Set to Fahrenheit first to verify it stays as default when param is missing
-    bsblan._temperature_unit = "°F"
+    bsblan._temperature._temperature_unit = "°F"
 
     # Mock response data without parameter 710
     response_data = {
@@ -170,7 +170,7 @@ async def test_extract_temperature_unit_from_response_missing_param() -> None:
     bsblan._extract_temperature_unit_from_response(response_data)
 
     # Should keep the existing value when param 710 is not found
-    assert bsblan._temperature_unit == "°F"
+    assert bsblan._temperature._temperature_unit == "°F"
 
 
 @pytest.mark.asyncio
@@ -192,7 +192,7 @@ async def test_extract_temperature_unit_unknown_unit() -> None:
     bsblan._extract_temperature_unit_from_response(response_data)
 
     # Should keep default
-    assert bsblan._temperature_unit == "°C"
+    assert bsblan._temperature._temperature_unit == "°C"
 
 
 @pytest.mark.asyncio
@@ -214,4 +214,4 @@ async def test_extract_temperature_unit_empty_unit() -> None:
     bsblan._extract_temperature_unit_from_response(response_data)
 
     # Should keep default
-    assert bsblan._temperature_unit == "°C"
+    assert bsblan._temperature._temperature_unit == "°C"

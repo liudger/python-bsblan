@@ -249,8 +249,8 @@ async def test_pps_thermostat_hvac_mode_writes_translated_value(
     expected_value: str,
 ) -> None:
     """Test PPS mode writes translate library modes to PPS raw values."""
-    pps_bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
-    pps_bsblan._circuit_temp_initialized.add(1)
+    pps_bsblan._temperature._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._temperature._circuit_temp_initialized.add(1)
     request_mock = AsyncMock(return_value={"status": "ok"})
     pps_bsblan._request = request_mock  # type: ignore[method-assign]
 
@@ -267,8 +267,8 @@ async def test_pps_thermostat_temperature_writes_comfort_setpoint(
     pps_bsblan: BSBLAN,
 ) -> None:
     """Test PPS target temperature writes use comfort setpoint."""
-    pps_bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
-    pps_bsblan._circuit_temp_initialized.add(1)
+    pps_bsblan._temperature._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._temperature._circuit_temp_initialized.add(1)
     request_mock = AsyncMock(return_value={"status": "ok"})
     pps_bsblan._request = request_mock  # type: ignore[method-assign]
 
@@ -285,8 +285,8 @@ async def test_pps_thermostat_rejects_cooling_temperature(
     pps_bsblan: BSBLAN,
 ) -> None:
     """Test PPS climate rejects cooling target writes."""
-    pps_bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
-    pps_bsblan._circuit_temp_initialized.add(1)
+    pps_bsblan._temperature._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._temperature._circuit_temp_initialized.add(1)
     request_mock = AsyncMock(return_value={"status": "ok"})
     pps_bsblan._request = request_mock  # type: ignore[method-assign]
 
@@ -301,8 +301,8 @@ async def test_pps_thermostat_rejects_unsupported_eco_mode(
     pps_bsblan: BSBLAN,
 ) -> None:
     """Test PPS climate rejects the library eco mode value."""
-    pps_bsblan._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
-    pps_bsblan._circuit_temp_initialized.add(1)
+    pps_bsblan._temperature._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._temperature._circuit_temp_initialized.add(1)
     request_mock = AsyncMock(return_value={"status": "ok"})
     pps_bsblan._request = request_mock  # type: ignore[method-assign]
 

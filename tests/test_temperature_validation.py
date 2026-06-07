@@ -24,7 +24,7 @@ async def test_validate_target_temperature_no_range() -> None:
     async def mock_init_temp_range(circuit: int = 1) -> None:
         pass
 
-    bsblan._initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
+    bsblan._temperature.initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
 
     # Should pass through without error when min/max are not available
     await bsblan._validate_target_temperature("22.0")
@@ -37,8 +37,8 @@ async def test_validate_target_temperature_invalid_value() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
-    bsblan._circuit_temp_initialized.add(1)
+    bsblan._temperature._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
+    bsblan._temperature._circuit_temp_initialized.add(1)
 
     # Test with non-numeric value
     with pytest.raises(BSBLANInvalidParameterError):
@@ -52,8 +52,8 @@ async def test_validate_target_temperature_out_of_range() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
-    bsblan._circuit_temp_initialized.add(1)
+    bsblan._temperature._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
+    bsblan._temperature._circuit_temp_initialized.add(1)
 
     # Test with value below minimum
     with pytest.raises(BSBLANInvalidParameterError):
@@ -71,8 +71,8 @@ async def test_validate_target_temperature_valid() -> None:
     bsblan = BSBLAN(config)
 
     # Initialize temperature range
-    bsblan._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
-    bsblan._circuit_temp_initialized.add(1)
+    bsblan._temperature._circuit_temp_ranges[1] = {"min": 10.0, "max": 30.0}
+    bsblan._temperature._circuit_temp_initialized.add(1)
 
     # Test with valid value (should not raise exception)
     await bsblan._validate_target_temperature("22.0")
@@ -87,7 +87,7 @@ async def test_validate_target_temperature_high_no_range() -> None:
     async def mock_init_temp_range(circuit: int = 1) -> None:
         pass
 
-    bsblan._initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
+    bsblan._temperature.initialize_temperature_range = mock_init_temp_range  # type: ignore[method-assign]
 
     await bsblan._validate_target_temperature_high("32.0")
 
@@ -98,8 +98,11 @@ async def test_validate_target_temperature_high_invalid_value() -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    bsblan._circuit_temp_ranges[1] = {"cooling_min": 18.0, "cooling_max": 26.0}
-    bsblan._circuit_temp_initialized.add(1)
+    bsblan._temperature._circuit_temp_ranges[1] = {
+        "cooling_min": 18.0,
+        "cooling_max": 26.0,
+    }
+    bsblan._temperature._circuit_temp_initialized.add(1)
 
     with pytest.raises(BSBLANInvalidParameterError):
         await bsblan._validate_target_temperature_high("invalid")
@@ -111,8 +114,11 @@ async def test_validate_target_temperature_high_out_of_range() -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    bsblan._circuit_temp_ranges[1] = {"cooling_min": 18.0, "cooling_max": 26.0}
-    bsblan._circuit_temp_initialized.add(1)
+    bsblan._temperature._circuit_temp_ranges[1] = {
+        "cooling_min": 18.0,
+        "cooling_max": 26.0,
+    }
+    bsblan._temperature._circuit_temp_initialized.add(1)
 
     with pytest.raises(BSBLANInvalidParameterError):
         await bsblan._validate_target_temperature_high("17.5")
@@ -127,8 +133,11 @@ async def test_validate_target_temperature_high_valid() -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    bsblan._circuit_temp_ranges[1] = {"cooling_min": 18.0, "cooling_max": 26.0}
-    bsblan._circuit_temp_initialized.add(1)
+    bsblan._temperature._circuit_temp_ranges[1] = {
+        "cooling_min": 18.0,
+        "cooling_max": 26.0,
+    }
+    bsblan._temperature._circuit_temp_initialized.add(1)
 
     await bsblan._validate_target_temperature_high("21.0")
 
@@ -166,7 +175,7 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         await client._initialize_temperature_range()
 
         # min should remain None when neither protective nor pps min is available
-        temp_range = client._circuit_temp_ranges.get(1, {})
+        temp_range = client._temperature._circuit_temp_ranges.get(1, {})
         assert temp_range.get("min") is None
 
 
@@ -202,7 +211,7 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         await client._initialize_temperature_range()
 
         # max_temp should remain None
-        temp_range = client._circuit_temp_ranges.get(1, {})
+        temp_range = client._temperature._circuit_temp_ranges.get(1, {})
         assert temp_range.get("max") is None
 
 
@@ -233,6 +242,6 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
         await client._initialize_temperature_range()
 
         # Both should remain None
-        temp_range = client._circuit_temp_ranges.get(1, {})
+        temp_range = client._temperature._circuit_temp_ranges.get(1, {})
         assert temp_range.get("min") is None
         assert temp_range.get("max") is None

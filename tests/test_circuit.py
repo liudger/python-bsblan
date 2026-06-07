@@ -36,8 +36,8 @@ async def mock_bsblan_circuit() -> AsyncGenerator[BSBLAN, None]:
         bsblan._firmware_version = "1.0.38-20200730234859"
         bsblan._api_version = "v3"
         bsblan._api_data = build_api_config("v3")
-        bsblan._circuit_temp_ranges[1] = {"min": 17.0, "max": 23.0}
-        bsblan._circuit_temp_initialized.add(1)
+        bsblan._temperature._circuit_temp_ranges[1] = {"min": 17.0, "max": 23.0}
+        bsblan._temperature._circuit_temp_initialized.add(1)
 
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("heating")
@@ -247,11 +247,11 @@ async def test_thermostat_circuit2_temperature(
 ) -> None:
     """Test setting temperature on circuit 2."""
     # Set up HC2 temp range
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "min": 16.0,
         "max": 28.0,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     expected_data = {
         "Parameter": "1010",
@@ -277,11 +277,11 @@ async def test_thermostat_circuit2_hvac_mode(
 ) -> None:
     """Test setting HVAC mode on circuit 2."""
     # Set up HC2 temp range
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "min": 16.0,
         "max": 28.0,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     expected_data = {
         "Parameter": "1000",
@@ -322,11 +322,11 @@ async def test_thermostat_circuit2_invalid_temperature(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
     """Test setting out-of-range temperature on circuit 2."""
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "min": 16.0,
         "max": 28.0,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan_circuit.thermostat(
@@ -341,11 +341,11 @@ async def test_thermostat_circuit2_no_temp_range(
 ) -> None:
     """Test thermostat passes through when HC2 temp range not available."""
     # Set HC2 as initialized but with None range
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "min": None,
         "max": None,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     # Should pass through without range validation when min/max are None
     mock_bsblan_circuit._request = AsyncMock(return_value={"status": "success"})
@@ -394,11 +394,11 @@ async def test_thermostat_circuit2_no_params(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
     """Test that multi-parameter error still works with circuit."""
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "min": 16.0,
         "max": 28.0,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     with pytest.raises(BSBLANError) as exc_info:
         await mock_bsblan_circuit.thermostat(circuit=2)
@@ -411,13 +411,13 @@ async def test_thermostat_circuit2_cooling_temperature(
     aresponses: ResponsesMockServer,
 ) -> None:
     """Test setting cooling temperature on circuit 2."""
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "min": 16.0,
         "max": 28.0,
         "cooling_min": 18.0,
         "cooling_max": 26.0,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     expected_data = {
         "Parameter": "1202",
@@ -441,11 +441,11 @@ async def test_thermostat_circuit2_invalid_cooling_temperature(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
     """Test setting out-of-range cooling temperature on circuit 2."""
-    mock_bsblan_circuit._circuit_temp_ranges[2] = {
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
         "cooling_min": 18.0,
         "cooling_max": 26.0,
     }
-    mock_bsblan_circuit._circuit_temp_initialized.add(2)
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
 
     with pytest.raises(BSBLANInvalidParameterError):
         await mock_bsblan_circuit.thermostat(
@@ -489,11 +489,11 @@ async def test_circuit2_temp_range_initialization(
 
         await bsblan._initialize_temperature_range(circuit=2)
 
-        assert 2 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[2]["min"] == 8.0
-        assert bsblan._circuit_temp_ranges[2]["max"] == 28.0
-        assert bsblan._circuit_temp_ranges[2]["cooling_min"] == 18.0
-        assert bsblan._circuit_temp_ranges[2]["cooling_max"] == 26.0
+        assert 2 in bsblan._temperature._circuit_temp_initialized
+        assert bsblan._temperature._circuit_temp_ranges[2]["min"] == 8.0
+        assert bsblan._temperature._circuit_temp_ranges[2]["max"] == 28.0
+        assert bsblan._temperature._circuit_temp_ranges[2]["cooling_min"] == 18.0
+        assert bsblan._temperature._circuit_temp_ranges[2]["cooling_max"] == 26.0
 
 
 @pytest.mark.asyncio
@@ -525,11 +525,11 @@ async def test_circuit1_temp_range_uses_protective_lower_bound(
 
         await bsblan._initialize_temperature_range(circuit=1)
 
-        assert 1 in bsblan._circuit_temp_initialized
+        assert 1 in bsblan._temperature._circuit_temp_initialized
         # Lower bound is the protective/frost setpoint (714 = 8.0), not the
         # reduced setpoint (712 = 17.0).
-        assert bsblan._circuit_temp_ranges[1]["min"] == 8.0
-        assert bsblan._circuit_temp_ranges[1]["max"] == 23.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["min"] == 8.0
+        assert bsblan._temperature._circuit_temp_ranges[1]["max"] == 23.0
 
         with pytest.raises(BSBLANInvalidParameterError):
             await bsblan._validate_target_temperature("7.5", circuit=1)
@@ -579,15 +579,15 @@ async def test_thermostat_circuit2_lazy_temp_init(
         monkeypatch.setattr(bsblan, "_request", mock_request)
 
         # HC2 temp range is NOT initialized yet
-        assert 2 not in bsblan._circuit_temp_initialized
+        assert 2 not in bsblan._temperature._circuit_temp_initialized
 
         # This should trigger lazy init of HC2 temp range
         await bsblan._validate_target_temperature("20.0", circuit=2)
 
         # Verify it was initialized
-        assert 2 in bsblan._circuit_temp_initialized
-        assert bsblan._circuit_temp_ranges[2]["min"] == 8.0
-        assert bsblan._circuit_temp_ranges[2]["max"] == 28.0
+        assert 2 in bsblan._temperature._circuit_temp_initialized
+        assert bsblan._temperature._circuit_temp_ranges[2]["min"] == 8.0
+        assert bsblan._temperature._circuit_temp_ranges[2]["max"] == 28.0
 
 
 # --- Tests for get_available_circuits ---
@@ -781,8 +781,8 @@ async def test_temperature_range_skips_unavailable_discovered_circuit(
 
     await bsblan._initialize_temperature_range(circuit=2)
 
-    assert 2 in bsblan._circuit_temp_initialized
-    assert bsblan._circuit_temp_ranges[2] == {
+    assert 2 in bsblan._temperature._circuit_temp_initialized
+    assert bsblan._temperature._circuit_temp_ranges[2] == {
         "min": None,
         "max": None,
         "cooling_min": None,
