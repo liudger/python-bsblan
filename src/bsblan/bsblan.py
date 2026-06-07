@@ -1434,29 +1434,61 @@ class BSBLAN:
             return {"target_temperature": "15004", "hvac_mode": "15000"}
         return CircuitConfig.THERMOSTAT_PARAMS[circuit]
 
+    async def _validate_temperature_in_range(
+        self,
+        value: str | float,
+        circuit: int,
+        *,
+        min_key: str,
+        max_key: str,
+    ) -> None:
+        """Validate a temperature value against a circuit's configured bounds.
+
+        Lazy-loads the circuit temperature range when needed. If the device
+        does not expose the relevant bounds, only the float conversion is
+        validated.
+
+        Args:
+            value (str | float): The temperature value to validate.
+            circuit (int): The heating circuit number (1 or 2).
+            min_key (str): Range key holding the lower bound.
+            max_key (str): Range key holding the upper bound.
+
+        Raises:
+            BSBLANInvalidParameterError: If the value is not a valid float or
+                falls outside the configured bounds.
+
+        """
+        try:
+            temp = float(value)
+        except ValueError as err:
+            raise BSBLANInvalidParameterError(str(value)) from err
+
+        if circuit not in self._circuit_temp_initialized:
+            await self._initialize_temperature_range(circuit)
+
+        temp_range = self._circuit_temp_ranges.get(circuit, {})
+        min_temp = temp_range.get(min_key)
+        max_temp = temp_range.get(max_key)
+
+        if min_temp is None or max_temp is None:
+            return
+
+        if not (min_temp <= temp <= max_temp):
+            raise BSBLANInvalidParameterError(str(value))
+
     async def _validate_target_temperature_high(
         self,
         target_temperature_high: str | float,
         circuit: int = 1,
     ) -> None:
         """Validate the cooling target temperature value."""
-        try:
-            temp = float(target_temperature_high)
-        except ValueError as err:
-            raise BSBLANInvalidParameterError(str(target_temperature_high)) from err
-
-        if circuit not in self._circuit_temp_initialized:
-            await self._initialize_temperature_range(circuit)
-
-        temp_range = self._circuit_temp_ranges.get(circuit, {})
-        min_temp = temp_range.get("cooling_min")
-        max_temp = temp_range.get("cooling_max")
-
-        if min_temp is None or max_temp is None:
-            return
-
-        if not (min_temp <= temp <= max_temp):
-            raise BSBLANInvalidParameterError(str(target_temperature_high))
+        await self._validate_temperature_in_range(
+            target_temperature_high,
+            circuit,
+            min_key="cooling_min",
+            max_key="cooling_max",
+        )
 
     async def _validate_target_temperature(
         self,
@@ -1477,26 +1509,12 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the target temperature is invalid.
 
         """
-        # Validate it's a valid float first
-        try:
-            temp = float(target_temperature)
-        except ValueError as err:
-            raise BSBLANInvalidParameterError(target_temperature) from err
-
-        # Try to load temperature range for bounds checking
-        if circuit not in self._circuit_temp_initialized:
-            await self._initialize_temperature_range(circuit)
-
-        temp_range = self._circuit_temp_ranges.get(circuit, {})
-        min_temp = temp_range.get("min")
-        max_temp = temp_range.get("max")
-
-        # Skip range validation if device doesn't provide min/max
-        if min_temp is None or max_temp is None:
-            return
-
-        if not (min_temp <= temp <= max_temp):
-            raise BSBLANInvalidParameterError(target_temperature)
+        await self._validate_temperature_in_range(
+            target_temperature,
+            circuit,
+            min_key="min",
+            max_key="max",
+        )
 
     def _validate_hvac_mode(self, hvac_mode: int) -> None:
         """Validate the HVAC mode.
