@@ -40,6 +40,7 @@ class BSBLANVersionError(BSBLANError):
     """Raised when the BSBLAN device has an unsupported version."""
 
     message: str = "The BSBLAN device has an unsupported version."
+    version: str | None = None
 
     def __init__(
         self,

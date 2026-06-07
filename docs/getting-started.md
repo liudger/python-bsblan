@@ -85,11 +85,14 @@ system exposes.
 
 ## Temperature bounds
 
-For heating comfort setpoint writes (`target_temperature`), `min_temp` maps to
-the reduced setpoint (`712` for circuit 1, `1012` for circuit 2). The protective
-setpoints (`714` and `1014`) are exposed separately and are not used as the
-comfort setpoint lower bound. The upper heating bound is `716` for circuit 1 and
-`1016` for circuit 2 when the device exposes those parameters.
+For heating comfort setpoint writes (`target_temperature`), the lower bound is
+the protective (frost) setpoint (`714` for circuit 1, `1014` for circuit 2),
+which allows setpoints down to the frost-protection temperature. The reduced
+setpoint (`712`/`1012`) is exposed as `min_temp` for reference and is used as a
+fallback lower bound only when the protective setpoint is unavailable (for
+example, on PPS devices). The upper heating bound is the comfort maximum (`716`
+for circuit 1 and `1016` for circuit 2) when the device exposes those
+parameters.
 
 ## Cooling setpoint support
 
