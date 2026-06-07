@@ -19,7 +19,7 @@ pull request — nothing more.
 1. Establish the diff scope. Run `git fetch` if needed, then `git --no-pager diff main...HEAD` and `git --no-pager diff` to capture committed and uncommitted changes.
 2. Read each changed file's surrounding context so feedback reflects real code, not the diff in isolation.
 3. Evaluate against the checklist below, flagging the smallest set of concrete problems.
-4. Verify the repo quality gate when changes are non-trivial: `uv run pytest` (95%+ total, 100% on patched lines) and `SKIP=no-commit-to-branch uv run prek run --all-files`.
+4. Verify the repo quality gate when changes are non-trivial: run `uv run pytest` and confirm coverage stays at 95%+ total with 100% patch coverage (via CI/Codecov), and run `SKIP=no-commit-to-branch uv run prek run --all-files`.
 
 ## Review Checklist
 - **Minimal**: every hunk is necessary for the stated goal; no drive-by edits, reformatting, or unrelated files.
