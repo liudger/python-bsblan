@@ -1120,8 +1120,9 @@ class BSBLAN:
             return params
         if not include:
             raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
+        include_set = set(include)
         filtered = {
-            param_id: name for param_id, name in params.items() if name in include
+            param_id: name for param_id, name in params.items() if name in include_set
         }
         if not filtered:
             raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
