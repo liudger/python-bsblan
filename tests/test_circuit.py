@@ -497,10 +497,10 @@ async def test_circuit2_temp_range_initialization(
 
 
 @pytest.mark.asyncio
-async def test_circuit1_temp_range_uses_reduced_lower_bound(
+async def test_circuit1_temp_range_uses_protective_lower_bound(
     monkeypatch: Any,
 ) -> None:
-    """Test that HC1 temp range uses the reduced setpoint lower bound."""
+    """Test that HC1 temp range uses the protective setpoint lower bound."""
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
@@ -526,6 +526,8 @@ async def test_circuit1_temp_range_uses_reduced_lower_bound(
         await bsblan._initialize_temperature_range(circuit=1)
 
         assert 1 in bsblan._circuit_temp_initialized
+        # Lower bound is the protective/frost setpoint (714 = 8.0), not the
+        # reduced setpoint (712 = 17.0).
         assert bsblan._circuit_temp_ranges[1]["min"] == 8.0
         assert bsblan._circuit_temp_ranges[1]["max"] == 23.0
 

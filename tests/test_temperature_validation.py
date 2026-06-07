@@ -159,7 +159,7 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         static_values_mock.return_value.min_temp = None
         static_values_mock.return_value.comfort_setpoint_max = None
         static_values_mock.return_value.max_temp = AsyncMock()
-        static_values_mock.return_value.max_temp.value = "30"
+        static_values_mock.return_value.max_temp.value = 30.0
         monkeypatch.setattr(client, "static_values", static_values_mock)
 
         # This should log a warning
@@ -193,7 +193,7 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         static_values_mock = AsyncMock()
         static_values_mock.return_value.heating_protective_setpoint = None
         static_values_mock.return_value.min_temp = AsyncMock()
-        static_values_mock.return_value.min_temp.value = "10"
+        static_values_mock.return_value.min_temp.value = 10.0
         static_values_mock.return_value.comfort_setpoint_max = None
         static_values_mock.return_value.max_temp = None
         monkeypatch.setattr(client, "static_values", static_values_mock)

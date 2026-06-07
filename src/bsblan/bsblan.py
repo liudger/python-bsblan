@@ -866,7 +866,7 @@ class BSBLAN:
         if self._api_version is None:
             raise BSBLANError(ErrorMsg.API_VERSION)
         if self._api_version not in SUPPORTED_API_VERSIONS:
-            raise BSBLANVersionError(ErrorMsg.VERSION)
+            raise BSBLANVersionError(ErrorMsg.VERSION, version=self._api_version)
         source_config: APIConfig = (
             API_V2 if self._api_version == BASIC_API_VERSION else API_V3
         )
