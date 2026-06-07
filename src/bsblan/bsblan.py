@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Awaitable, Callable, Mapping
 
 import aiohttp
 import backoff
@@ -259,6 +259,40 @@ class BSBLAN:
         self._api_data["heating_circuit2"] = {}
         self._api_data["staticValues_circuit2"] = {}
 
+    async def _run_once_locked(
+        self,
+        key: str,
+        locks: dict[str, asyncio.Lock],
+        is_done: Callable[[], bool],
+        body: Callable[[], Awaitable[None]],
+    ) -> None:
+        """Run an idempotent async operation at most once per key.
+
+        Implements double-checked locking: a fast path when the work is already
+        done, a per-key lock to serialize concurrent first-time callers, and a
+        re-check after acquiring the lock so only one caller runs ``body``.
+
+        Args:
+            key (str): Identifier for the one-time operation.
+            locks (dict[str, asyncio.Lock]): Registry of per-key locks, created
+                on demand.
+            is_done (Callable[[], bool]): Predicate returning True when the work
+                is already complete.
+            body (Callable[[], Awaitable[None]]): Coroutine factory executed once
+                while holding the lock.
+
+        """
+        if is_done():
+            return
+
+        if key not in locks:
+            locks[key] = asyncio.Lock()
+
+        async with locks[key]:
+            if is_done():
+                return
+            await body()
+
     async def _ensure_section_validated(
         self, section: SectionLiteral, include: list[str] | None = None
     ) -> None:
@@ -279,19 +313,7 @@ class BSBLAN:
         if not self._api_validator:
             raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
 
-        # Fast path: skip if already validated (no lock needed)
-        if self._api_validator.is_section_validated(section):
-            return
-
-        # Get or create lock for this section
-        if section not in self._section_locks:
-            self._section_locks[section] = asyncio.Lock()
-
-        async with self._section_locks[section]:
-            # Double-check after acquiring lock (another task may have validated)
-            if self._api_validator.is_section_validated(section):
-                return
-
+        async def _validate() -> None:
             logger.debug("Lazy loading section: %s", section)
             response_data = await self._validate_api_section(section, include)
 
@@ -299,6 +321,13 @@ class BSBLAN:
                 section, include, response_data
             ):
                 self._extract_temperature_unit_from_response(response_data)
+
+        await self._run_once_locked(
+            section,
+            self._section_locks,
+            lambda: self._api_validator.is_section_validated(section),
+            _validate,
+        )
 
     def _should_extract_temperature_unit(
         self,
@@ -337,24 +366,13 @@ class BSBLAN:
                 If provided, only these parameters will be validated.
 
         """
-        # Fast path: skip if already validated (no lock needed)
-        if group_name in self._validated_hot_water_groups:
-            return
 
-        if not self._api_validator:
-            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
+        async def _validate() -> None:
+            if not self._api_validator:
+                raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
 
-        if not self._api_data:
-            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
-
-        # Get or create lock for this group
-        if group_name not in self._hot_water_group_locks:
-            self._hot_water_group_locks[group_name] = asyncio.Lock()
-
-        async with self._hot_water_group_locks[group_name]:
-            # Double-check after acquiring lock (another task may have validated)
-            if group_name in self._validated_hot_water_groups:
-                return
+            if not self._api_data:
+                raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
 
             logger.debug("Lazy loading hot water group: %s", group_name)
 
@@ -422,6 +440,13 @@ class BSBLAN:
                 len(group_params),
                 len(params_to_remove),
             )
+
+        await self._run_once_locked(
+            group_name,
+            self._hot_water_group_locks,
+            lambda: group_name in self._validated_hot_water_groups,
+            _validate,
+        )
 
     async def _validate_api_section(
         self, section: SectionLiteral, include: list[str] | None = None
