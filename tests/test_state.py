@@ -33,7 +33,7 @@ async def test_state(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("heating")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock: AsyncMock = AsyncMock(
             return_value=json.loads(load_fixture("state.json")),
@@ -104,7 +104,7 @@ async def test_state_with_cooling_include(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("heating")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         state_data = json.loads(load_fixture("state.json"))
         request_mock: AsyncMock = AsyncMock(return_value={"902": state_data["902"]})
@@ -132,7 +132,7 @@ async def test_state_without_cooling_strips_target_temperature_high(
         bsblan._api_data = {
             section: params.copy() for section, params in API_V3.items()
         }
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         state_data = json.loads(load_fixture("state.json"))
         validation_response = {"700": state_data["700"]}

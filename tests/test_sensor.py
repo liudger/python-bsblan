@@ -83,7 +83,7 @@ async def test_sensor(
 
         api_validator = APIValidator(api_data)
         api_validator.validated_sections.add("sensor")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock = AsyncMock(return_value=sensor_response)
         monkeypatch.setattr(bsblan, "_request", request_mock)

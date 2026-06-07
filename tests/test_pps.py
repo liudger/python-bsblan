@@ -40,7 +40,7 @@ async def pps_bsblan() -> AsyncGenerator[BSBLAN, None]:
         )
         bsblan._api_data = build_api_config("v3")
         bsblan._apply_bus_specific_api_config()
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
         yield bsblan
 
 
@@ -329,7 +329,7 @@ async def test_pps_thermostat_rejects_read_only_bus() -> None:
         )
         bsblan._api_data = build_api_config("v3")
         bsblan._apply_bus_specific_api_config()
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
         request_mock = AsyncMock(return_value={"status": "ok"})
         bsblan._request = request_mock  # type: ignore[method-assign]
 

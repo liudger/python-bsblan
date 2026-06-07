@@ -27,7 +27,7 @@ async def test_validate_api_section_key_error(monkeypatch: Any) -> None:
         # Mock API validator
         mock_validator = MagicMock()
         mock_validator.is_section_validated.return_value = False
-        bsblan._api_validator = mock_validator
+        bsblan._validator._api_validator = mock_validator
 
         # Mock request to avoid network calls
         request_mock = AsyncMock(return_value={})
@@ -38,7 +38,7 @@ async def test_validate_api_section_key_error(monkeypatch: Any) -> None:
             BSBLANError,
             match="Section 'nonexistent' not found in API data",
         ):
-            await bsblan._validate_api_section("nonexistent")  # type: ignore[arg-type]
+            await bsblan._validator._validate_api_section("nonexistent")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -90,4 +90,4 @@ def test_bsblan_config_initialization_edge_cases() -> None:
     # Verify initial state
     assert bsblan.session is None
     assert bsblan._initialized is False
-    assert len(bsblan._hot_water_param_cache) == 0
+    assert len(bsblan._validator._hot_water_param_cache) == 0

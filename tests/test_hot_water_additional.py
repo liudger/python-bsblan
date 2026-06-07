@@ -33,7 +33,7 @@ async def test_hot_water_config(
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("hot_water")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Set up the hot water parameter cache
         hot_water_cache = {
@@ -49,7 +49,7 @@ async def test_hot_water_config(
         bsblan.set_hot_water_cache(hot_water_cache)
 
         # Mark config group as validated to skip validation logic
-        bsblan._validated_hot_water_groups.add("config")
+        bsblan._validator._validated_hot_water_groups.add("config")
 
         # Mock the request response
         fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
@@ -95,13 +95,13 @@ async def test_hot_water_config_no_params_error(
         # Create a mock API validator that returns empty parameters
         mock_validator = MagicMock()
         mock_validator.get_section_params.return_value = {}
-        bsblan._api_validator = mock_validator
+        bsblan._validator._api_validator = mock_validator
 
         # Set empty cache - no config parameters available
         bsblan.set_hot_water_cache({})
 
         # Mark config group as already validated (so it skips validation)
-        bsblan._validated_hot_water_groups.add("config")
+        bsblan._validator._validated_hot_water_groups.add("config")
 
         with pytest.raises(
             BSBLANError,
@@ -125,7 +125,7 @@ async def test_hot_water_schedule(
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("hot_water")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Set up the hot water parameter cache with schedule parameters
         hot_water_cache = {
@@ -141,7 +141,7 @@ async def test_hot_water_schedule(
         bsblan.set_hot_water_cache(hot_water_cache)
 
         # Mark schedule group as validated to skip validation logic
-        bsblan._validated_hot_water_groups.add("schedule")
+        bsblan._validator._validated_hot_water_groups.add("schedule")
 
         # Create mock fixture data for schedule parameters
         schedule_fixture_data = {
@@ -244,13 +244,13 @@ async def test_hot_water_schedule_no_params_error(
         # Create a mock API validator that returns empty parameters
         mock_validator = MagicMock()
         mock_validator.get_section_params.return_value = {}
-        bsblan._api_validator = mock_validator
+        bsblan._validator._api_validator = mock_validator
 
         # Set empty cache - no schedule parameters available
         bsblan.set_hot_water_cache({})
 
         # Mark schedule group as already validated (so it skips validation)
-        bsblan._validated_hot_water_groups.add("schedule")
+        bsblan._validator._validated_hot_water_groups.add("schedule")
 
         with pytest.raises(
             BSBLANError,
@@ -274,13 +274,13 @@ async def test_hot_water_state_no_params_error(
         # Create a mock API validator that returns empty parameters
         mock_validator = MagicMock()
         mock_validator.get_section_params.return_value = {}
-        bsblan._api_validator = mock_validator
+        bsblan._validator._api_validator = mock_validator
 
         # Set empty cache - no essential parameters available
         bsblan.set_hot_water_cache({})
 
         # Mark essential group as already validated (so it skips validation)
-        bsblan._validated_hot_water_groups.add("essential")
+        bsblan._validator._validated_hot_water_groups.add("essential")
 
         with pytest.raises(
             BSBLANError,
@@ -303,7 +303,7 @@ async def test_granular_hot_water_validation(
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Mock the request to return valid hot water params
         fixture_data: dict[str, Any] = json.loads(load_fixture("hot_water_state.json"))
@@ -324,18 +324,18 @@ async def test_granular_hot_water_validation(
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         # Initially no groups validated
-        assert len(bsblan._validated_hot_water_groups) == 0
+        assert len(bsblan._validator._validated_hot_water_groups) == 0
 
         # Call hot_water_state - should validate essential group only
         await bsblan.hot_water_state()
 
         # Essential group should be validated
-        assert "essential" in bsblan._validated_hot_water_groups
-        assert "config" not in bsblan._validated_hot_water_groups
-        assert "schedule" not in bsblan._validated_hot_water_groups
+        assert "essential" in bsblan._validator._validated_hot_water_groups
+        assert "config" not in bsblan._validator._validated_hot_water_groups
+        assert "schedule" not in bsblan._validator._validated_hot_water_groups
 
         # Cache should have essential params only
-        assert len(bsblan._hot_water_param_cache) > 0
+        assert len(bsblan._validator._hot_water_param_cache) > 0
 
 
 @pytest.mark.asyncio
@@ -354,13 +354,13 @@ async def test_granular_validation_empty_params(
         monkeypatch.setattr(bsblan, "_api_data", api_data)
 
         api_validator = APIValidator(api_data)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Validation should complete without error even with empty params
         await bsblan._ensure_hot_water_group_validated("essential", {"1600", "1610"})
 
         # Group should be marked as validated
-        assert "essential" in bsblan._validated_hot_water_groups
+        assert "essential" in bsblan._validator._validated_hot_water_groups
 
 
 @pytest.mark.asyncio
@@ -370,13 +370,13 @@ async def test_populate_hot_water_cache_no_validator() -> None:
     bsblan = BSBLAN(config)
 
     # Ensure no validator is set
-    bsblan._api_validator = None  # type: ignore[assignment]
+    bsblan._validator._api_validator = None  # type: ignore[assignment]
 
     # Should not raise an error, just return without doing anything
     bsblan._populate_hot_water_cache()
 
     # Cache should still be empty
-    assert len(bsblan._hot_water_param_cache) == 0
+    assert len(bsblan._validator._hot_water_param_cache) == 0
 
 
 @pytest.mark.asyncio
@@ -387,7 +387,7 @@ async def test_ensure_hot_water_group_validated_no_validator() -> None:
         bsblan = BSBLAN(config, session=session)
 
         # No validator set
-        bsblan._api_validator = None  # type: ignore[assignment]
+        bsblan._validator._api_validator = None  # type: ignore[assignment]
 
         with pytest.raises(BSBLANError, match="API validator not initialized"):
             await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
@@ -401,7 +401,7 @@ async def test_ensure_hot_water_group_validated_no_api_data() -> None:
         bsblan = BSBLAN(config, session=session)
 
         # Set validator but no api_data
-        bsblan._api_validator = MagicMock()
+        bsblan._validator._api_validator = MagicMock()
         bsblan._api_data = None
 
         with pytest.raises(BSBLANError, match="API data not initialized"):
@@ -416,7 +416,7 @@ async def test_ensure_section_validated_no_validator() -> None:
         bsblan = BSBLAN(config, session=session)
 
         # No validator set
-        bsblan._api_validator = None  # type: ignore[assignment]
+        bsblan._validator._api_validator = None  # type: ignore[assignment]
 
         with pytest.raises(BSBLANError, match="API validator not initialized"):
             await bsblan._ensure_section_validated("heating")
@@ -450,7 +450,7 @@ async def test_granular_validation_filters_missing_params(
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Mock response that's missing param "1610"
         mock_response = {
@@ -465,9 +465,9 @@ async def test_granular_validation_filters_missing_params(
         await bsblan._ensure_hot_water_group_validated("test_missing", {"1600", "1610"})
 
         # Only "1600" should be in cache (1610 was missing)
-        assert "1600" in bsblan._hot_water_param_cache
-        assert "1610" not in bsblan._hot_water_param_cache
-        assert "test_missing" in bsblan._validated_hot_water_groups
+        assert "1600" in bsblan._validator._hot_water_param_cache
+        assert "1610" not in bsblan._validator._hot_water_param_cache
+        assert "test_missing" in bsblan._validator._validated_hot_water_groups
 
 
 @pytest.mark.asyncio
@@ -484,7 +484,7 @@ async def test_granular_validation_filters_invalid_params(
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Mock response with invalid values
         mock_response = {
@@ -502,10 +502,10 @@ async def test_granular_validation_filters_invalid_params(
         )
 
         # Only "1600" should be in cache (others had invalid values)
-        assert "1600" in bsblan._hot_water_param_cache
-        assert "1610" not in bsblan._hot_water_param_cache  # value was "---"
-        assert "1620" not in bsblan._hot_water_param_cache  # value was None
-        assert "test_invalid" in bsblan._validated_hot_water_groups
+        assert "1600" in bsblan._validator._hot_water_param_cache
+        assert "1610" not in bsblan._validator._hot_water_param_cache  # value was "---"
+        assert "1620" not in bsblan._validator._hot_water_param_cache  # value was None
+        assert "test_invalid" in bsblan._validator._validated_hot_water_groups
 
 
 @pytest.mark.asyncio
@@ -515,7 +515,7 @@ async def test_ensure_hot_water_group_double_check_after_lock() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
         bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         # Mock the request
         bsblan._request = AsyncMock(  # type: ignore[method-assign]
@@ -523,11 +523,11 @@ async def test_ensure_hot_water_group_double_check_after_lock() -> None:
         )
 
         # Create the lock first
-        bsblan._hot_water_group_locks["essential"] = asyncio.Lock()
+        bsblan._validator._hot_water_group_locks["essential"] = asyncio.Lock()
 
         # First call validates
         await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
-        assert "essential" in bsblan._validated_hot_water_groups
+        assert "essential" in bsblan._validator._validated_hot_water_groups
 
         # Second call should hit the fast path (before lock)
         bsblan._request.reset_mock()  # type: ignore[attr-defined]
@@ -542,7 +542,7 @@ async def test_ensure_hot_water_group_concurrent_double_check() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
         bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         request_count = 0
         request_started = asyncio.Event()
@@ -587,7 +587,7 @@ async def test_ensure_hot_water_group_validated_with_include_filter() -> None:
                 "1648": "legionella_circulation_temp_diff",
             }
         }
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         requested_params: list[str] = []
 
@@ -619,9 +619,9 @@ async def test_ensure_hot_water_group_validated_with_include_filter() -> None:
         assert "1645" in requested_params[0]
 
         # Cache should only contain the validated params
-        assert "1640" in bsblan._hot_water_param_cache
-        assert "1645" in bsblan._hot_water_param_cache
-        assert "1648" not in bsblan._hot_water_param_cache
+        assert "1640" in bsblan._validator._hot_water_param_cache
+        assert "1645" in bsblan._validator._hot_water_param_cache
+        assert "1648" not in bsblan._validator._hot_water_param_cache
 
 
 @pytest.mark.asyncio
@@ -635,7 +635,7 @@ async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
                 "1640": "legionella_function",
             }
         }
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         request_count = 0
 
@@ -656,7 +656,7 @@ async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
         # No request should be made since no params match
         assert request_count == 0
         # Group should still be marked as validated
-        assert "config" in bsblan._validated_hot_water_groups
+        assert "config" in bsblan._validator._validated_hot_water_groups
 
 
 @pytest.mark.asyncio
@@ -672,7 +672,7 @@ async def test_ensure_hot_water_group_validated_without_include() -> None:
                 "1648": "legionella_circulation_temp_diff",
             }
         }
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         requested_params: list[str] = []
 
@@ -703,6 +703,6 @@ async def test_ensure_hot_water_group_validated_without_include() -> None:
         assert "1648" in requested_params[0]
 
         # All params should be cached
-        assert "1640" in bsblan._hot_water_param_cache
-        assert "1645" in bsblan._hot_water_param_cache
-        assert "1648" in bsblan._hot_water_param_cache
+        assert "1640" in bsblan._validator._hot_water_param_cache
+        assert "1645" in bsblan._validator._hot_water_param_cache
+        assert "1648" in bsblan._validator._hot_water_param_cache
