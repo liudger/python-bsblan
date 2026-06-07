@@ -413,7 +413,7 @@ async def test_ensure_section_validated_heating_extracts_temp_unit() -> None:
         await bsblan._ensure_section_validated("heating")
 
         # Temperature unit should be extracted from heating response
-        assert bsblan._temperature_unit == "°F"
+        assert bsblan._temperature._temperature_unit == "°F"
 
 
 @pytest.mark.asyncio

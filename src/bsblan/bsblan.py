@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 import aiohttp
 from aiohttp.hdrs import METH_POST
 
+from ._temperature import TemperatureManager
 from ._transport import BSBLANTransport
 from ._validation import SectionValidator
 from ._version import VersionResolver
@@ -105,15 +106,10 @@ class BSBLAN:
     _api_data: APIConfig | None = None
     _device: Device | None = None
     _initialized: bool = False
-    _temperature_unit: str = "°C"
-    # Per-circuit temperature ranges: circuit_number -> {min, max}
-    _circuit_temp_ranges: dict[int, dict[str, float | None]] = field(
-        default_factory=dict,
-    )
-    _circuit_temp_initialized: set[int] = field(default_factory=set)
     _available_circuits: set[int] | None = None
     _transport: BSBLANTransport = field(init=False)
     _version_resolver: VersionResolver = field(init=False)
+    _temperature: TemperatureManager = field(init=False)
     _validator: SectionValidator = field(init=False)
 
     def __post_init__(self) -> None:
@@ -124,6 +120,10 @@ class BSBLAN:
             lambda: self._firmware_version,
         )
         self._version_resolver = VersionResolver()
+        self._temperature = TemperatureManager(
+            static_values=lambda **kw: self.static_values(**kw),  # noqa: PLW0108
+            get_available_circuits=lambda: self._available_circuits,
+        )
         # _request and _extract_params_summary are monkeypatched by some tests,
         # so resolve them lazily instead of binding them at construction time.
         self._validator = SectionValidator(
@@ -285,13 +285,9 @@ class BSBLAN:
         response_data: dict[str, Any],
     ) -> bool:
         """Return whether the validation response should update temperature unit."""
-        if section != "heating":
-            return False
-
-        if include is None or "target_temperature" in include:
-            return True
-
-        return any(param_id in response_data for param_id in ("710", "15004"))
+        return self._temperature.should_extract_temperature_unit(
+            section, include, response_data
+        )
 
     async def _ensure_hot_water_group_validated(
         self,
@@ -335,28 +331,7 @@ class BSBLAN:
             response_data: The response data from heating section validation
 
         """
-        # Look for target_temperature in the response.
-        for param_id, param_data in response_data.items():
-            if param_id in {"710", "15004"} and isinstance(param_data, dict):
-                unit = param_data.get("unit", "")
-                if unit in ("&deg;C", "°C"):
-                    self._temperature_unit = "°C"
-                elif unit == "°F":
-                    self._temperature_unit = "°F"
-                else:
-                    # Keep default if unit is empty or unknown
-                    logger.debug(
-                        "Unknown or empty temperature unit from heating target: "
-                        "'%s'. Using default (°C)",
-                        unit,
-                    )
-                logger.debug("Temperature unit set to: %s", self._temperature_unit)
-                return
-
-        logger.warning(
-            "Could not find target temperature in heating section response. "
-            "Using default temperature unit (°C)"
-        )
+        self._temperature.extract_temperature_unit_from_response(response_data)
 
     def set_hot_water_cache(self, params: dict[str, str]) -> None:
         """Set the hot water parameter cache manually (for testing).
@@ -460,110 +435,6 @@ class BSBLAN:
             firmware_version=self._firmware_version,
         )
 
-    async def _fetch_temperature_range(
-        self,
-        circuit: int,
-    ) -> dict[str, float | None]:
-        """Fetch min/max temperature range for a circuit from the device.
-
-        Args:
-            circuit: The heating circuit number (1 or 2).
-
-        Returns:
-            dict with heating and cooling min/max keys. Values may be None if
-            unavailable.
-
-        """
-        temp_range: dict[str, float | None] = {
-            "min": None,
-            "max": None,
-            "cooling_min": None,
-            "cooling_max": None,
-        }
-        if (
-            self._available_circuits is not None
-            and circuit not in self._available_circuits
-        ):
-            logger.debug(
-                "Skipping temperature range fetch for unavailable circuit %d",
-                circuit,
-            )
-            return temp_range
-
-        try:
-            static_values = await self.static_values(circuit=circuit)
-        except BSBLANError as err:
-            logger.warning(
-                "Failed to get static values for circuit %d: %s. "
-                "Temperature range will be None",
-                circuit,
-                str(err),
-            )
-            return temp_range
-
-        # Prefer heating_protective_setpoint (714/1014) as the true lower bound
-        # for standard circuits. Fall back to min_temp for PPS circuits (15006)
-        # which have no separate protective setpoint. Skip sources whose value is
-        # inactive (BSB-LAN may return "---" which becomes value=None).
-        min_source = next(
-            (
-                source
-                for source in (
-                    static_values.heating_protective_setpoint,
-                    static_values.min_temp,
-                )
-                if source is not None and source.value is not None
-            ),
-            None,
-        )
-        if min_source is not None:
-            temp_range["min"] = min_source.value
-            logger.debug(
-                "Circuit %d min temp initialized: %s",
-                circuit,
-                temp_range["min"],
-            )
-
-        # Prefer comfort_setpoint_max (716/1016) as the upper bound for standard
-        # circuits. Fall back to max_temp for PPS circuits (15007) which expose
-        # only a generic max. Skip sources whose value is inactive.
-        max_source = next(
-            (
-                source
-                for source in (
-                    static_values.comfort_setpoint_max,
-                    static_values.max_temp,
-                )
-                if source is not None and source.value is not None
-            ),
-            None,
-        )
-        if max_source is not None:
-            temp_range["max"] = max_source.value
-            logger.debug(
-                "Circuit %d max temp initialized: %s",
-                circuit,
-                temp_range["max"],
-            )
-
-        if static_values.cooling_comfort_setpoint_min is not None:
-            temp_range["cooling_min"] = static_values.cooling_comfort_setpoint_min.value
-            logger.debug(
-                "Circuit %d cooling min temp initialized: %s",
-                circuit,
-                temp_range["cooling_min"],
-            )
-
-        if static_values.cooling_reduced_setpoint is not None:
-            temp_range["cooling_max"] = static_values.cooling_reduced_setpoint.value
-            logger.debug(
-                "Circuit %d cooling max temp initialized: %s",
-                circuit,
-                temp_range["cooling_max"],
-            )
-
-        return temp_range
-
     async def _initialize_temperature_range(
         self,
         circuit: int = 1,
@@ -581,12 +452,7 @@ class BSBLAN:
         so no extra API call is needed here.
 
         """
-        if circuit in self._circuit_temp_initialized:
-            return
-
-        temp_range = await self._fetch_temperature_range(circuit)
-        self._circuit_temp_ranges[circuit] = temp_range
-        self._circuit_temp_initialized.add(circuit)
+        await self._temperature.initialize_temperature_range(circuit)
 
     def _validate_circuit(self, circuit: int) -> None:
         """Validate the circuit number.
@@ -624,7 +490,7 @@ class BSBLAN:
             initialization, it will return the default unit (°C).
 
         """
-        return self._temperature_unit
+        return self._temperature.unit
 
     def _copy_api_config(self) -> APIConfig:
         """Create a copy of the API configuration for the current version.
@@ -1077,60 +943,15 @@ class BSBLAN:
             return {"target_temperature": "15004", "hvac_mode": "15000"}
         return CircuitConfig.THERMOSTAT_PARAMS[circuit]
 
-    async def _validate_temperature_in_range(
-        self,
-        value: str | float,
-        circuit: int,
-        *,
-        min_key: str,
-        max_key: str,
-    ) -> None:
-        """Validate a temperature value against a circuit's configured bounds.
-
-        Lazy-loads the circuit temperature range when needed. If the device
-        does not expose the relevant bounds, only the float conversion is
-        validated.
-
-        Args:
-            value (str | float): The temperature value to validate.
-            circuit (int): The heating circuit number (1 or 2).
-            min_key (str): Range key holding the lower bound.
-            max_key (str): Range key holding the upper bound.
-
-        Raises:
-            BSBLANInvalidParameterError: If the value is not a valid float or
-                falls outside the configured bounds.
-
-        """
-        try:
-            temp = float(value)
-        except ValueError as err:
-            raise BSBLANInvalidParameterError(str(value)) from err
-
-        if circuit not in self._circuit_temp_initialized:
-            await self._initialize_temperature_range(circuit)
-
-        temp_range = self._circuit_temp_ranges.get(circuit, {})
-        min_temp = temp_range.get(min_key)
-        max_temp = temp_range.get(max_key)
-
-        if min_temp is None or max_temp is None:
-            return
-
-        if not (min_temp <= temp <= max_temp):
-            raise BSBLANInvalidParameterError(str(value))
-
     async def _validate_target_temperature_high(
         self,
         target_temperature_high: str | float,
         circuit: int = 1,
     ) -> None:
         """Validate the cooling target temperature value."""
-        await self._validate_temperature_in_range(
+        await self._temperature.validate_target_temperature_high(
             target_temperature_high,
             circuit,
-            min_key="cooling_min",
-            max_key="cooling_max",
         )
 
     async def _validate_target_temperature(
@@ -1152,11 +973,9 @@ class BSBLAN:
             BSBLANInvalidParameterError: If the target temperature is invalid.
 
         """
-        await self._validate_temperature_in_range(
+        await self._temperature.validate_target_temperature(
             target_temperature,
             circuit,
-            min_key="min",
-            max_key="max",
         )
 
     def _validate_hvac_mode(self, hvac_mode: int) -> None:
