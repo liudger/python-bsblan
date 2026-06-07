@@ -2,25 +2,23 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Mapping
+    from collections.abc import Mapping
 
 import aiohttp
 from aiohttp.hdrs import METH_POST
 
 from ._transport import BSBLANTransport
+from ._validation import SectionValidator
 from ._version import VersionResolver
 from .constants import (
     API_V2,
     API_V3,
     BASIC_API_VERSION,
-    PPS_HEATING_PARAMS,
-    PPS_STATIC_VALUES_PARAMS,
     SUPPORTED_API_VERSION,
     SUPPORTED_API_VERSIONS,
     APIConfig,
@@ -54,7 +52,7 @@ from .models import (
     State,
     StaticState,
 )
-from .utility import APIValidator, validate_time_format
+from .utility import validate_time_format
 
 if TYPE_CHECKING:
     from typing import Self
@@ -107,7 +105,6 @@ class BSBLAN:
     _api_data: APIConfig | None = None
     _device: Device | None = None
     _initialized: bool = False
-    _api_validator: APIValidator = field(init=False)
     _temperature_unit: str = "°C"
     # Per-circuit temperature ranges: circuit_number -> {min, max}
     _circuit_temp_ranges: dict[int, dict[str, float | None]] = field(
@@ -115,14 +112,9 @@ class BSBLAN:
     )
     _circuit_temp_initialized: set[int] = field(default_factory=set)
     _available_circuits: set[int] | None = None
-    _hot_water_param_cache: dict[str, str] = field(default_factory=dict)
-    # Track which hot water param groups have been validated
-    _validated_hot_water_groups: set[str] = field(default_factory=set)
-    # Locks to prevent concurrent validation of the same section/group
-    _section_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
-    _hot_water_group_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
     _transport: BSBLANTransport = field(init=False)
     _version_resolver: VersionResolver = field(init=False)
+    _validator: SectionValidator = field(init=False)
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
@@ -132,6 +124,17 @@ class BSBLAN:
             lambda: self._firmware_version,
         )
         self._version_resolver = VersionResolver()
+        # _request and _extract_params_summary are monkeypatched by some tests,
+        # so resolve them lazily instead of binding them at construction time.
+        self._validator = SectionValidator(
+            request=lambda **kw: self._request(**kw),  # noqa: PLW0108
+            extract_params_summary=(
+                lambda d: self._extract_params_summary(d)  # noqa: PLW0108
+            ),
+            get_api_data=lambda: self._api_data,
+            should_extract_temperature_unit=self._should_extract_temperature_unit,
+            extract_temperature_unit=self._extract_temperature_unit_from_response,
+        )
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -247,54 +250,14 @@ class BSBLAN:
         if self._api_data is None:
             self._api_data = self._copy_api_config()
 
-        self._apply_bus_specific_api_config()
-
-        # Initialize the API validator (but don't validate sections yet)
-        self._api_validator = APIValidator(self._api_data)
+        # Build the validator (applies bus-specific config, defers validation)
+        self._validator.setup(self._api_data, uses_pps_bus=self._uses_pps_bus)
 
     def _apply_bus_specific_api_config(self) -> None:
         """Apply bus-specific parameter maps to the current API config."""
-        if self._api_data is None or not self._uses_pps_bus:
-            return
-
-        self._api_data["heating"] = PPS_HEATING_PARAMS.copy()
-        self._api_data["staticValues"] = PPS_STATIC_VALUES_PARAMS.copy()
-        self._api_data["heating_circuit2"] = {}
-        self._api_data["staticValues_circuit2"] = {}
-
-    async def _run_once_locked(
-        self,
-        key: str,
-        locks: dict[str, asyncio.Lock],
-        is_done: Callable[[], bool],
-        body: Callable[[], Awaitable[None]],
-    ) -> None:
-        """Run an idempotent async operation at most once per key.
-
-        Implements double-checked locking: a fast path when the work is already
-        done, a per-key lock to serialize concurrent first-time callers, and a
-        re-check after acquiring the lock so only one caller runs ``body``.
-
-        Args:
-            key (str): Identifier for the one-time operation.
-            locks (dict[str, asyncio.Lock]): Registry of per-key locks, created
-                on demand.
-            is_done (Callable[[], bool]): Predicate returning True when the work
-                is already complete.
-            body (Callable[[], Awaitable[None]]): Coroutine factory executed once
-                while holding the lock.
-
-        """
-        if is_done():
-            return
-
-        if key not in locks:
-            locks[key] = asyncio.Lock()
-
-        async with locks[key]:
-            if is_done():
-                return
-            await body()
+        self._validator.apply_bus_specific_api_config(
+            self._api_data, uses_pps_bus=self._uses_pps_bus
+        )
 
     async def _ensure_section_validated(
         self, section: SectionLiteral, include: list[str] | None = None
@@ -313,24 +276,7 @@ class BSBLAN:
                 validates all parameters for the section.
 
         """
-        if not self._api_validator:
-            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
-
-        async def _validate() -> None:
-            logger.debug("Lazy loading section: %s", section)
-            response_data = await self._validate_api_section(section, include)
-
-            if response_data and self._should_extract_temperature_unit(
-                section, include, response_data
-            ):
-                self._extract_temperature_unit_from_response(response_data)
-
-        await self._run_once_locked(
-            section,
-            self._section_locks,
-            lambda: self._api_validator.is_section_validated(section),
-            _validate,
-        )
+        await self._validator.ensure_section_validated(section, include)
 
     def _should_extract_temperature_unit(
         self,
@@ -369,166 +315,13 @@ class BSBLAN:
                 If provided, only these parameters will be validated.
 
         """
-
-        async def _validate() -> None:
-            if not self._api_validator:
-                raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
-
-            if not self._api_data:
-                raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
-
-            logger.debug("Lazy loading hot water group: %s", group_name)
-
-            # Get the base hot water params from API config
-            section_data = self._api_data.get("hot_water", {})
-
-            # Filter to only the params in this group
-            group_params = {
-                param_id: param_name
-                for param_id, param_name in section_data.items()
-                if param_id in param_filter
-            }
-
-            # Apply include filter if specified - only validate requested params
-            if include is not None:
-                group_params = {
-                    param_id: name
-                    for param_id, name in group_params.items()
-                    if name in include
-                }
-
-            if not group_params:
-                logger.debug("No parameters to validate for group %s", group_name)
-                self._validated_hot_water_groups.add(group_name)
-                return
-
-            # Request only these specific parameters from the device
-            params = self._extract_params_summary(group_params)
-            response_data = await self._request(
-                params={"Parameter": params["string_par"]}
-            )
-
-            # Validate and filter out unsupported params
-            params_to_remove = []
-            for param_id, param_name in group_params.items():
-                if param_id not in response_data:
-                    logger.info(
-                        "Hot water param %s (%s) not found in response",
-                        param_id,
-                        param_name,
-                    )
-                    params_to_remove.append(param_id)
-                    continue
-
-                param_data = response_data[param_id]
-                if not param_data or param_data.get("value") in (None, "---"):
-                    logger.info(
-                        "Hot water param %s (%s) returned invalid value: %s",
-                        param_id,
-                        param_name,
-                        param_data.get("value") if param_data else None,
-                    )
-                    params_to_remove.append(param_id)
-
-            # Update the cache with validated params for this group
-            for param_id, param_name in group_params.items():
-                if param_id not in params_to_remove:
-                    self._hot_water_param_cache[param_id] = param_name
-
-            # Mark this group as validated
-            self._validated_hot_water_groups.add(group_name)
-            logger.debug(
-                "Validated hot water group '%s': %d params, removed %d unsupported",
-                group_name,
-                len(group_params),
-                len(params_to_remove),
-            )
-
-        await self._run_once_locked(
-            group_name,
-            self._hot_water_group_locks,
-            lambda: group_name in self._validated_hot_water_groups,
-            _validate,
+        await self._validator.ensure_hot_water_group_validated(
+            group_name, param_filter, include
         )
-
-    async def _validate_api_section(
-        self, section: SectionLiteral, include: list[str] | None = None
-    ) -> dict[str, Any] | None:
-        """Validate a specific section of the API configuration.
-
-        Args:
-            section: The section name to validate
-            include: Optional list of parameter names to validate. If None,
-                validates all parameters for the section.
-
-        Returns:
-            dict[str, Any] | None: The response data from the device, or None if
-                section was already validated or validation failed
-
-        Raises:
-            BSBLANError: If the API validator is not initialized
-
-        """
-        if not self._api_validator:
-            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
-
-        if not self._api_data:
-            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
-
-        # Assign to local variable after asserting it's not None
-        api_validator = self._api_validator
-
-        if api_validator.is_section_validated(section):
-            return None
-
-        # Get parameters for the section
-        try:
-            section_data = self._api_data[section]
-        except KeyError as err:
-            msg = ErrorMsg.SECTION_NOT_FOUND.format(section)
-            raise BSBLANError(msg) from err
-
-        # Filter to only included params if specified
-        if include is not None:
-            section_data = {
-                param_id: name
-                for param_id, name in section_data.items()
-                if name in include
-            }
-
-        try:
-            # Request data from device for validation
-            params = self._extract_params_summary(section_data)
-            response_data = await self._request(
-                params={"Parameter": params["string_par"]}
-            )
-
-            # Validate the section against actual device response
-            api_validator.validate_section(section, response_data, include)
-            # Update API data with validated configuration
-            if self._api_data:
-                self._api_data[section] = api_validator.get_section_params(section)
-
-            # Cache hot water parameters if this is the hot_water section
-            if section == "hot_water":
-                self._populate_hot_water_cache()
-        except BSBLANError as err:
-            logger.warning("Failed to validate section %s: %s", section, str(err))
-            # Reset validation state for this section
-            api_validator.reset_validation(section)
-            raise
-        else:
-            return response_data
 
     def _populate_hot_water_cache(self) -> None:
         """Populate the hot water parameter cache with all available parameters."""
-        if not self._api_validator:
-            return
-
-        # Get all hot water parameters and cache them
-        hotwater_params = self._api_validator.get_section_params("hot_water")
-        self._hot_water_param_cache = hotwater_params.copy()
-        logger.debug("Cached %d hot water parameters", len(self._hot_water_param_cache))
+        self._validator.populate_hot_water_cache()
 
     def _extract_temperature_unit_from_response(
         self, response_data: dict[str, Any]
@@ -572,8 +365,7 @@ class BSBLAN:
             params: Dictionary of parameter_id -> parameter_name mappings
 
         """
-        self._hot_water_param_cache = params.copy()
-        logger.debug("Manually set cache with %d hot water parameters", len(params))
+        self._validator.set_hot_water_cache(params)
 
     async def _fetch_firmware_version(self) -> None:
         """Fetch the firmware version if not already available."""
@@ -997,7 +789,7 @@ class BSBLAN:
         # Lazy load: validate section on first access (only for included params)
         await self._ensure_section_validated(section, include)
 
-        section_params = self._api_validator.get_section_params(section)
+        section_params = self._validator.get_section_params(section)
 
         # Guard: if validation removed all params, the section is not available
         if not section_params:
@@ -1463,7 +1255,7 @@ class BSBLAN:
         # Use cached validated params
         filtered_params = {
             param_id: param_name
-            for param_id, param_name in self._hot_water_param_cache.items()
+            for param_id, param_name in self._validator.hot_water_param_cache.items()
             if param_id in param_filter
         }
 

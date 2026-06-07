@@ -44,7 +44,7 @@ async def mock_bsblan_circuit() -> AsyncGenerator[BSBLAN, None]:
         api_validator.validated_sections.add("heating_circuit2")
         api_validator.validated_sections.add("staticValues")
         api_validator.validated_sections.add("staticValues_circuit2")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         yield bsblan
 
@@ -91,7 +91,7 @@ async def test_state_circuit1_default(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(api_data)
         api_validator.validated_sections.add("heating")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock = AsyncMock(
             return_value=json.loads(load_fixture("state.json")),
@@ -127,7 +127,7 @@ async def test_state_circuit2(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("heating_circuit2")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock = AsyncMock(
             return_value=json.loads(
@@ -168,7 +168,7 @@ async def test_state_circuit2_with_include(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("heating_circuit2")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Only return hvac_mode data
         request_mock = AsyncMock(
@@ -213,7 +213,7 @@ async def test_static_values_circuit2(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("staticValues_circuit2")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock = AsyncMock(
             return_value=json.loads(
@@ -479,7 +479,7 @@ async def test_circuit2_temp_range_initialization(
 
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("staticValues_circuit2")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         static_fixture = json.loads(
             load_fixture("static_state_circuit2.json"),
@@ -515,7 +515,7 @@ async def test_circuit1_temp_range_uses_protective_lower_bound(
 
         api_validator = APIValidator(api_data)
         api_validator.validated_sections.add("staticValues")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         static_fixture = json.loads(
             load_fixture("static_state.json"),
@@ -558,7 +558,7 @@ async def test_thermostat_circuit2_lazy_temp_init(
         api_validator = APIValidator(bsblan._api_data)
         api_validator.validated_sections.add("staticValues_circuit2")
         api_validator.validated_sections.add("heating_circuit2")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # First: mock _request to return static values for temp range
         static_fixture = json.loads(
@@ -799,9 +799,9 @@ async def test_state_empty_section_after_validation(
     bsblan = mock_bsblan_circuit
 
     # Simulate validation removing all params for heating_circuit2
-    assert bsblan._api_validator is not None
-    bsblan._api_validator.api_config["heating_circuit2"] = {}  # type: ignore[index]
-    bsblan._api_validator.validated_sections.add("heating_circuit2")
+    assert bsblan._validator._api_validator is not None
+    bsblan._validator._api_validator.api_config["heating_circuit2"] = {}  # type: ignore[index]
+    bsblan._validator._api_validator.validated_sections.add("heating_circuit2")
 
     with pytest.raises(BSBLANError, match="No valid parameters found"):
         await bsblan.state(circuit=2)

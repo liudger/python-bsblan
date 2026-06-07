@@ -42,7 +42,7 @@ async def test_info(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
             "6225": "controller_family",
             "6226": "controller_variant",
         }
-        object.__setattr__(bsblan, "_api_validator", mock_validator)
+        object.__setattr__(bsblan._validator, "_api_validator", mock_validator)
 
         info: Info = await bsblan.info()
         assert info

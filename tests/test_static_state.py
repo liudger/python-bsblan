@@ -30,7 +30,7 @@ async def test_sensor(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("staticValues")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Mock the request response
         request_mock = AsyncMock(

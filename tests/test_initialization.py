@@ -166,7 +166,7 @@ async def test_setup_api_validator() -> None:
 
         await bsblan._setup_api_validator()
 
-        assert bsblan._api_validator is not None
+        assert bsblan._validator._api_validator is not None
         assert bsblan._api_data is not None
 
 

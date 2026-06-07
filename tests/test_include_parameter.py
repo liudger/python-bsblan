@@ -57,7 +57,7 @@ async def test_section_method_with_include_single_param(
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add(section)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Load appropriate fixture based on method
         fixture_map = {
@@ -111,7 +111,7 @@ async def test_section_method_with_empty_include_list(
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add(section)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock: AsyncMock = AsyncMock()
         monkeypatch.setattr(bsblan, "_request", request_mock)
@@ -151,7 +151,7 @@ async def test_section_method_with_invalid_params(
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add(section)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock: AsyncMock = AsyncMock()
         monkeypatch.setattr(bsblan, "_request", request_mock)
@@ -192,7 +192,7 @@ async def test_validate_api_section_with_include_filter(monkeypatch: Any) -> Non
         bsblan._api_data = api_data  # type: ignore[assignment]
 
         api_validator = APIValidator(api_data)
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         # Mock request to return only the filtered param
         request_mock = AsyncMock(
@@ -201,7 +201,9 @@ async def test_validate_api_section_with_include_filter(monkeypatch: Any) -> Non
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
         # Validate with include filter - should only request hvac_mode
-        result = await bsblan._validate_api_section("heating", include=["hvac_mode"])
+        result = await bsblan._validator._validate_api_section(
+            "heating", include=["hvac_mode"]
+        )
 
         # Verify only filtered param was requested
         request_mock.assert_awaited_once()
@@ -260,7 +262,7 @@ async def test_state_with_include_multiple_params(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("heating")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         state_data = json.loads(load_fixture("state.json"))
         partial_response = {
@@ -292,7 +294,7 @@ async def test_state_include_skips_temperature_unit_warning(
         monkeypatch.setattr(bsblan, "_firmware_version", "5.1.0")
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
-        bsblan._api_validator = APIValidator(API_V3)
+        bsblan._validator._api_validator = APIValidator(API_V3)
 
         state_data = json.loads(load_fixture("state.json"))
         partial_response = {"700": state_data["700"]}
@@ -325,7 +327,7 @@ async def test_state_with_include_mixed_valid_invalid_params(monkeypatch: Any) -
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("heating")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         state_data = json.loads(load_fixture("state.json"))
         partial_response = {"700": state_data["700"]}
@@ -359,7 +361,7 @@ async def test_state_without_include(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("heating")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         request_mock: AsyncMock = AsyncMock(
             return_value=json.loads(load_fixture("state.json"))
@@ -389,7 +391,7 @@ async def test_static_values_with_include(monkeypatch: Any) -> None:
 
         api_validator = APIValidator(API_V3)
         api_validator.validated_sections.add("staticValues")
-        bsblan._api_validator = api_validator
+        bsblan._validator._api_validator = api_validator
 
         partial_response = {
             "712": {
@@ -478,8 +480,8 @@ async def test_hot_water_method_with_include(
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        monkeypatch.setattr(bsblan, "_hot_water_param_cache", param_cache)
-        bsblan._validated_hot_water_groups.add(group_name)
+        monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
+        bsblan._validator._validated_hot_water_groups.add(group_name)
 
         # Create mock response
         mock_response = {
@@ -543,8 +545,8 @@ async def test_hot_water_method_with_empty_include_list(
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        monkeypatch.setattr(bsblan, "_hot_water_param_cache", param_cache)
-        bsblan._validated_hot_water_groups.add(group_name)
+        monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
+        bsblan._validator._validated_hot_water_groups.add(group_name)
 
         request_mock: AsyncMock = AsyncMock()
         monkeypatch.setattr(bsblan, "_request", request_mock)
@@ -594,8 +596,8 @@ async def test_hot_water_method_with_invalid_params(
         monkeypatch.setattr(bsblan, "_api_version", "v3")
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
-        monkeypatch.setattr(bsblan, "_hot_water_param_cache", param_cache)
-        bsblan._validated_hot_water_groups.add(group_name)
+        monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
+        bsblan._validator._validated_hot_water_groups.add(group_name)
 
         request_mock: AsyncMock = AsyncMock()
         monkeypatch.setattr(bsblan, "_request", request_mock)

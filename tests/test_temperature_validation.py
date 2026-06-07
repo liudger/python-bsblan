@@ -150,7 +150,7 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
                 for section, params in source_config.items()
             },
         )
-        client._api_validator = APIValidator(client._api_data)
+        client._validator._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to return data without min_temp
         # Mock static_values without protective or pps min temp
@@ -187,7 +187,7 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
                 for section, params in source_config.items()
             },
         )
-        client._api_validator = APIValidator(client._api_data)
+        client._validator._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to return data without max_temp
         static_values_mock = AsyncMock()
@@ -223,7 +223,7 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
                 for section, params in source_config.items()
             },
         )
-        client._api_validator = APIValidator(client._api_data)
+        client._validator._api_validator = APIValidator(client._api_data)
 
         # Mock static_values to raise an error
         static_values_mock = AsyncMock(side_effect=BSBLANError("Test error"))

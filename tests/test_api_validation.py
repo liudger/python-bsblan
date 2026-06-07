@@ -67,13 +67,13 @@ async def test_validate_api_section_success(aresponses: ResponsesMockServer) -> 
             }
         }
         bsblan._api_data = {"device": api_data_device_section}  # type: ignore[assignment]
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         # Test validation
-        await bsblan._validate_api_section("device")
+        await bsblan._validator._validate_api_section("device")
 
         # Verify validation status
-        assert bsblan._api_validator.is_section_validated("device")
+        assert bsblan._validator._api_validator.is_section_validated("device")
 
 
 @pytest.mark.asyncio
@@ -83,10 +83,10 @@ async def test_validate_api_section_no_validator() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
         # Ensure validator is None
-        bsblan._api_validator = None  # type: ignore[assignment]
+        bsblan._validator._api_validator = None  # type: ignore[assignment]
 
         with pytest.raises(BSBLANError, match=ErrorMsg.API_VALIDATOR_NOT_INITIALIZED):
-            await bsblan._validate_api_section("device")
+            await bsblan._validator._validate_api_section("device")
 
 
 @pytest.mark.asyncio
@@ -96,11 +96,11 @@ async def test_validate_api_section_no_api_data() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
         # Initialize validator but not API data
-        bsblan._api_validator = APIValidator({})
+        bsblan._validator._api_validator = APIValidator({})
         bsblan._api_data = None
 
         with pytest.raises(BSBLANError, match=ErrorMsg.API_DATA_NOT_INITIALIZED):
-            await bsblan._validate_api_section("device")
+            await bsblan._validator._validate_api_section("device")
 
 
 @pytest.mark.asyncio
@@ -110,13 +110,13 @@ async def test_validate_api_section_invalid_section() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
         # Initialize validator and API data without the requested section
-        bsblan._api_validator = APIValidator({})
+        bsblan._validator._api_validator = APIValidator({})
         bsblan._api_data = {"heating": {}}  # type: ignore[assignment]
 
         with pytest.raises(
             BSBLANError, match="Section 'invalid_section' not found in API data"
         ):
-            await bsblan._validate_api_section("invalid_section")  # type: ignore[arg-type]
+            await bsblan._validator._validate_api_section("invalid_section")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -158,8 +158,8 @@ async def test_validate_api_section_validation_error(
         bsblan._api_data = {"device": api_data_device_section_error}  # type: ignore[assignment]
 
         original_validate = APIValidator.validate_section
-        # Initialize bsblan._api_validator with the full _api_data
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        # Initialize the validator's APIValidator with the full _api_data
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         def mock_validate(
             _self: APIValidator,
@@ -181,9 +181,9 @@ async def test_validate_api_section_validation_error(
             bsblan._extract_params_summary = mock_extract_params  # type: ignore[assignment, method-assign]
             # Handle the exception because we expect it
             with contextlib.suppress(BSBLANError):
-                await bsblan._validate_api_section("device")
+                await bsblan._validator._validate_api_section("device")
 
-            assert not bsblan._api_validator.is_section_validated("device")
+            assert not bsblan._validator._api_validator.is_section_validated("device")
         finally:
             APIValidator.validate_section = original_validate
 
@@ -205,7 +205,7 @@ async def test_validate_section_already_validated(monkeypatch: Any) -> None:
                 for section, params in source_config.items()
             },
         )
-        client._api_validator = APIValidator(client._api_data)
+        client._validator._api_validator = APIValidator(client._api_data)
 
         # Mock request
         request_mock: AsyncMock = AsyncMock(
@@ -214,11 +214,11 @@ async def test_validate_section_already_validated(monkeypatch: Any) -> None:
         monkeypatch.setattr(client, "_request", request_mock)
 
         # First validation should succeed
-        response_data = await client._validate_api_section("heating")
+        response_data = await client._validator._validate_api_section("heating")
         assert response_data is not None
 
         # Second call should return None (already validated)
-        response_data = await client._validate_api_section("heating")
+        response_data = await client._validator._validate_api_section("heating")
         assert response_data is None
 
 
@@ -239,7 +239,7 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
                 for section, params in source_config.items()
             },
         )
-        client._api_validator = APIValidator(client._api_data)
+        client._validator._api_validator = APIValidator(client._api_data)
 
         # Mock request to raise an error
         request_mock: AsyncMock = AsyncMock(side_effect=BSBLANError("Test error"))
@@ -247,7 +247,7 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
 
         # This should raise BSBLANError and reset validation
         with pytest.raises(BSBLANError, match="Test error"):
-            await client._validate_api_section("heating")
+            await client._validator._validate_api_section("heating")
 
 
 @pytest.mark.asyncio
@@ -265,7 +265,7 @@ async def test_setup_api_validator_api_data_already_exists() -> None:
 
         # _api_data should remain unchanged (not overwritten)
         assert bsblan._api_data is existing_data
-        assert bsblan._api_validator is not None
+        assert bsblan._validator._api_validator is not None
 
 
 @pytest.mark.asyncio
@@ -283,7 +283,7 @@ async def test_setup_api_validator_initializes_api_data() -> None:
         # _api_data should be initialized from API config
         assert bsblan._api_data is not None
         assert "heating" in bsblan._api_data
-        assert bsblan._api_validator is not None
+        assert bsblan._validator._api_validator is not None
 
 
 @pytest.mark.asyncio
@@ -293,7 +293,7 @@ async def test_ensure_section_validated_double_check_after_lock() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
         bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         # Track validation calls
         validation_count = 0
@@ -304,13 +304,13 @@ async def test_ensure_section_validated_double_check_after_lock() -> None:
             nonlocal validation_count
             validation_count += 1
             # Mark section as validated
-            bsblan._api_validator.validated_sections.add(section)
+            bsblan._validator._api_validator.validated_sections.add(section)
             return {}
 
-        bsblan._validate_api_section = mock_validate  # type: ignore[method-assign]
+        bsblan._validator._validate_api_section = mock_validate  # type: ignore[method-assign]
 
         # Create the lock first
-        bsblan._section_locks["heating"] = asyncio.Lock()
+        bsblan._validator._section_locks["heating"] = asyncio.Lock()
 
         # First call validates
         await bsblan._ensure_section_validated("heating")
@@ -328,7 +328,7 @@ async def test_ensure_section_validated_concurrent_double_check() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
         bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         validation_count = 0
         validation_started = asyncio.Event()
@@ -341,10 +341,10 @@ async def test_ensure_section_validated_concurrent_double_check() -> None:
             validation_started.set()
             # Simulate slow validation
             await asyncio.sleep(0.1)
-            bsblan._api_validator.validated_sections.add(section)
+            bsblan._validator._api_validator.validated_sections.add(section)
             return {}
 
-        bsblan._validate_api_section = slow_validate  # type: ignore[method-assign]
+        bsblan._validator._validate_api_section = slow_validate  # type: ignore[method-assign]
 
         # Start two concurrent validations
         task1 = asyncio.create_task(bsblan._ensure_section_validated("heating"))
@@ -373,7 +373,7 @@ async def test_validate_api_section_hot_water_cache() -> None:
             "heating_circuit2": {},
             "staticValues_circuit2": {},
         }
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         # Mock the request
         bsblan._request = AsyncMock(  # type: ignore[method-assign]
@@ -384,10 +384,10 @@ async def test_validate_api_section_hot_water_cache() -> None:
         )
 
         # Validate hot_water section
-        await bsblan._validate_api_section("hot_water")
+        await bsblan._validator._validate_api_section("hot_water")
 
         # Cache should be populated
-        assert len(bsblan._hot_water_param_cache) > 0
+        assert len(bsblan._validator._hot_water_param_cache) > 0
 
 
 @pytest.mark.asyncio
@@ -397,18 +397,18 @@ async def test_ensure_section_validated_heating_extracts_temp_unit() -> None:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._api_version = "v3"
         bsblan._api_data = {"heating": {"710": "target_temperature"}}  # type: ignore[assignment]
-        bsblan._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
         # Mock _validate_api_section to return response with temp unit
         async def mock_validate(
             section: str, _include: list[str] | None = None
         ) -> dict[str, Any]:
-            bsblan._api_validator.validated_sections.add(section)
+            bsblan._validator._api_validator.validated_sections.add(section)
             if section == "heating":
                 return {"710": {"value": "20.0", "unit": "°F"}}
             return {}
 
-        bsblan._validate_api_section = mock_validate  # type: ignore[method-assign]
+        bsblan._validator._validate_api_section = mock_validate  # type: ignore[method-assign]
 
         await bsblan._ensure_section_validated("heating")
 
