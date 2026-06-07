@@ -11,13 +11,11 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Mapping
 
 import aiohttp
-import backoff
 from aiohttp.hdrs import METH_POST
-from aiohttp.helpers import BasicAuth
 from packaging import version as pkg_version
 from packaging.version import InvalidVersion
-from yarl import URL
 
+from ._transport import BSBLANTransport
 from .constants import (
     API_V2,
     API_V3,
@@ -38,7 +36,6 @@ from .constants import (
     Validation,
 )
 from .exceptions import (
-    BSBLANAuthError,
     BSBLANConnectionError,
     BSBLANError,
     BSBLANInvalidParameterError,
@@ -129,6 +126,15 @@ class BSBLAN:
     # Locks to prevent concurrent validation of the same section/group
     _section_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
     _hot_water_group_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
+    _transport: BSBLANTransport = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Wire up internal collaborators after dataclass construction."""
+        self._transport = BSBLANTransport(
+            self.config,
+            lambda: self.session,
+            lambda: self._firmware_version,
+        )
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -932,144 +938,13 @@ class BSBLAN:
 
         """
         try:
-            return await self._request_with_retry(method, base_path, data, params)
+            return await self._transport.request_with_retry(
+                method, base_path, data, params
+            )
         except TimeoutError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
         except aiohttp.ClientError as e:
             raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
-
-    @backoff.on_exception(
-        backoff.expo,
-        (TimeoutError, aiohttp.ClientError),
-        max_tries=3,
-        max_time=30,
-        giveup=lambda e: isinstance(e, aiohttp.ClientResponseError) and e.status == 404,
-        logger=logger,
-    )
-    async def _request_with_retry(
-        self,
-        method: str,
-        base_path: str,
-        data: dict[str, object] | None,
-        params: Mapping[str, str | int] | str | None,
-    ) -> dict[str, Any]:
-        """Execute HTTP request with retry logic.
-
-        This internal method handles the actual HTTP request and is decorated
-        with backoff for automatic retries on transient failures.
-
-        Args:
-            method: The HTTP method to use.
-            base_path: The base path for the URL.
-            data: The data to send in the request body.
-            params: The query parameters to include.
-
-        Returns:
-            dict[str, Any]: The JSON response from the BSBLAN device.
-
-        """
-        if self.session is None:
-            raise BSBLANError(ErrorMsg.SESSION_NOT_INITIALIZED)
-        url = self._build_url(base_path)
-        auth = self._get_auth()
-        headers = self._get_headers()
-
-        try:
-            async with asyncio.timeout(self.config.request_timeout):
-                async with self.session.request(
-                    method,
-                    url,
-                    auth=auth,
-                    params=params,
-                    json=data,
-                    headers=headers,
-                ) as response:
-                    response.raise_for_status()
-                    response_data = cast("dict[str, Any]", await response.json())
-                    return self._process_response(response_data, base_path)
-        except aiohttp.ClientResponseError as e:
-            if e.status in (401, 403):
-                raise BSBLANAuthError from e
-            raise
-        except (ValueError, UnicodeDecodeError) as e:
-            # Handle JSON decode errors and other parsing issues
-            msg = ErrorMsg.INVALID_RESPONSE.format(e)
-            raise BSBLANError(msg) from e
-
-    def _process_response(
-        self, response_data: dict[str, Any], base_path: str
-    ) -> dict[str, Any]:
-        """Process response data based on firmware version.
-
-        BSB-LAN 5.0+ includes additional 'payload' field in /JQ responses
-        that needs to be handled for compatibility.
-
-        Args:
-            response_data: Raw response data from BSB-LAN
-            base_path: The API endpoint that was called
-
-        Returns:
-            Processed response data compatible with existing code
-
-        """
-        # For non-JQ endpoints, return response as-is
-        if base_path != "/JQ":
-            return response_data
-
-        # Check if we have a firmware version to determine processing
-        if not self._firmware_version:
-            return response_data
-
-        # For BSB-LAN 5.0+, remove 'payload' field if present as it's for debugging
-        version = pkg_version.parse(self._firmware_version)
-        if version >= pkg_version.parse("5.0.0") and "payload" in response_data:
-            # Remove payload field if present - it's added for debugging in 5.0+
-            return {k: v for k, v in response_data.items() if k != "payload"}
-
-        return response_data
-
-    def _build_url(self, base_path: str) -> URL:
-        """Build the URL for the request.
-
-        Args:
-            base_path (str): The base path for the URL.
-
-        Returns:
-            URL: The constructed URL.
-
-        """
-        if self.config.passkey:
-            base_path = f"/{self.config.passkey}{base_path}"
-        return URL.build(
-            scheme="http",
-            host=self.config.host,
-            port=self.config.port,
-            path=base_path,
-        )
-
-    def _get_auth(self) -> BasicAuth | None:
-        """Get the authentication for the request.
-
-        Returns:
-            BasicAuth | None: The authentication object or None if no authentication
-                is required.
-
-        """
-        if self.config.username and self.config.password:
-            return BasicAuth(self.config.username, self.config.password)
-        return None
-
-    def _get_headers(self) -> dict[str, str]:
-        """Get the headers for the request.
-
-        Returns:
-            dict[str, str]: The headers for the request.
-
-        """
-        return {
-            "User-Agent": f"PythonBSBLAN/{self._firmware_version}",
-            "Accept": "application/json, */*",
-        }
 
     def _validate_single_parameter(self, *params: Any, error_msg: str) -> None:
         """Validate that exactly one parameter is provided.

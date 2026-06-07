@@ -166,7 +166,7 @@ async def test_process_response_v5_payload_removal() -> None:
     }
 
     # Process the response
-    processed = bsblan._process_response(response_with_payload, "/JQ")
+    processed = bsblan._transport._process_response(response_with_payload, "/JQ")
 
     # Payload should be removed
     expected = {
@@ -195,7 +195,7 @@ async def test_process_response_non_jq_endpoint() -> None:
     }
 
     # Process the response for non-JQ endpoint
-    processed = bsblan._process_response(response_with_payload, "/JI")
+    processed = bsblan._transport._process_response(response_with_payload, "/JI")
 
     # Payload should remain for non-JQ endpoints
     assert processed == response_with_payload

@@ -14,7 +14,7 @@ def test_get_auth_without_credentials() -> None:
     """Test the _get_auth method without credentials."""
     config_no_auth = BSBLANConfig(host="example.com")
     bsblan_no_auth = BSBLAN(config_no_auth)
-    auth = bsblan_no_auth._get_auth()
+    auth = bsblan_no_auth._transport._get_auth()
     assert auth is None
 
 
@@ -26,7 +26,7 @@ def test_get_auth_with_credentials() -> None:
     config.password = "testpassword"  # noqa: S105
 
     bsblan = BSBLAN(config)
-    auth = bsblan._get_auth()
+    auth = bsblan._transport._get_auth()
 
     assert isinstance(auth, BasicAuth)
     assert auth.login == "testuser"
