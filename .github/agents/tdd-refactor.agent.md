@@ -8,6 +8,9 @@ tools: ["github/*", "search/fileSearch", "edit/editFiles", "execute/runTests", "
 
 Clean up code, apply security best practices, and enhance design whilst keeping all tests green and maintaining GitHub issue compliance.
 
+## Repository Standards
+Follow `AGENTS.md` for python-bsblan conventions and required validation (at minimum: `uv run prek run --all-files` and `uv run pytest`).
+
 ## GitHub Issue Integration
 
 ### Issue Completion Validation
