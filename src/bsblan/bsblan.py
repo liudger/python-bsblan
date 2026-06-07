@@ -12,22 +12,17 @@ if TYPE_CHECKING:
 
 import aiohttp
 from aiohttp.hdrs import METH_POST
-from packaging import version as pkg_version
-from packaging.version import InvalidVersion
 
 from ._transport import BSBLANTransport
+from ._version import VersionResolver
 from .constants import (
     API_V2,
     API_V3,
     BASIC_API_VERSION,
-    MIN_SUPPORTED_FIRMWARE,
-    MIN_SUPPORTED_JSON_API,
     PPS_HEATING_PARAMS,
     PPS_STATIC_VALUES_PARAMS,
     SUPPORTED_API_VERSION,
     SUPPORTED_API_VERSIONS,
-    V3_FIRMWARE_MINIMUM,
-    V3_JSON_API_MINIMUM,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -127,6 +122,7 @@ class BSBLAN:
     _section_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
     _hot_water_group_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
     _transport: BSBLANTransport = field(init=False)
+    _version_resolver: VersionResolver = field(init=False)
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
@@ -135,6 +131,7 @@ class BSBLAN:
             lambda: self.session,
             lambda: self._firmware_version,
         )
+        self._version_resolver = VersionResolver()
 
     async def __aenter__(self) -> Self:
         """Enter the context manager.
@@ -666,57 +663,10 @@ class BSBLAN:
             BSBLANVersionError: If the reported version is not supported.
 
         """
-        if self._json_api_version is not None:
-            self._api_version = self._resolve_api_version(
-                self._json_api_version,
-                minimum=MIN_SUPPORTED_JSON_API,
-                v3_minimum=V3_JSON_API_MINIMUM,
-            )
-            return
-
-        if not self._firmware_version:
-            raise BSBLANError(ErrorMsg.FIRMWARE_VERSION)
-
-        self._api_version = self._resolve_api_version(
-            self._firmware_version,
-            minimum=MIN_SUPPORTED_FIRMWARE,
-            v3_minimum=V3_FIRMWARE_MINIMUM,
+        self._api_version = self._version_resolver.resolve_config_version(
+            json_api_version=self._json_api_version,
+            firmware_version=self._firmware_version,
         )
-
-    def _resolve_api_version(
-        self,
-        reported: str,
-        *,
-        minimum: str,
-        v3_minimum: str,
-    ) -> str:
-        """Map a reported version string to a supported API config version.
-
-        Args:
-            reported: The version string reported by the device.
-            minimum: The lowest supported version; anything below is rejected.
-            v3_minimum: The threshold at or above which the full "v3" config is
-                used; below it the basic "v2" config is used.
-
-        Returns:
-            ``"v2"`` for the basic single-circuit config or ``"v3"`` for the
-            full config.
-
-        Raises:
-            BSBLANVersionError: If the reported version cannot be parsed or is
-                below ``minimum``.
-
-        """
-        try:
-            parsed = pkg_version.parse(reported)
-        except InvalidVersion as exc:
-            raise BSBLANVersionError(ErrorMsg.VERSION, version=reported) from exc
-        if parsed < pkg_version.parse(minimum):
-            raise BSBLANVersionError(ErrorMsg.VERSION, version=reported)
-        if parsed < pkg_version.parse(v3_minimum):
-            # Legacy / basic capability: single-circuit support only.
-            return BASIC_API_VERSION
-        return SUPPORTED_API_VERSION
 
     async def _fetch_temperature_range(
         self,
