@@ -1323,12 +1323,9 @@ class BSBLAN:
         await self._ensure_device_metadata()
         self._validate_time_sync_supported()
         self._validate_time_format(time_value)
-        state: dict[str, object] = {
-            "Parameter": "0",
-            "Value": time_value,
-            "Type": "1",
-        }
-        response = await self._request(base_path="/JS", data=state)
+        response = await self._request(
+            base_path="/JS", data=self._set_payload("0", time_value)
+        )
         logger.debug("Response for setting time: %s", response)
 
     async def thermostat(
@@ -1407,11 +1404,7 @@ class BSBLAN:
                 circuit,
             )
             state.update(
-                {
-                    "Parameter": param_ids["target_temperature"],
-                    "Value": target_temperature,
-                    "Type": "1",
-                },
+                self._set_payload(param_ids["target_temperature"], target_temperature),
             )
         if target_temperature_high is not None:
             param_id = param_ids.get("target_temperature_high")
@@ -1423,11 +1416,7 @@ class BSBLAN:
                 circuit,
             )
             state.update(
-                {
-                    "Parameter": param_id,
-                    "Value": str(target_temperature_high),
-                    "Type": "1",
-                },
+                self._set_payload(param_id, str(target_temperature_high)),
             )
         if hvac_mode is not None:
             self._validate_hvac_mode(hvac_mode)
@@ -1435,11 +1424,7 @@ class BSBLAN:
             if self._uses_pps_bus:
                 hvac_value = Validation.PPS_HVAC_MODE_TO_BSBLAN[hvac_mode]
             state.update(
-                {
-                    "Parameter": param_ids["hvac_mode"],
-                    "Value": hvac_value,
-                    "Type": "1",
-                },
+                self._set_payload(param_ids["hvac_mode"], hvac_value),
             )
         return state
 
@@ -1544,6 +1529,22 @@ class BSBLAN:
             validate_time_format(time_value, Validation.MIN_YEAR, Validation.MAX_YEAR)
         except ValueError as err:
             raise BSBLANInvalidParameterError(str(err)) from err
+
+    def _set_payload(
+        self, parameter: str, value: str, type_: str = "1"
+    ) -> dict[str, Any]:
+        """Build a BSB-LAN ``/JS`` set-parameter payload.
+
+        Args:
+            parameter (str): The BSB-LAN parameter ID to set.
+            value (str): The value to write for the parameter.
+            type_ (str): The BSB-LAN set type. Defaults to ``"1"``.
+
+        Returns:
+            dict[str, Any]: The payload for a ``/JS`` set request.
+
+        """
+        return {"Parameter": parameter, "Value": value, "Type": type_}
 
     async def _set_device_state(self, state: dict[str, Any]) -> None:
         """Set device state via BSB-LAN API.
@@ -1737,17 +1738,7 @@ class BSBLAN:
         self._validate_circuit(circuit)
         time_program_params = HeatingScheduleParams.TIME_PROGRAMS[circuit]
 
-        filtered_params = time_program_params
-        if include is not None:
-            if not include:
-                raise BSBLANError(ErrorMsg.EMPTY_INCLUDE_LIST)
-            filtered_params = {
-                param_id: name
-                for param_id, name in time_program_params.items()
-                if name in include
-            }
-            if not filtered_params:
-                raise BSBLANError(ErrorMsg.INVALID_INCLUDE_PARAMS)
+        filtered_params = self._apply_include_filter(time_program_params, include)
 
         params = self._extract_params_summary(filtered_params)
         data = await self._request(params={"Parameter": params["string_par"]})
@@ -1794,12 +1785,9 @@ class BSBLAN:
         for day_name, param_id in day_param_map.items():
             day_schedule: DaySchedule | None = getattr(schedule, day_name)
             if day_schedule is not None:
-                state = {
-                    "Parameter": param_id,
-                    "Value": day_schedule.to_bsblan_format(),
-                    "Type": "1",
-                }
-                await self._set_device_state(state)
+                await self._set_device_state(
+                    self._set_payload(param_id, day_schedule.to_bsblan_format()),
+                )
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
@@ -1895,12 +1883,9 @@ class BSBLAN:
         for day_name, param_id in day_param_map.items():
             day_schedule: DaySchedule | None = getattr(schedule, day_name)
             if day_schedule is not None:
-                state = {
-                    "Parameter": param_id,
-                    "Value": day_schedule.to_bsblan_format(),
-                    "Type": "1",
-                }
-                await self._set_device_state(state)
+                await self._set_device_state(
+                    self._set_payload(param_id, day_schedule.to_bsblan_format()),
+                )
 
     def _prepare_hot_water_state(
         self,
@@ -1924,14 +1909,14 @@ class BSBLAN:
         for param_id, attr_name in HotWaterParams.SETTABLE.items():
             value = getattr(params, attr_name)
             if value is not None:
-                state.update({"Parameter": param_id, "Value": str(value), "Type": "1"})
+                state.update(self._set_payload(param_id, str(value)))
 
         # Process time programs if provided using constants
         if params.dhw_time_programs:
             for param_id, attr_name in HotWaterParams.TIME_PROGRAMS.items():
                 value = getattr(params.dhw_time_programs, attr_name)
                 if value is not None:
-                    state.update({"Parameter": param_id, "Value": value, "Type": "1"})
+                    state.update(self._set_payload(param_id, value))
 
         if not state:
             raise BSBLANError(ErrorMsg.NO_STATE)
