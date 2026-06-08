@@ -52,7 +52,7 @@ async def test_section_method_with_include_single_param(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -106,7 +106,7 @@ async def test_section_method_with_empty_include_list(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -146,7 +146,7 @@ async def test_section_method_with_invalid_params(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -175,7 +175,7 @@ async def test_validate_api_section_with_include_filter(monkeypatch: Any) -> Non
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
 
         # Set up API data with multiple params
         api_data = {
@@ -257,7 +257,7 @@ async def test_state_with_include_multiple_params(monkeypatch: Any) -> None:
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -292,7 +292,7 @@ async def test_state_include_skips_temperature_unit_warning(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "5.1.0")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
         bsblan._validator._api_validator = APIValidator(API_V3)
 
@@ -322,7 +322,7 @@ async def test_state_with_include_mixed_valid_invalid_params(monkeypatch: Any) -
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -356,7 +356,7 @@ async def test_state_without_include(monkeypatch: Any) -> None:
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -386,7 +386,7 @@ async def test_static_values_with_include(monkeypatch: Any) -> None:
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -477,7 +477,7 @@ async def test_hot_water_method_with_include(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
@@ -542,7 +542,7 @@ async def test_hot_water_method_with_empty_include_list(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
@@ -593,7 +593,7 @@ async def test_hot_water_method_with_invalid_params(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)

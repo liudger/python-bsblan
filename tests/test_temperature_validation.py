@@ -149,7 +149,7 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v3"
+        client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
         source_config = API_V3
         client._api_data = cast(
@@ -186,7 +186,7 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v3"
+        client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
         source_config = API_V3
         client._api_data = cast(
@@ -222,7 +222,7 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v3"
+        client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
         source_config = API_V3
         client._api_data = cast(

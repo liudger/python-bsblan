@@ -21,7 +21,7 @@ async def test_validate_api_section_key_error(monkeypatch: Any) -> None:
 
         # Set up basic initialization
         bsblan._firmware_version = "1.0.38-20200730234859"
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {"other_section": {}}  # type: ignore[assignment]
 
         # Mock API validator

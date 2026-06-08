@@ -28,7 +28,7 @@ async def test_state(monkeypatch: Any) -> None:
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -99,7 +99,7 @@ async def test_state_with_cooling_include(monkeypatch: Any) -> None:
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -128,7 +128,7 @@ async def test_state_without_cooling_strips_target_temperature_high(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         bsblan._api_data = {
             section: params.copy() for section, params in API_V3.items()
         }

@@ -31,7 +31,7 @@ async def test_api_data_initialized_from_default_config() -> None:
         client = BSBLAN(config, session=session)
 
         # Set up client with minimal state
-        client._api_version = "v3"
+        client._supports_full_config = True
         client._api_data = None  # This should be initialized
 
         # Call _setup_api_validator which should initialize _api_data
@@ -51,7 +51,7 @@ async def test_copy_api_config_raises_without_version() -> None:
         client = BSBLAN(config, session=session)
 
         # Set both to None
-        client._api_version = None
+        client._supports_full_config = None
         client._api_data = None
 
         # This should raise BSBLANError

@@ -29,7 +29,7 @@ async def test_hot_water_state(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
 
         # Create a modified API_V3 excluding the time switch parameters
         test_api_v3: APIConfig = {

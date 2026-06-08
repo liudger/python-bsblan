@@ -25,7 +25,7 @@ async def test_sensor(monkeypatch: Any) -> None:
         bsblan = BSBLAN(config=BSBLANConfig(host="example.com"), session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)

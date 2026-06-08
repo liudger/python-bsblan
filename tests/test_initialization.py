@@ -16,26 +16,15 @@ from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
     ErrorMsg,
 )
-from bsblan.exceptions import BSBLANError, BSBLANVersionError
+from bsblan.exceptions import BSBLANError
 
 
 @pytest.mark.asyncio
-async def test_copy_api_config_rejects_unsupported_version() -> None:
-    """Test _copy_api_config rejects unsupported API versions."""
+async def test_copy_api_config_full() -> None:
+    """Test _copy_api_config when full config is supported."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v1"
-
-        with pytest.raises(BSBLANVersionError):
-            bsblan._copy_api_config()
-
-
-@pytest.mark.asyncio
-async def test_copy_api_config_v3() -> None:
-    """Test _copy_api_config with v3 version."""
-    async with aiohttp.ClientSession() as session:
-        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
 
         api_data = bsblan._copy_api_config()
 
@@ -49,8 +38,8 @@ async def test_copy_api_config_no_version() -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
-        # Force api_version to None to test error condition
-        bsblan._api_version = None
+        # Force capability flag to None to test error condition
+        bsblan._supports_full_config = None
 
         with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
             bsblan._copy_api_config()
@@ -162,7 +151,7 @@ async def test_setup_api_validator() -> None:
     """Test _setup_api_validator method."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
 
         await bsblan._setup_api_validator()
 

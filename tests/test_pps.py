@@ -34,7 +34,7 @@ async def pps_bsblan() -> AsyncGenerator[BSBLAN, None]:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(config, session=session)
         bsblan._firmware_version = "5.1.0"
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._device = Device.model_validate(
             json.loads(load_fixture("pps_device.json"))
         )
@@ -147,7 +147,7 @@ async def test_time_refreshes_device_when_initialized() -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._firmware_version = "5.1.0"
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._initialized = True
         request_mock = AsyncMock(
             side_effect=[
@@ -318,7 +318,7 @@ async def test_pps_thermostat_rejects_read_only_bus() -> None:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._firmware_version = "5.1.0"
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._device = Device(
             name="BSB-LAN",
             version="5.1.0",
