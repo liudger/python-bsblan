@@ -72,7 +72,7 @@ async def test_setup_api_validator_no_api_version() -> None:
     # Force the capability flag to None to test the defensive error path
     bsblan._supports_full_config = None
 
-    with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
+    with pytest.raises(BSBLANError, match=ErrorMsg.CONFIG_NOT_RESOLVED):
         await bsblan._setup_api_validator()
 
 

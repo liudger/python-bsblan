@@ -10,7 +10,7 @@ import pytest
 from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig
-from bsblan.constants import API_V3
+from bsblan.constants import API_FULL
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ async def mock_bsblan(
         bsblan = BSBLAN(config, session=session)
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
         request_mock: AsyncMock = AsyncMock(return_value={"status": "ok"})
         monkeypatch.setattr(bsblan, "_request", request_mock)
         yield bsblan

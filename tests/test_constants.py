@@ -5,8 +5,8 @@ import pytest
 import bsblan
 import bsblan.constants
 from bsblan.constants import (
-    API_V2,
-    API_V3,
+    API_BASIC,
+    API_FULL,
     BASE_HOT_WATER_PARAMS,
     HeatingCircuitStatus,
     HotWaterParams,
@@ -16,8 +16,8 @@ from bsblan.constants import (
 )
 
 
-def test_build_api_config_defaults_to_v3() -> None:
-    """Test building the supported v3 API config by default."""
+def test_build_api_config_defaults_to_full() -> None:
+    """Test building the full API config by default."""
     config = build_api_config()
 
     expected_includes = {
@@ -41,20 +41,20 @@ def test_build_api_config_defaults_to_v3() -> None:
             | config["device"]
             | config["sensor"]
             | config["hot_water"]
-        ), f"Parameter {param_id} missing in the v3 config"
+        ), f"Parameter {param_id} missing in the full config"
 
     # Check excluded parameters are not included
     for param_id in expected_excludes:
         assert param_id not in (config["heating"] | config["staticValues"]), (
-            f"Parameter {param_id} should not be in the v3 config"
+            f"Parameter {param_id} should not be in the full config"
         )
 
-    assert build_api_config("v3") == config
+    assert build_api_config(full=True) == config
 
 
-def test_build_api_config_v2_is_basic_single_circuit() -> None:
-    """Test the basic v2 config is single-circuit and excludes cooling/boost."""
-    config = build_api_config("v2")
+def test_build_api_config_basic_is_single_circuit() -> None:
+    """Test the basic config is single-circuit and excludes cooling/boost."""
+    config = build_api_config(full=False)
 
     # Core heating control is present.
     assert config["heating"] == {
@@ -77,19 +77,12 @@ def test_build_api_config_v2_is_basic_single_circuit() -> None:
     assert config["staticValues_circuit2"] == {}
     # Hot water and sensors reuse the shared base sets.
     assert config["hot_water"] == BASE_HOT_WATER_PARAMS
-    assert config == API_V2
-
-
-@pytest.mark.parametrize("version", ["v1", "v5"])
-def test_build_api_config_rejects_unsupported_versions(version: str) -> None:
-    """Test that only API v2 and v3 can be built."""
-    with pytest.raises(ValueError, match="Only API versions v2, v3 are supported"):
-        build_api_config(version)
+    assert config == API_BASIC
 
 
 def test_pre_built_api_configuration() -> None:
     """Test that the pre-built API configuration is correct."""
-    all_params = set(API_V3["heating"].keys()) | set(API_V3["staticValues"].keys())
+    all_params = set(API_FULL["heating"].keys()) | set(API_FULL["staticValues"].keys())
 
     for param_id in ("770", "716"):
         assert param_id in all_params

@@ -16,7 +16,7 @@ import pytest
 
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
 from bsblan.constants import (
-    API_V3,
+    API_FULL,
     ErrorMsg,
 )
 from bsblan.exceptions import BSBLANError
@@ -53,9 +53,9 @@ async def test_section_method_with_include_single_param(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add(section)
         bsblan._validator._api_validator = api_validator
 
@@ -107,9 +107,9 @@ async def test_section_method_with_empty_include_list(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add(section)
         bsblan._validator._api_validator = api_validator
 
@@ -147,9 +147,9 @@ async def test_section_method_with_invalid_params(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add(section)
         bsblan._validator._api_validator = api_validator
 
@@ -258,9 +258,9 @@ async def test_state_with_include_multiple_params(monkeypatch: Any) -> None:
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("heating")
         bsblan._validator._api_validator = api_validator
 
@@ -293,8 +293,8 @@ async def test_state_include_skips_temperature_unit_warning(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "5.1.0")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
-        bsblan._validator._api_validator = APIValidator(API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
+        bsblan._validator._api_validator = APIValidator(API_FULL)
 
         state_data = json.loads(load_fixture("state.json"))
         partial_response = {"700": state_data["700"]}
@@ -323,9 +323,9 @@ async def test_state_with_include_mixed_valid_invalid_params(monkeypatch: Any) -
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("heating")
         bsblan._validator._api_validator = api_validator
 
@@ -357,9 +357,9 @@ async def test_state_without_include(monkeypatch: Any) -> None:
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("heating")
         bsblan._validator._api_validator = api_validator
 
@@ -387,9 +387,9 @@ async def test_static_values_with_include(monkeypatch: Any) -> None:
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("staticValues")
         bsblan._validator._api_validator = api_validator
 
@@ -478,7 +478,7 @@ async def test_hot_water_method_with_include(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
         bsblan._validator._validated_hot_water_groups.add(group_name)
@@ -543,7 +543,7 @@ async def test_hot_water_method_with_empty_include_list(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
         bsblan._validator._validated_hot_water_groups.add(group_name)
@@ -594,7 +594,7 @@ async def test_hot_water_method_with_invalid_params(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         monkeypatch.setattr(bsblan._validator, "_hot_water_param_cache", param_cache)
         bsblan._validator._validated_hot_water_groups.add(group_name)

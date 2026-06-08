@@ -7,7 +7,7 @@ import pytest
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
 from bsblan.constants import (
-    API_V3,
+    API_FULL,
 )
 from bsblan.exceptions import BSBLANError
 
@@ -39,8 +39,8 @@ async def test_api_data_initialized_from_default_config() -> None:
 
         # Verify API data was initialized (should be a copy, not the same object)
         assert client._api_data is not None
-        # Verify it started with the same keys as API_V3
-        assert set(client._api_data.keys()) == set(API_V3.keys())
+        # Verify it started with the same keys as API_FULL
+        assert set(client._api_data.keys()) == set(API_FULL.keys())
 
 
 @pytest.mark.asyncio
@@ -55,5 +55,5 @@ async def test_copy_api_config_raises_without_version() -> None:
         client._api_data = None
 
         # This should raise BSBLANError
-        with pytest.raises(BSBLANError, match="API version not set"):
+        with pytest.raises(BSBLANError, match="API configuration not resolved"):
             client._copy_api_config()

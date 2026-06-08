@@ -41,7 +41,7 @@ async def test_copy_api_config_no_version() -> None:
         # Force capability flag to None to test error condition
         bsblan._supports_full_config = None
 
-        with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
+        with pytest.raises(BSBLANError, match=ErrorMsg.CONFIG_NOT_RESOLVED):
             bsblan._copy_api_config()
 
 

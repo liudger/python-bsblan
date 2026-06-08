@@ -7,7 +7,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig, BSBLANError
-from bsblan.constants import API_V3
+from bsblan.constants import API_FULL
 
 
 @pytest.mark.asyncio
@@ -119,7 +119,7 @@ async def test_get_parameter_id_found(monkeypatch: Any) -> None:
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         # Act
         param_id = bsblan.get_parameter_id("current_temperature")
@@ -134,7 +134,7 @@ async def test_get_parameter_id_not_found(monkeypatch: Any) -> None:
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         # Act
         param_id = bsblan.get_parameter_id("nonexistent_parameter")
@@ -164,7 +164,7 @@ async def test_get_parameter_ids(monkeypatch: Any) -> None:
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         # Act
         result = bsblan.get_parameter_ids(
@@ -188,7 +188,7 @@ async def test_read_parameters_by_name(monkeypatch: Any) -> None:
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         # Mock response
         mock_response = {
@@ -230,7 +230,7 @@ async def test_read_parameters_by_name_empty_list(monkeypatch: Any) -> None:
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         with pytest.raises(BSBLANError, match="No parameter names provided"):
             await bsblan.read_parameters_by_name([])
@@ -254,7 +254,7 @@ async def test_read_parameters_by_name_unknown_names(monkeypatch: Any) -> None:
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
         with pytest.raises(
             BSBLANError,

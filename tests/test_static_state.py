@@ -12,7 +12,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig, StaticState
-from bsblan.constants import API_V3
+from bsblan.constants import API_FULL
 from bsblan.utility import APIValidator
 
 from . import load_fixture
@@ -26,9 +26,9 @@ async def test_sensor(monkeypatch: Any) -> None:
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("staticValues")
         bsblan._validator._api_validator = api_validator
 

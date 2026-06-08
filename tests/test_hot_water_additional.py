@@ -11,7 +11,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig
-from bsblan.constants import API_V3
+from bsblan.constants import API_FULL
 from bsblan.exceptions import BSBLANError
 from bsblan.models import HotWaterConfig, HotWaterSchedule
 from bsblan.utility import APIValidator
@@ -29,9 +29,9 @@ async def test_hot_water_config(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("hot_water")
         bsblan._validator._api_validator = api_validator
 
@@ -121,9 +121,9 @@ async def test_hot_water_schedule(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         api_validator.validated_sections.add("hot_water")
         bsblan._validator._api_validator = api_validator
 
@@ -300,9 +300,9 @@ async def test_granular_hot_water_validation(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         bsblan._validator._api_validator = api_validator
 
         # Mock the request to return valid hot water params
@@ -350,7 +350,7 @@ async def test_granular_validation_empty_params(
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
         # Empty hot_water section in API data
-        api_data = {**API_V3, "hot_water": {}}
+        api_data = {**API_FULL, "hot_water": {}}
         monkeypatch.setattr(bsblan, "_api_data", api_data)
 
         api_validator = APIValidator(api_data)
@@ -424,15 +424,15 @@ async def test_ensure_section_validated_no_validator() -> None:
 
 @pytest.mark.asyncio
 async def test_setup_api_validator_no_api_version() -> None:
-    """Test _setup_api_validator raises error without API version."""
+    """Test _setup_api_validator raises error without a resolved config."""
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
 
-        # No API version set
+        # No config capability resolved
         bsblan._supports_full_config = None
 
-        with pytest.raises(BSBLANError, match="API version not set"):
+        with pytest.raises(BSBLANError, match="API configuration not resolved"):
             await bsblan._setup_api_validator()
 
 
@@ -447,9 +447,9 @@ async def test_granular_validation_filters_missing_params(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         bsblan._validator._api_validator = api_validator
 
         # Mock response that's missing param "1610"
@@ -481,9 +481,9 @@ async def test_granular_validation_filters_invalid_params(
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
         monkeypatch.setattr(bsblan, "_supports_full_config", True)
-        monkeypatch.setattr(bsblan, "_api_data", API_V3)
+        monkeypatch.setattr(bsblan, "_api_data", API_FULL)
 
-        api_validator = APIValidator(API_V3)
+        api_validator = APIValidator(API_FULL)
         bsblan._validator._api_validator = api_validator
 
         # Mock response with invalid values

@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from bsblan.constants import API_V3
+from bsblan.constants import API_FULL
 from bsblan.utility import APIValidator
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 def test_validate_section_unknown_section(caplog: pytest.LogCaptureFixture) -> None:
     """Test validation of an unknown section logs warning and returns."""
-    api_validator = APIValidator(API_V3)
+    api_validator = APIValidator(API_FULL)
 
     # Mock the api_config to not have the section we're testing
     api_validator.api_config = MagicMock()
@@ -33,7 +33,7 @@ def test_validate_section_unknown_section(caplog: pytest.LogCaptureFixture) -> N
 
 def test_validate_section_already_validated(caplog: pytest.LogCaptureFixture) -> None:
     """Test validation of an already validated section logs debug and returns."""
-    api_validator = APIValidator(API_V3)
+    api_validator = APIValidator(API_FULL)
 
     # Add section to validated_sections first
     api_validator.validated_sections.add("hot_water")

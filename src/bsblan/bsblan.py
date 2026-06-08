@@ -17,8 +17,8 @@ from ._transport import BSBLANTransport
 from ._validation import SectionValidator
 from ._version import VersionResolver
 from .constants import (
-    API_V2,
-    API_V3,
+    API_BASIC,
+    API_FULL,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -240,7 +240,7 @@ class BSBLAN:
         section validation until the data is needed (lazy loading).
         """
         if self._supports_full_config is None:
-            raise BSBLANError(ErrorMsg.API_VERSION)
+            raise BSBLANError(ErrorMsg.CONFIG_NOT_RESOLVED)
 
         # Initialize API data if not already done
         if self._api_data is None:
@@ -489,8 +489,8 @@ class BSBLAN:
 
         """
         if self._supports_full_config is None:
-            raise BSBLANError(ErrorMsg.API_VERSION)
-        source_config: APIConfig = API_V3 if self._supports_full_config else API_V2
+            raise BSBLANError(ErrorMsg.CONFIG_NOT_RESOLVED)
+        source_config: APIConfig = API_FULL if self._supports_full_config else API_BASIC
         return cast(
             "APIConfig",
             {
