@@ -69,10 +69,10 @@ On the first request the client lazily runs `initialize()`, which detects the
 device's capabilities and selects a matching configuration based on the BSB-LAN
 JSON-API version reported by the `/JV` endpoint:
 
-- **Full support (`v3`)** — JSON-API version 2.0 or newer. All features are
+- **Full configuration** — JSON-API version 2.0 or newer. All features are
   available, including multiple heating circuits, hot water control, schedules,
   sensors, and cooling setpoints.
-- **Basic support (`v2`)** — JSON-API version 1.x. A reduced, single-circuit
+- **Basic configuration** — JSON-API version 1.x. A reduced, single-circuit
   configuration covering essential heating, hot water, and sensor parameters.
 
 The JSON-API version is the documented, firmware-independent compatibility

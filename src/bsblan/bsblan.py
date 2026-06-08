@@ -378,21 +378,12 @@ class BSBLAN:
         return self._device
 
     @property
-    def api_version(self) -> str | None:
-        """Return the resolved API configuration version (``"v2"`` or ``"v3"``).
-
-        The value is populated during initialization. ``"v3"`` indicates full
-        support and ``"v2"`` the basic single-circuit configuration.
-        """
-        return self._api_version
-
-    @property
     def json_api_version(self) -> str | None:
         """Return the BSB-LAN JSON-API version reported by ``/JV``.
 
-        This is the firmware-independent JSON-API version (e.g. ``"2.0"``).
-        Returns ``None`` when the device does not expose the ``/JV`` endpoint,
-        in which case the firmware version is used to resolve ``api_version``.
+        This is the firmware-independent JSON-API version (e.g. ``"2.0"``) and
+        the signal used to select the device configuration. Returns ``None``
+        until ``/JV`` has been queried during initialization.
         """
         return self._json_api_version
 
