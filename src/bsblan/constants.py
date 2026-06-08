@@ -19,7 +19,7 @@ MAX_CIRCUIT: Final[int] = 2
 # the full config. The adapter firmware version (from /JI) is retrieved for
 # informational purposes only and is not used to select the config.
 MIN_SUPPORTED_JSON_API: Final[str] = "1.0"
-V3_JSON_API_MINIMUM: Final[str] = "2.0"
+V2_JSON_API_MINIMUM: Final[str] = "2.0"
 
 
 class APIConfig(TypedDict):

@@ -14,7 +14,7 @@ from packaging.version import InvalidVersion
 
 from .constants import (
     MIN_SUPPORTED_JSON_API,
-    V3_JSON_API_MINIMUM,
+    V2_JSON_API_MINIMUM,
     ErrorMsg,
 )
 from .exceptions import BSBLANVersionError
@@ -32,18 +32,18 @@ class VersionResolver:
         self,
         *,
         json_api_minimum: str = MIN_SUPPORTED_JSON_API,
-        json_api_v3_minimum: str = V3_JSON_API_MINIMUM,
+        json_api_v2_minimum: str = V2_JSON_API_MINIMUM,
     ) -> None:
         """Initialize the resolver with version policy thresholds.
 
         Args:
             json_api_minimum: Lowest supported JSON-API version.
-            json_api_v3_minimum: JSON-API version at/above which the full
+            json_api_v2_minimum: JSON-API version at/above which the full
                 configuration is used.
 
         """
         self._json_api_minimum = json_api_minimum
-        self._json_api_v3_minimum = json_api_v3_minimum
+        self._json_api_v3_minimum = json_api_v2_minimum
 
     def supports_full_config(self, *, json_api_version: str | None) -> bool:
         """Determine whether the device supports the full configuration.
