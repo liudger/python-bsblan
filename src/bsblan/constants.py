@@ -21,22 +21,14 @@ SUPPORTED_API_VERSIONS: Final[tuple[str, ...]] = (
     SUPPORTED_API_VERSION,
 )
 
-# Firmware version thresholds (BSB-LAN adapter firmware, from /JI).
-# Firmware below MIN_SUPPORTED_FIRMWARE is rejected outright. Firmware in the
-# [MIN_SUPPORTED_FIRMWARE, V3_FIRMWARE_MINIMUM) range maps to the basic "v2"
-# config, and firmware >= V3_FIRMWARE_MINIMUM maps to the full "v3" config.
-# The firmware version is only used as a fallback when the JSON-API version
-# (from /JV) is not available (very old firmware that predates that endpoint).
-MIN_SUPPORTED_FIRMWARE: Final[str] = "2.0.0"
-V3_FIRMWARE_MINIMUM: Final[str] = "3.0.0"
-
-# JSON-API version thresholds (from /JV, distinct from adapter firmware).
+# JSON-API version thresholds (from /JV).
 # The /JV endpoint reports the BSB-LAN JSON-API version (e.g. "2.0"), which is
-# the documented, firmware-independent compatibility signal. When available it
-# is the primary signal for selecting the API config: a JSON-API version below
-# MIN_SUPPORTED_JSON_API is rejected, the [MIN_SUPPORTED_JSON_API,
-# V3_JSON_API_MINIMUM) range maps to the basic "v2" config, and a version
-# >= V3_JSON_API_MINIMUM maps to the full "v3" config.
+# the documented, firmware-independent compatibility signal and the sole input
+# for selecting the API config: a JSON-API version below MIN_SUPPORTED_JSON_API
+# is rejected, the [MIN_SUPPORTED_JSON_API, V3_JSON_API_MINIMUM) range maps to
+# the basic "v2" config, and a version >= V3_JSON_API_MINIMUM maps to the full
+# "v3" config. The adapter firmware version (from /JI) is retrieved for
+# informational purposes only and is not used to select the config.
 MIN_SUPPORTED_JSON_API: Final[str] = "1.0"
 V3_JSON_API_MINIMUM: Final[str] = "2.0"
 
@@ -539,7 +531,6 @@ class ErrorMsg:
     NO_STATE = "No state provided."
     NO_SCHEDULE = "No schedule provided."
     VERSION = "Version not supported"
-    FIRMWARE_VERSION = "Firmware version not available"
     TEMPERATURE_RANGE = "Temperature range not initialized"
     API_VERSION = "API version not set"
     MULTI_PARAMETER = "Only one parameter can be set at a time"

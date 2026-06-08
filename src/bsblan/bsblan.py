@@ -420,19 +420,17 @@ class BSBLAN:
         """Set the API version used to select the configuration.
 
         The BSB-LAN JSON-API version (from /JV) is the documented,
-        firmware-independent compatibility signal and is preferred when
-        available. When the device does not expose /JV (very old firmware), the
-        adapter firmware version (from /JI) is used as a fallback.
+        firmware-independent compatibility signal and is the sole input for
+        selecting the API configuration. The adapter firmware version (from
+        /JI) is retrieved for informational purposes only and is not checked.
 
         Raises:
-            BSBLANError: If neither the JSON-API version nor the firmware
-                version is available.
-            BSBLANVersionError: If the reported version is not supported.
+            BSBLANVersionError: If the JSON-API version is unavailable or the
+                reported version is not supported.
 
         """
         self._api_version = self._version_resolver.resolve_config_version(
             json_api_version=self._json_api_version,
-            firmware_version=self._firmware_version,
         )
 
     async def _initialize_temperature_range(
