@@ -57,7 +57,7 @@ async def test_validate_api_section_success(aresponses: ResponsesMockServer) -> 
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
         # Initialize API validator and data
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         api_data_device_section = {
             "5870": {
                 "name": "Device Parameter",
@@ -146,7 +146,7 @@ async def test_validate_api_section_validation_error(
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
 
         # Set up for test
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         api_data_device_section_error = {
             "5870": {
                 "name": "Device Parameter",
@@ -195,7 +195,7 @@ async def test_validate_section_already_validated(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v3"
+        client._supports_full_config = True
         # Deep copy to avoid modifying the shared constant
         source_config = API_V3
         client._api_data = cast(
@@ -229,7 +229,7 @@ async def test_validation_error_resets_section(monkeypatch: Any) -> None:
         config = BSBLANConfig(host="example.com")
         client = BSBLAN(config, session=session)
 
-        client._api_version = "v3"
+        client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
         source_config = API_V3
         client._api_data = cast(
@@ -255,7 +255,7 @@ async def test_setup_api_validator_api_data_already_exists() -> None:
     """Test _setup_api_validator when _api_data already exists."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
 
         # Pre-set api_data
         existing_data = {"heating": {"700": "operating_mode"}}
@@ -273,7 +273,7 @@ async def test_setup_api_validator_initializes_api_data() -> None:
     """Test _setup_api_validator initializes _api_data when None."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
 
         # Ensure _api_data is None
         bsblan._api_data = None
@@ -291,7 +291,7 @@ async def test_ensure_section_validated_double_check_after_lock() -> None:
     """Test double-check locking in _ensure_section_validated."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
@@ -326,7 +326,7 @@ async def test_ensure_section_validated_concurrent_double_check() -> None:
     """Test that concurrent calls don't duplicate validation."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
@@ -363,7 +363,7 @@ async def test_validate_api_section_hot_water_cache() -> None:
     """Test that hot_water section validation populates the cache."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {
             "heating": {},
             "sensor": {},
@@ -395,7 +395,7 @@ async def test_ensure_section_validated_heating_extracts_temp_unit() -> None:
     """Test that heating section validation extracts temperature unit."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {"heating": {"710": "target_temperature"}}  # type: ignore[assignment]
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
@@ -421,7 +421,7 @@ async def test_setup_api_validator_skips_api_data_init_when_exists() -> None:
     """Test that _setup_api_validator doesn't override existing _api_data."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
 
         # Pre-set custom api_data
         custom_data: dict[str, Any] = {"heating": {"custom": "value"}}

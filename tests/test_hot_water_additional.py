@@ -28,7 +28,7 @@ async def test_hot_water_config(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -90,7 +90,7 @@ async def test_hot_water_config_no_params_error(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
 
         # Create a mock API validator that returns empty parameters
         mock_validator = MagicMock()
@@ -120,7 +120,7 @@ async def test_hot_water_schedule(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -239,7 +239,7 @@ async def test_hot_water_schedule_no_params_error(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
 
         # Create a mock API validator that returns empty parameters
         mock_validator = MagicMock()
@@ -269,7 +269,7 @@ async def test_hot_water_state_no_params_error(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
 
         # Create a mock API validator that returns empty parameters
         mock_validator = MagicMock()
@@ -299,7 +299,7 @@ async def test_granular_hot_water_validation(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -348,7 +348,7 @@ async def test_granular_validation_empty_params(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         # Empty hot_water section in API data
         api_data = {**API_V3, "hot_water": {}}
         monkeypatch.setattr(bsblan, "_api_data", api_data)
@@ -430,7 +430,7 @@ async def test_setup_api_validator_no_api_version() -> None:
         bsblan = BSBLAN(config, session=session)
 
         # No API version set
-        bsblan._api_version = None
+        bsblan._supports_full_config = None
 
         with pytest.raises(BSBLANError, match="API version not set"):
             await bsblan._setup_api_validator()
@@ -446,7 +446,7 @@ async def test_granular_validation_filters_missing_params(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -480,7 +480,7 @@ async def test_granular_validation_filters_invalid_params(
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(bsblan, "_api_data", API_V3)
 
         api_validator = APIValidator(API_V3)
@@ -513,7 +513,7 @@ async def test_ensure_hot_water_group_double_check_after_lock() -> None:
     """Test double-check locking in _ensure_hot_water_group_validated."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
@@ -540,7 +540,7 @@ async def test_ensure_hot_water_group_concurrent_double_check() -> None:
     """Test that concurrent hot water group validation doesn't duplicate."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
 
@@ -578,7 +578,7 @@ async def test_ensure_hot_water_group_validated_with_include_filter() -> None:
     """Test that include filter limits which params are validated."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         # Set up api_data with multiple params in the config group
         bsblan._api_data = {  # type: ignore[assignment]
             "hot_water": {
@@ -629,7 +629,7 @@ async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
     """Test that include filter with no matching params marks group validated."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {  # type: ignore[assignment]
             "hot_water": {
                 "1640": "legionella_function",
@@ -664,7 +664,7 @@ async def test_ensure_hot_water_group_validated_without_include() -> None:
     """Test that without include filter all group params are validated."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = {  # type: ignore[assignment]
             "hot_water": {
                 "1640": "legionella_function",

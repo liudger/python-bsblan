@@ -19,9 +19,6 @@ from ._version import VersionResolver
 from .constants import (
     API_V2,
     API_V3,
-    BASIC_API_VERSION,
-    SUPPORTED_API_VERSION,
-    SUPPORTED_API_VERSIONS,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -33,7 +30,6 @@ from .exceptions import (
     BSBLANConnectionError,
     BSBLANError,
     BSBLANInvalidParameterError,
-    BSBLANVersionError,
 )
 from .models import (
     ApiVersion,
@@ -102,7 +98,7 @@ class BSBLAN:
     _close_session: bool = False
     _firmware_version: str | None = None
     _json_api_version: str | None = None
-    _api_version: str | None = SUPPORTED_API_VERSION
+    _supports_full_config: bool | None = None
     _api_data: APIConfig | None = None
     _device: Device | None = None
     _initialized: bool = False
@@ -243,7 +239,7 @@ class BSBLAN:
         This creates the validator infrastructure but defers actual
         section validation until the data is needed (lazy loading).
         """
-        if self._api_version is None:
+        if self._supports_full_config is None:
             raise BSBLANError(ErrorMsg.API_VERSION)
 
         # Initialize API data if not already done
@@ -349,15 +345,16 @@ class BSBLAN:
             self._firmware_version = device.version
             logger.debug("BSBLAN version: %s", self._firmware_version)
             await self._fetch_json_api_version()
-            self._set_api_version()
+            self._resolve_api_capabilities()
 
     async def _fetch_json_api_version(self) -> None:
         """Fetch the BSB-LAN JSON-API version from the /JV endpoint.
 
         The JSON-API version (e.g. ``"2.0"``) is the documented,
-        firmware-independent compatibility signal. Older firmware may not
-        expose the /JV endpoint; in that case the value is left as ``None`` and
-        the firmware version is used as a fallback for selecting the API config.
+        firmware-independent compatibility signal and the sole input for
+        selecting the configuration. Older firmware may not expose the /JV
+        endpoint; in that case the value is left as ``None`` and
+        :meth:`_resolve_api_capabilities` raises ``BSBLANVersionError``.
         """
         if self._json_api_version is not None:
             return
@@ -365,8 +362,8 @@ class BSBLAN:
             response = await self._request(base_path="/JV")
             api_version = ApiVersion.model_validate(response)
         except (BSBLANError, ValueError, KeyError) as exc:
-            # /JV is unavailable or returned an unexpected payload; fall back to
-            # firmware-version based detection.
+            # /JV is unavailable or returned an unexpected payload; leave the
+            # JSON-API version unset so capability resolution can reject it.
             logger.debug("JSON-API version unavailable from /JV: %s", exc)
             return
         self._json_api_version = api_version.api_version
@@ -407,8 +404,8 @@ class BSBLAN:
         if self._device is None:
             await self.device()
 
-    def _set_api_version(self) -> None:
-        """Set the API version used to select the configuration.
+    def _resolve_api_capabilities(self) -> None:
+        """Resolve the API capabilities used to select the configuration.
 
         The BSB-LAN JSON-API version (from /JV) is the documented,
         firmware-independent compatibility signal and is the sole input for
@@ -420,7 +417,7 @@ class BSBLAN:
                 reported version is not supported.
 
         """
-        self._api_version = self._version_resolver.resolve_config_version(
+        self._supports_full_config = self._version_resolver.supports_full_config(
             json_api_version=self._json_api_version,
         )
 
@@ -482,22 +479,18 @@ class BSBLAN:
         return self._temperature.unit
 
     def _copy_api_config(self) -> APIConfig:
-        """Create a copy of the API configuration for the current version.
+        """Create a copy of the API configuration for the current capability.
 
         Returns:
             APIConfig: A deep copy of the API configuration.
 
         Raises:
-            BSBLANError: If the API version is not set.
+            BSBLANError: If the API capability has not been resolved.
 
         """
-        if self._api_version is None:
+        if self._supports_full_config is None:
             raise BSBLANError(ErrorMsg.API_VERSION)
-        if self._api_version not in SUPPORTED_API_VERSIONS:
-            raise BSBLANVersionError(ErrorMsg.VERSION, version=self._api_version)
-        source_config: APIConfig = (
-            API_V2 if self._api_version == BASIC_API_VERSION else API_V3
-        )
+        source_config: APIConfig = API_V3 if self._supports_full_config else API_V2
         return cast(
             "APIConfig",
             {

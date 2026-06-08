@@ -32,8 +32,8 @@ async def test_info(aresponses: ResponsesMockServer, monkeypatch: Any) -> None:
         bsblan = BSBLAN(config, session=session)
 
         monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
-        # set _api_version
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        # set the capability flag
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
 
         # Mock _api_validator with device section params
         mock_validator = MagicMock()

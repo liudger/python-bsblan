@@ -34,7 +34,7 @@ async def mock_bsblan_circuit() -> AsyncGenerator[BSBLAN, None]:
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(config, session=session)
         bsblan._firmware_version = "1.0.38-20200730234859"
-        bsblan._api_version = "v3"
+        bsblan._supports_full_config = True
         bsblan._api_data = build_api_config("v3")
         bsblan._temperature._circuit_temp_ranges[1] = {"min": 17.0, "max": 23.0}
         bsblan._temperature._circuit_temp_initialized.add(1)
@@ -85,7 +85,7 @@ async def test_state_circuit1_default(monkeypatch: Any) -> None:
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         api_data = build_api_config("v3")
         monkeypatch.setattr(bsblan, "_api_data", api_data)
 
@@ -118,7 +118,7 @@ async def test_state_circuit2(monkeypatch: Any) -> None:
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(
             bsblan,
             "_api_data",
@@ -159,7 +159,7 @@ async def test_state_circuit2_with_include(monkeypatch: Any) -> None:
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(
             bsblan,
             "_api_data",
@@ -204,7 +204,7 @@ async def test_static_values_circuit2(monkeypatch: Any) -> None:
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(
             bsblan,
             "_api_data",
@@ -470,7 +470,7 @@ async def test_circuit2_temp_range_initialization(
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(
             bsblan,
             "_api_data",
@@ -509,7 +509,7 @@ async def test_circuit1_temp_range_uses_protective_lower_bound(
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         api_data = build_api_config("v3")
         monkeypatch.setattr(bsblan, "_api_data", api_data)
 
@@ -548,7 +548,7 @@ async def test_thermostat_circuit2_lazy_temp_init(
             "_firmware_version",
             "1.0.38-20200730234859",
         )
-        monkeypatch.setattr(bsblan, "_api_version", "v3")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
         monkeypatch.setattr(
             bsblan,
             "_api_data",
