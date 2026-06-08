@@ -54,23 +54,23 @@ authentication setup, see the [Getting Started][docs-getting-started] guide.
 ## Compatibility
 
 The client automatically detects the device's capabilities during
-`initialize()` and selects a matching configuration:
+`initialize()` and selects a matching configuration based on the BSB-LAN
+JSON-API version reported by the `/JV` endpoint:
 
-- **Full support (`v3`)** — modern BSB-LAN firmware (3.x and newer, including
-  4.x and 5.x). All features are available: multiple heating circuits, hot
-  water control, schedules, sensors, and cooling setpoints.
-- **Basic support (`v2`)** — the legacy 2.x firmware branch. A reduced,
-  single-circuit configuration covering essential heating, hot water, and
-  sensor parameters.
+- **Full support (`v3`)** — JSON-API version 2.0 or newer. All features are
+  available: multiple heating circuits, hot water control, schedules, sensors,
+  and cooling setpoints.
+- **Basic support (`v2`)** — JSON-API version 1.x. A reduced, single-circuit
+  configuration covering essential heating, hot water, and sensor parameters.
 
-Detection prefers the documented BSB-LAN JSON-API version reported by the
-`/JV` endpoint, which is independent of the adapter firmware version. When a
-device does not expose `/JV` (very old firmware), the firmware version reported
-by `/JI` is used as a fallback. Firmware older than the 2.x branch is not
-supported.
+The JSON-API version is the documented, firmware-independent compatibility
+signal. The adapter firmware version (from `/JI`) is still retrieved and
+exposed via `device_info`, but it is not used to determine support. A device
+that does not expose `/JV`, or reports a JSON-API version below 1.0, is not
+supported and raises `BSBLANVersionError` during `initialize()`.
 
-> Note: basic 2.x support is best-effort and may not cover every parameter your
-> heating system exposes.
+> Note: basic (JSON-API 1.x) support is best-effort and may not cover every
+> parameter your heating system exposes.
 
 ## Changelog & Releases
 

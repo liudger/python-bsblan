@@ -13,78 +13,31 @@ from bsblan.models import Device
 
 
 @pytest.mark.asyncio
-async def test_set_api_version_without_firmware() -> None:
-    """Test setting API version with firmware version not set."""
+async def test_set_api_version_without_json_api() -> None:
+    """Test that a missing JSON-API version raises BSBLANVersionError."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Firmware version is None by default
-    with pytest.raises(BSBLANError, match=ErrorMsg.FIRMWARE_VERSION):
-        bsblan._set_api_version()
-
-
-@pytest.mark.asyncio
-async def test_set_api_version_unsupported() -> None:
-    """Test setting API version with unsupported firmware version."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Set firmware version below the supported floor (< 2.0.0)
-    bsblan._firmware_version = "1.9.0"
-
+    # No JSON-API version available (device did not expose /JV).
     with pytest.raises(BSBLANVersionError):
         bsblan._set_api_version()
 
 
 @pytest.mark.asyncio
-async def test_set_api_version_v2_basic() -> None:
-    """Test legacy 2.x firmware maps to the basic v2 config."""
+async def test_set_api_version_ignores_firmware() -> None:
+    """Test the firmware version is not used to select the configuration.
+
+    Even a modern firmware version cannot stand in for a missing JSON-API
+    version: without /JV the device capabilities cannot be confirmed.
+    """
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    bsblan._firmware_version = "2.2.3"
-    bsblan._set_api_version()
-
-    assert bsblan._api_version == "v2"
-
-
-@pytest.mark.asyncio
-async def test_set_api_version_rejects_legacy_firmware() -> None:
-    """Test legacy firmware that previously mapped to v1 is unsupported."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Set firmware version to legacy v1-compatible firmware
-    bsblan._firmware_version = "1.0.0"
+    # Firmware is retrieved for information only; it must not gate support.
+    bsblan._firmware_version = "5.0.16"
 
     with pytest.raises(BSBLANVersionError):
         bsblan._set_api_version()
-
-
-@pytest.mark.asyncio
-async def test_set_api_version_invalid_firmware_string() -> None:
-    """Test non-PEP440 firmware strings raise BSBLANVersionError."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Firmware strings with build metadata are not PEP 440 compliant
-    bsblan._firmware_version = "1.0.38-not-a-version"
-
-    with pytest.raises(BSBLANVersionError):
-        bsblan._set_api_version()
-
-
-@pytest.mark.asyncio
-async def test_set_api_version_v3() -> None:
-    """Test setting API version with v3 compatible firmware."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Set firmware version to v3 compatible
-    bsblan._firmware_version = "3.0.0"
-    bsblan._set_api_version()
-
-    assert bsblan._api_version == "v3"
 
 
 @pytest.mark.asyncio
@@ -121,32 +74,6 @@ async def test_setup_api_validator_no_api_version() -> None:
 
     with pytest.raises(BSBLANError, match=ErrorMsg.API_VERSION):
         await bsblan._setup_api_validator()
-
-
-@pytest.mark.asyncio
-async def test_set_api_version_v5() -> None:
-    """Test setting API version with v5 compatible firmware (BSB-LAN 5.x)."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Set firmware version to 5.0.16 (current BSB-LAN version)
-    bsblan._firmware_version = "5.0.16"
-    bsblan._set_api_version()
-
-    assert bsblan._api_version == "v3"
-
-
-@pytest.mark.asyncio
-async def test_set_api_version_v5_early() -> None:
-    """Test setting API version with early v5 compatible firmware."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Set firmware version to 5.0.0 (first 5.x version)
-    bsblan._firmware_version = "5.0.0"
-    bsblan._set_api_version()
-
-    assert bsblan._api_version == "v3"
 
 
 @pytest.mark.asyncio
@@ -203,53 +130,6 @@ async def test_process_response_non_jq_endpoint() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_api_version_v5_edge_cases() -> None:
-    """Test edge cases for BSB-LAN 5.x version detection."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Test version 4.9.9 (should still be v3, not v5)
-    bsblan._firmware_version = "4.9.9"
-    bsblan._set_api_version()
-    assert bsblan._api_version == "v3"
-
-    # Test version 5.0.0-beta (should be v3)
-    bsblan._firmware_version = "5.0.0"
-    bsblan._set_api_version()
-    assert bsblan._api_version == "v3"
-
-
-@pytest.mark.asyncio
-async def test_unsupported_version_still_fails() -> None:
-    """Test that firmware below the supported floor (< 2.0.0) still fails."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # Test that version 1.9.9 still fails
-    bsblan._firmware_version = "1.9.9"
-
-    with pytest.raises(BSBLANVersionError):
-        bsblan._set_api_version()
-
-
-@pytest.mark.asyncio
-async def test_legacy_2x_maps_to_basic_v2() -> None:
-    """Test that legacy 2.x firmware maps to the basic v2 config."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    # 2.0.0 is the lower bound of basic support
-    bsblan._firmware_version = "2.0.0"
-    bsblan._set_api_version()
-    assert bsblan._api_version == "v2"
-
-    # 2.9.9 still maps to basic v2 (below the 3.0.0 v3 threshold)
-    bsblan._firmware_version = "2.9.9"
-    bsblan._set_api_version()
-    assert bsblan._api_version == "v2"
-
-
-@pytest.mark.asyncio
 async def test_json_api_version_v3() -> None:
     """Test JSON-API version >= 2.0 maps to the full v3 config."""
     config = BSBLANConfig(host="example.com")
@@ -298,13 +178,13 @@ async def test_json_api_version_invalid_string() -> None:
 
 
 @pytest.mark.asyncio
-async def test_json_api_version_takes_precedence_over_firmware() -> None:
-    """Test the JSON-API version is preferred over the firmware version."""
+async def test_json_api_version_used_regardless_of_firmware() -> None:
+    """Test the JSON-API version alone selects the config, ignoring firmware."""
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    # Firmware would map to v2, but a modern JSON-API version wins.
-    bsblan._firmware_version = "2.2.3"
+    # Firmware is informational only; the JSON-API version drives the result.
+    bsblan._firmware_version = "1.0.0"
     bsblan._json_api_version = "2.0"
     bsblan._set_api_version()
 
@@ -342,12 +222,12 @@ async def test_version_error_exposes_version() -> None:
     config = BSBLANConfig(host="example.com")
     bsblan = BSBLAN(config)
 
-    bsblan._firmware_version = "1.9.0"
+    bsblan._json_api_version = "0.9"
 
     with pytest.raises(BSBLANVersionError) as exc_info:
         bsblan._set_api_version()
 
-    assert exc_info.value.version == "1.9.0"
+    assert exc_info.value.version == "0.9"
 
 
 @pytest.mark.asyncio
@@ -425,5 +305,5 @@ async def test_fetch_firmware_version_queries_json_api() -> None:
 
     assert bsblan._firmware_version == "2.2.3"
     assert bsblan._json_api_version == "2.0"
-    # JSON-API version wins over the legacy firmware mapping.
+    # The JSON-API version drives the result; firmware is informational only.
     assert bsblan._api_version == "v3"

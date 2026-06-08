@@ -9,7 +9,7 @@ Asynchronous Python client for [BSB-LAN](https://github.com/fredlcore/bsb_lan) d
 - Control thermostat settings and hot water parameters
 - Detect optional cooling setpoints for heat/cool range controls
 - Fully typed with PEP 561 support
-- API v3 parameter support, plus basic support for the legacy 2.x firmware
+- API v3 parameter support, plus basic support for JSON-API 1.x devices
 - Automatic version detection via the BSB-LAN JSON-API (`/JV`)
 - Lazy loading with per-section validation
 

@@ -66,22 +66,23 @@ asyncio.run(main())
 ## Firmware compatibility
 
 On the first request the client lazily runs `initialize()`, which detects the
-device's capabilities and selects a matching configuration:
+device's capabilities and selects a matching configuration based on the BSB-LAN
+JSON-API version reported by the `/JV` endpoint:
 
-- **Full support (`v3`)** — BSB-LAN firmware 3.x and newer (including 4.x and
-  5.x). All features are available, including multiple heating circuits, hot
-  water control, schedules, sensors, and cooling setpoints.
-- **Basic support (`v2`)** — the legacy 2.x firmware branch. A reduced,
-  single-circuit configuration covering essential heating, hot water, and
-  sensor parameters.
+- **Full support (`v3`)** — JSON-API version 2.0 or newer. All features are
+  available, including multiple heating circuits, hot water control, schedules,
+  sensors, and cooling setpoints.
+- **Basic support (`v2`)** — JSON-API version 1.x. A reduced, single-circuit
+  configuration covering essential heating, hot water, and sensor parameters.
 
-Detection prefers the BSB-LAN JSON-API version reported by the `/JV` endpoint,
-which is independent of the adapter firmware version. When a device does not
-expose `/JV` (very old firmware), the firmware version from `/JI` is used as a
-fallback. Firmware older than the 2.x branch raises `BSBLANVersionError`.
+The JSON-API version is the documented, firmware-independent compatibility
+signal. The adapter firmware version (from `/JI`) is still retrieved and exposed
+via `device_info`, but it is not used to determine support. A device that does
+not expose `/JV`, or reports a JSON-API version below 1.0, raises
+`BSBLANVersionError`.
 
-Basic 2.x support is best-effort and may not cover every parameter your heating
-system exposes.
+Basic (JSON-API 1.x) support is best-effort and may not cover every parameter
+your heating system exposes.
 
 ## Temperature bounds
 
