@@ -10,24 +10,13 @@ MIN_CIRCUIT: Final[int] = 1
 MAX_CIRCUIT: Final[int] = 2
 
 
-# API version
-# "v3" is the full configuration for BSB-LAN firmware >= 3.0.0.
-# "v2" is a reduced "basic" configuration for the legacy 2.x firmware branch:
-# a single heating circuit plus essential heating, hot water and sensor params.
-SUPPORTED_API_VERSION: Final[str] = "v3"
-BASIC_API_VERSION: Final[str] = "v2"
-SUPPORTED_API_VERSIONS: Final[tuple[str, ...]] = (
-    BASIC_API_VERSION,
-    SUPPORTED_API_VERSION,
-)
-
 # JSON-API version thresholds (from /JV).
 # The /JV endpoint reports the BSB-LAN JSON-API version (e.g. "2.0"), which is
 # the documented, firmware-independent compatibility signal and the sole input
 # for selecting the API config: a JSON-API version below MIN_SUPPORTED_JSON_API
-# is rejected, the [MIN_SUPPORTED_JSON_API, V3_JSON_API_MINIMUM) range maps to
-# the basic "v2" config, and a version >= V3_JSON_API_MINIMUM maps to the full
-# "v3" config. The adapter firmware version (from /JI) is retrieved for
+# is rejected, the [MIN_SUPPORTED_JSON_API, V3_JSON_API_MINIMUM) range selects
+# the basic single-circuit config, and a version >= V3_JSON_API_MINIMUM selects
+# the full config. The adapter firmware version (from /JI) is retrieved for
 # informational purposes only and is not used to select the config.
 MIN_SUPPORTED_JSON_API: Final[str] = "1.0"
 V3_JSON_API_MINIMUM: Final[str] = "2.0"
@@ -133,12 +122,13 @@ BASE_STATIC_VALUES_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     "1203": "cooling_reduced_setpoint",
 }
 
-# --- Basic "v2" parameters (legacy 2.x firmware) ---
+# --- Basic configuration parameters ---
 # A deliberately minimal, single-circuit set covering core heating control and
 # the min/max bounds needed for a thermostat. Cooling, boost and circuit 2 are
-# intentionally excluded because they are not reliably available on the legacy
-# firmware branch. Hot water, sensor and device params reuse the shared base
-# sets and are filtered per-section against what the device actually exposes.
+# intentionally excluded because they are not reliably available on devices
+# without full-config support. Hot water, sensor and device params reuse the
+# shared base sets and are filtered per-section against what the device
+# actually exposes.
 BASIC_HEATING_PARAMS: Final[dict[str, str]] = {
     "700": "hvac_mode",
     "710": "target_temperature",
@@ -201,29 +191,22 @@ class CircuitConfig:
     INACTIVE_MARKER: Final[str] = "---"
 
 
-def build_api_config(version: str = SUPPORTED_API_VERSION) -> APIConfig:
-    """Build the API configuration for a supported version.
+def build_api_config(*, full: bool = True) -> APIConfig:
+    """Build the API configuration.
 
     Args:
-        version: The API version to build. ``"v3"`` returns the full
-            configuration; ``"v2"`` returns the reduced single-circuit basic
-            configuration for legacy 2.x firmware.
+        full: When ``True`` (default) return the full multi-circuit
+            configuration. When ``False`` return the reduced single-circuit
+            basic configuration (essential heating, hot water and sensor
+            params) for devices without full-config support.
 
     Returns:
         APIConfig: The complete API configuration.
 
-    Raises:
-        ValueError: If a version other than ``"v2"`` or ``"v3"`` is requested.
-
     """
-    if version not in SUPPORTED_API_VERSIONS:
-        supported = ", ".join(SUPPORTED_API_VERSIONS)
-        msg = f"Only API versions {supported} are supported"
-        raise ValueError(msg)
-
-    if version == BASIC_API_VERSION:
-        # Basic single-circuit config for legacy 2.x firmware. Circuit 2 and
-        # cooling are intentionally empty/omitted.
+    if not full:
+        # Basic single-circuit config. Circuit 2 and cooling are intentionally
+        # empty/omitted.
         return {
             "heating": BASIC_HEATING_PARAMS.copy(),
             "staticValues": BASIC_STATIC_VALUES_PARAMS.copy(),
@@ -248,8 +231,8 @@ def build_api_config(version: str = SUPPORTED_API_VERSION) -> APIConfig:
 
 
 # Pre-built API configurations
-API_V2: Final[APIConfig] = build_api_config(BASIC_API_VERSION)
-API_V3: Final[APIConfig] = build_api_config()
+API_BASIC: Final[APIConfig] = build_api_config(full=False)
+API_FULL: Final[APIConfig] = build_api_config()
 
 
 # Validation constants
@@ -532,7 +515,7 @@ class ErrorMsg:
     NO_SCHEDULE = "No schedule provided."
     VERSION = "Version not supported"
     TEMPERATURE_RANGE = "Temperature range not initialized"
-    API_VERSION = "API version not set"
+    CONFIG_NOT_RESOLVED = "API configuration not resolved"
     MULTI_PARAMETER = "Only one parameter can be set at a time"
     SESSION_NOT_INITIALIZED = "Session not initialized"
     API_DATA_NOT_INITIALIZED = "API data not initialized"

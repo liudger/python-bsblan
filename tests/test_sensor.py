@@ -12,7 +12,7 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig, Sensor
-from bsblan.constants import API_V3
+from bsblan.constants import API_FULL
 from bsblan.utility import APIValidator
 
 from . import load_fixture
@@ -34,8 +34,8 @@ SENSOR_RESPONSE_NO_OUTSIDE_TEMP = {
 }
 
 # API config without outside_temperature parameter
-API_V3_NO_OUTSIDE_TEMP = {
-    **API_V3,
+API_FULL_NO_OUTSIDE_TEMP = {
+    **API_FULL,
     "sensor": {"8740": "current_temperature"},
 }
 
@@ -45,14 +45,14 @@ API_V3_NO_OUTSIDE_TEMP = {
     ("api_data", "sensor_response", "expected_outside_temp", "expected_current_temp"),
     [
         pytest.param(
-            API_V3,
+            API_FULL,
             SENSOR_RESPONSE_FULL,
             {"value": 7.6, "unit": "&deg;C"},
             {"value": 18.2},
             id="with_outside_temperature",
         ),
         pytest.param(
-            API_V3_NO_OUTSIDE_TEMP,
+            API_FULL_NO_OUTSIDE_TEMP,
             SENSOR_RESPONSE_NO_OUTSIDE_TEMP,
             None,
             {"value": 18.2},

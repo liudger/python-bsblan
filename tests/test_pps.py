@@ -38,7 +38,7 @@ async def pps_bsblan() -> AsyncGenerator[BSBLAN, None]:
         bsblan._device = Device.model_validate(
             json.loads(load_fixture("pps_device.json"))
         )
-        bsblan._api_data = build_api_config("v3")
+        bsblan._api_data = build_api_config()
         bsblan._apply_bus_specific_api_config()
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
         yield bsblan
@@ -327,7 +327,7 @@ async def test_pps_thermostat_rejects_read_only_bus() -> None:
             bus="PPS",
             buswritable=0,
         )
-        bsblan._api_data = build_api_config("v3")
+        bsblan._api_data = build_api_config()
         bsblan._apply_bus_specific_api_config()
         bsblan._validator._api_validator = APIValidator(bsblan._api_data)
         request_mock = AsyncMock(return_value={"status": "ok"})

@@ -9,7 +9,7 @@ import pytest
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.constants import API_V3, APIConfig
+from bsblan.constants import API_FULL, APIConfig
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -151,7 +151,7 @@ async def test_temperature_range_min_temp_not_available(monkeypatch: Any) -> Non
 
         client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_V3
+        source_config = API_FULL
         client._api_data = cast(
             "APIConfig",
             {
@@ -188,7 +188,7 @@ async def test_temperature_range_max_temp_not_available(monkeypatch: Any) -> Non
 
         client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_V3
+        source_config = API_FULL
         client._api_data = cast(
             "APIConfig",
             {
@@ -224,7 +224,7 @@ async def test_temperature_range_static_values_error(monkeypatch: Any) -> None:
 
         client._supports_full_config = True
         # Copy each section dictionary to avoid modifying the shared constant
-        source_config = API_V3
+        source_config = API_FULL
         client._api_data = cast(
             "APIConfig",
             {
