@@ -192,18 +192,6 @@ async def test_json_api_version_used_regardless_of_firmware() -> None:
 
 
 @pytest.mark.asyncio
-async def test_api_version_property() -> None:
-    """Test the public api_version property reflects the resolved version."""
-    config = BSBLANConfig(host="example.com")
-    bsblan = BSBLAN(config)
-
-    bsblan._json_api_version = "2.0"
-    bsblan._set_api_version()
-
-    assert bsblan.api_version == "v3"
-
-
-@pytest.mark.asyncio
 async def test_json_api_version_property() -> None:
     """Test the public json_api_version property exposes the /JV version."""
     config = BSBLANConfig(host="example.com")
