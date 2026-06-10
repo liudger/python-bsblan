@@ -187,8 +187,6 @@ class BSBLAN:
                 # circuits == [1, 2] for a dual-circuit controller
 
         """
-        if self._uses_pps_bus:
-            return await self._get_available_pps_circuits()
         if self._json_api_version == "1.0":
             logger.debug(
                 "BSBLAN JSON-API version 1.0 detected; skipping circuit discovery and "
@@ -196,6 +194,8 @@ class BSBLAN:
             )
             self._available_circuits = {1}
             return [1]
+        if self._uses_pps_bus:
+            return await self._get_available_pps_circuits()
 
         available: list[int] = []
         for circuit, param_id in CircuitConfig.PROBE_PARAMS.items():
