@@ -13,7 +13,12 @@ import pytest
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
-from bsblan.constants import CircuitConfig, ErrorMsg, build_api_config
+from bsblan.constants import (
+    MIN_SUPPORTED_JSON_API,
+    CircuitConfig,
+    ErrorMsg,
+    build_api_config,
+)
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -775,7 +780,7 @@ async def test_get_available_circuits_json_api_v1_skips_discovery(
 ) -> None:
     """Test that JSON-API version 1.0 skips circuit discovery and returns [1]."""
     bsblan = mock_bsblan_circuit
-    bsblan._json_api_version = "1.0"
+    bsblan._json_api_version = MIN_SUPPORTED_JSON_API
 
     request_mock = AsyncMock()
     bsblan._request = request_mock  # type: ignore[method-assign]
