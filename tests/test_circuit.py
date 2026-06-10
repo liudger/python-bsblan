@@ -13,7 +13,12 @@ import pytest
 from aresponses import Response, ResponsesMockServer
 
 from bsblan import BSBLAN, BSBLANConfig, State, StaticState
-from bsblan.constants import CircuitConfig, ErrorMsg, build_api_config
+from bsblan.constants import (
+    MIN_SUPPORTED_JSON_API,
+    CircuitConfig,
+    ErrorMsg,
+    build_api_config,
+)
 from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.utility import APIValidator
 
@@ -767,6 +772,24 @@ async def test_get_available_circuits_all_probes_missing(
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
     ] == expected_params
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_json_api_v1_skips_discovery(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test that JSON-API version 1.0 skips circuit discovery and returns [1]."""
+    bsblan = mock_bsblan_circuit
+    bsblan._json_api_version = MIN_SUPPORTED_JSON_API
+
+    request_mock = AsyncMock()
+    bsblan._request = request_mock  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == [1]
+    assert bsblan._available_circuits == {1}
+    request_mock.assert_not_awaited()
 
 
 @pytest.mark.asyncio
