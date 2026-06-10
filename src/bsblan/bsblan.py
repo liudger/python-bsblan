@@ -19,6 +19,7 @@ from ._version import VersionResolver
 from .constants import (
     API_BASIC,
     API_FULL,
+    MIN_SUPPORTED_JSON_API,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -187,7 +188,7 @@ class BSBLAN:
                 # circuits == [1, 2] for a dual-circuit controller
 
         """
-        if self._json_api_version == "1.0":
+        if self._json_api_version == MIN_SUPPORTED_JSON_API:
             logger.debug(
                 "BSBLAN JSON-API version 1.0 detected; skipping circuit discovery and "
                 "assuming only circuit 1 is available"
