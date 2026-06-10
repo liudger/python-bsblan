@@ -770,6 +770,24 @@ async def test_get_available_circuits_all_probes_missing(
 
 
 @pytest.mark.asyncio
+async def test_get_available_circuits_json_api_v1_skips_discovery(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test that JSON-API version 1.0 skips circuit discovery and returns [1]."""
+    bsblan = mock_bsblan_circuit
+    bsblan._json_api_version = "1.0"
+
+    request_mock = AsyncMock()
+    bsblan._request = request_mock  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == [1]
+    assert bsblan._available_circuits == {1}
+    request_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_temperature_range_skips_unavailable_discovered_circuit(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
