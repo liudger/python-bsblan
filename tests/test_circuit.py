@@ -784,7 +784,7 @@ async def test_get_available_circuits_json_api_v1_skips_discovery(
 
     assert circuits == [1]
     assert bsblan._available_circuits == {1}
-    request_mock.assert_not_called()
+    request_mock.assert_not_awaited()
 
 
 @pytest.mark.asyncio
