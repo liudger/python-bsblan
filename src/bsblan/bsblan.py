@@ -212,8 +212,9 @@ class BSBLAN:
                 continue
 
             # A circuit exists if the response contains the operating mode key
-            # with actual data (not an empty dict).
-            if not response.get(param_id):
+            # with a valid value (not an empty dict, and not None/"---").
+            param_data = response.get(param_id)
+            if not param_data or param_data.get("value") in (None, "---"):
                 logger.debug(
                     "Circuit %d has no operating mode data (not supported)",
                     circuit,
@@ -236,6 +237,11 @@ class BSBLAN:
 
         if not response.get(param_id):
             logger.debug("PPS climate circuit has no operating mode data")
+            self._available_circuits = set()
+            return []
+        param_data = response[param_id]
+        if param_data.get("value") in (None, "---"):
+            logger.debug("PPS climate circuit has invalid operating mode value")
             self._available_circuits = set()
             return []
         self._available_circuits = {1}

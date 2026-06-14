@@ -357,12 +357,20 @@ async def test_pps_circuit_discovery_returns_single_climate(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("response", [{}, {"15000": {}}])
+@pytest.mark.parametrize(
+    "response",
+    [
+        {},
+        {"15000": {}},
+        {"15000": {"value": "---", "unit": "", "desc": ""}},
+        {"15000": {"value": None, "unit": "", "desc": ""}},
+    ],
+)
 async def test_pps_circuit_discovery_returns_empty_without_mode(
     pps_bsblan: BSBLAN,
     response: dict[str, Any],
 ) -> None:
-    """Test PPS circuit discovery handles missing operating mode data."""
+    """Test PPS circuit discovery handles missing or inactive mode data."""
     pps_bsblan._request = AsyncMock(return_value=response)  # type: ignore[method-assign]
 
     circuits = await pps_bsblan.get_available_circuits()

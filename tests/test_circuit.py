@@ -775,6 +775,59 @@ async def test_get_available_circuits_all_probes_missing(
 
 
 @pytest.mark.asyncio
+async def test_get_available_circuits_inactive_marker_excludes_circuit(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test a circuit whose probe value is "---" is excluded."""
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "700":
+            return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        # HC2 reports the inactive marker value
+        if param_id == "1000":
+            return {"1000": {"value": "---", "unit": "", "desc": ""}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+    assert circuits == [1]
+    assert bsblan._available_circuits == {1}
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_none_value_excludes_circuit(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test a circuit whose probe value is None is excluded."""
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "700":
+            return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        if param_id == "1000":
+            return {"1000": {"value": None, "unit": "", "desc": ""}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+    assert circuits == [1]
+    assert bsblan._available_circuits == {1}
+
+
+@pytest.mark.asyncio
 async def test_get_available_circuits_json_api_v1_skips_discovery(
     mock_bsblan_circuit: BSBLAN,
 ) -> None:
