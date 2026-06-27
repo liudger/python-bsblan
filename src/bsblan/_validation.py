@@ -96,6 +96,9 @@ class SectionValidator:
             dict[str, str]: Mapping of parameter id to parameter name.
 
         """
+        if not self._api_validator:
+            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
+
         return cast("APIValidator", self._api_validator).get_section_params(section)
 
     def apply_bus_specific_api_config(

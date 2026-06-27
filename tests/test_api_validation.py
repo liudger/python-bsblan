@@ -90,6 +90,18 @@ async def test_validate_api_section_no_validator() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_section_params_no_validator() -> None:
+    """Test section parameter lookup with no validator initialized."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+
+        bsblan._validator._api_validator = None
+
+        with pytest.raises(BSBLANError, match=ErrorMsg.API_VALIDATOR_NOT_INITIALIZED):
+            bsblan._validator.get_section_params("device")
+
+
+@pytest.mark.asyncio
 async def test_validate_api_section_no_api_data() -> None:
     """Test API section validation with no API data initialized."""
     async with aiohttp.ClientSession() as session:
