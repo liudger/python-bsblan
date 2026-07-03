@@ -833,12 +833,14 @@ class BSBLAN:
         )
         logger.debug("Response for setting time: %s", response)
 
-    async def thermostat(
+    async def thermostat(  # pylint: disable=too-many-arguments
         self,
         target_temperature: str | None = None,
         hvac_mode: int | None = None,
         circuit: int = 1,
         target_temperature_high: str | float | None = None,
+        *,
+        cooling_operating_mode: int | None = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan.
 
@@ -850,6 +852,9 @@ class BSBLAN:
                 they are translated to PPS raw values before posting.
             circuit: The heating circuit number (1 or 2). Defaults to 1.
             target_temperature_high: The cooling comfort setpoint to set.
+            cooling_operating_mode: The cooling circuit operating mode to set
+                as raw integer value: 0=Protection, 1=Automatic, 2=Reduced,
+                3=Comfort. Not supported on PPS devices.
 
         Example:
             # Set HC1 temperature
@@ -857,6 +862,9 @@ class BSBLAN:
 
             # Set HC1 cooling comfort setpoint
             await client.thermostat(target_temperature_high="24.0")
+
+            # Set HC1 cooling operating mode
+            await client.thermostat(cooling_operating_mode=1)
 
             # Set HC2 mode
             await client.thermostat(hvac_mode=1, circuit=2)
@@ -871,6 +879,7 @@ class BSBLAN:
             target_temperature,
             hvac_mode,
             target_temperature_high,
+            cooling_operating_mode,
             error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
@@ -879,15 +888,18 @@ class BSBLAN:
             hvac_mode,
             circuit,
             target_temperature_high,
+            cooling_operating_mode=cooling_operating_mode,
         )
         await self._set_device_state(state)
 
-    async def _prepare_thermostat_state(
+    async def _prepare_thermostat_state(  # pylint: disable=too-many-arguments
         self,
         target_temperature: str | None,
         hvac_mode: int | None,
         circuit: int = 1,
         target_temperature_high: str | float | None = None,
+        *,
+        cooling_operating_mode: int | None = None,
     ) -> dict[str, Any]:
         """Prepare the thermostat state for setting.
 
@@ -896,6 +908,8 @@ class BSBLAN:
             hvac_mode (int | None): The HVAC mode to set as raw integer.
             circuit: The heating circuit number (1 or 2).
             target_temperature_high: The cooling comfort setpoint to set.
+            cooling_operating_mode: The cooling circuit operating mode to set
+                as raw integer.
 
         Returns:
             dict[str, Any]: The prepared state for the thermostat.
@@ -930,6 +944,15 @@ class BSBLAN:
                 hvac_value = Validation.PPS_HVAC_MODE_TO_BSBLAN[hvac_mode]
             state.update(
                 self._set_payload(param_ids["hvac_mode"], hvac_value),
+            )
+        if cooling_operating_mode is not None:
+            param_id = param_ids.get("cooling_operating_mode")
+            if param_id is None:
+                parameter_name = "cooling_operating_mode"
+                raise BSBLANInvalidParameterError(parameter_name)
+            self._validate_cooling_operating_mode(cooling_operating_mode)
+            state.update(
+                self._set_payload(param_id, str(cooling_operating_mode)),
             )
         return state
 
@@ -990,6 +1013,20 @@ class BSBLAN:
         )
         if hvac_mode not in valid_modes:
             raise BSBLANInvalidParameterError(str(hvac_mode))
+
+    def _validate_cooling_operating_mode(self, cooling_operating_mode: int) -> None:
+        """Validate the cooling circuit operating mode.
+
+        Args:
+            cooling_operating_mode (int): The mode to validate. Valid values
+                are 0=Protection, 1=Automatic, 2=Reduced, 3=Comfort.
+
+        Raises:
+            BSBLANInvalidParameterError: If the mode is invalid.
+
+        """
+        if cooling_operating_mode not in Validation.COOLING_OPERATING_MODES:
+            raise BSBLANInvalidParameterError(str(cooling_operating_mode))
 
     def _validate_time_format(self, time_value: str) -> None:
         """Validate the time format.

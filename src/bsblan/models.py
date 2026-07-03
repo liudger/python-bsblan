@@ -472,6 +472,9 @@ class State(BaseModel):
     target_temperature_high: EntityInfo[float] | None = None
     hvac_action: EntityInfo[int] | None = None
     hvac_mode_changeover: EntityInfo[int] | None = None
+    # 901/1201: cooling circuit operating mode
+    # (0=Protection, 1=Automatic, 2=Reduced, 3=Comfort)
+    cooling_operating_mode: EntityInfo[int] | None = None
     current_temperature: EntityInfo[float] | None = None
     room1_temp_setpoint_boost: EntityInfo[float] | None = None
 
