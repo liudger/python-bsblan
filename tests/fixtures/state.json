@@ -36,6 +36,18 @@
     "readwrite": 0,
     "unit": ""
   },
+  "901": {
+    "name": "Operating mode",
+    "dataType_name": "ENUM",
+    "dataType_family": "ENUM",
+    "error": 0,
+    "value": "3",
+    "desc": "Comfort",
+    "dataType": 1,
+    "readonly": 0,
+    "readwrite": 0,
+    "unit": ""
+  },
   "902": {
     "name": "Cooling circuit 1 - Comfort setpoint",
     "dataType_name": "TEMP",

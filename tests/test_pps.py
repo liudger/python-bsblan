@@ -297,6 +297,22 @@ async def test_pps_thermostat_rejects_cooling_temperature(
 
 
 @pytest.mark.asyncio
+async def test_pps_thermostat_rejects_cooling_operating_mode(
+    pps_bsblan: BSBLAN,
+) -> None:
+    """Test PPS climate rejects cooling operating mode writes."""
+    pps_bsblan._temperature._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._temperature._circuit_temp_initialized.add(1)
+    request_mock = AsyncMock(return_value={"status": "ok"})
+    pps_bsblan._request = request_mock  # type: ignore[method-assign]
+
+    with pytest.raises(BSBLANInvalidParameterError, match="cooling_operating_mode"):
+        await pps_bsblan.thermostat(cooling_operating_mode=1)
+
+    request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_pps_thermostat_rejects_unsupported_eco_mode(
     pps_bsblan: BSBLAN,
 ) -> None:
