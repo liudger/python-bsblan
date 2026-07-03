@@ -40,6 +40,7 @@ BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     "700": "hvac_mode",
     "710": "target_temperature",
     "900": "hvac_mode_changeover",
+    "901": "cooling_operating_mode",
     "902": "target_temperature_high",
     # -------
     "8000": "hvac_action",
@@ -107,6 +108,7 @@ BASE_HEATING_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     "1000": "hvac_mode",
     "1010": "target_temperature",
     "1200": "hvac_mode_changeover",
+    "1201": "cooling_operating_mode",
     "1202": "target_temperature_high",
     # -------
     "8001": "hvac_action",
@@ -173,11 +175,13 @@ class CircuitConfig:
             "target_temperature": "710",
             "target_temperature_high": "902",
             "hvac_mode": "700",
+            "cooling_operating_mode": "901",
         },
         2: {
             "target_temperature": "1010",
             "target_temperature_high": "1202",
             "hvac_mode": "1000",
+            "cooling_operating_mode": "1201",
         },
     }
     PROBE_PARAMS: Final[dict[int, str]] = {
@@ -240,6 +244,9 @@ class Validation:
     """Validation-related constants for BSBLAN."""
 
     HVAC_MODES: Final[set[int]] = {0, 1, 2, 3}
+    # 901/1201 cooling circuit operating mode (ENUM, verified on device):
+    # 0=Protection, 1=Automatic, 2=Reduced, 3=Comfort
+    COOLING_OPERATING_MODES: Final[set[int]] = {0, 1, 2, 3}
     PPS_HVAC_MODES: Final[set[int]] = {0, 1, 3}
     PPS_HVAC_MODE_TO_BSBLAN: Final[dict[int, str]] = {
         0: "2",  # off
