@@ -151,6 +151,9 @@ async def test_state_circuit2(monkeypatch: Any) -> None:
         assert state.current_temperature.value == 18.5
         assert state.target_temperature_high is not None
         assert state.target_temperature_high.value == 24.0
+        assert state.cooling_operating_mode is not None
+        assert state.cooling_operating_mode.value == 0
+        assert state.cooling_operating_mode.desc == "Protection"
 
 
 @pytest.mark.asyncio
@@ -457,6 +460,35 @@ async def test_thermostat_circuit2_invalid_cooling_temperature(
             target_temperature_high="17",
             circuit=2,
         )
+
+
+@pytest.mark.asyncio
+async def test_thermostat_circuit2_cooling_operating_mode(
+    mock_bsblan_circuit: BSBLAN,
+    aresponses: ResponsesMockServer,
+) -> None:
+    """Test setting the cooling operating mode on circuit 2."""
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
+        "min": 16.0,
+        "max": 28.0,
+    }
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
+
+    expected_data = {
+        "Parameter": "1201",
+        "Value": "0",
+        "Type": "1",
+    }
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan_circuit.thermostat(
+        cooling_operating_mode=0,
+        circuit=2,
+    )
 
 
 # --- Temperature range initialization tests ---

@@ -231,3 +231,39 @@ async def test_cooling_temperature_with_other_parameter_raises(
             target_temperature_high="24",
         )
     assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
+
+
+@pytest.mark.asyncio
+async def test_set_cooling_operating_mode(
+    mock_bsblan: BSBLAN,
+    aresponses: ResponsesMockServer,
+) -> None:
+    """Test setting the cooling operating mode on circuit 1."""
+    expected_data = {"Parameter": "901", "Value": "1", "Type": "1"}
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan.thermostat(cooling_operating_mode=1)
+
+
+@pytest.mark.asyncio
+async def test_invalid_cooling_operating_mode(mock_bsblan: BSBLAN) -> None:
+    """Test that an invalid cooling operating mode is rejected."""
+    with pytest.raises(BSBLANInvalidParameterError):
+        await mock_bsblan.thermostat(cooling_operating_mode=99)
+
+
+@pytest.mark.asyncio
+async def test_cooling_operating_mode_with_other_parameter_raises(
+    mock_bsblan: BSBLAN,
+) -> None:
+    """Test cooling operating mode respects one-parameter-per-call rule."""
+    with pytest.raises(BSBLANError) as exc_info:
+        await mock_bsblan.thermostat(
+            hvac_mode=3,
+            cooling_operating_mode=1,
+        )
+    assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER

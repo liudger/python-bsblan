@@ -24,6 +24,7 @@ def test_build_api_config_defaults_to_full() -> None:
         "700",
         "710",
         "770",
+        "901",
         "902",
         "712",
         "714",
@@ -69,7 +70,7 @@ def test_build_api_config_basic_is_single_circuit() -> None:
         "716": "comfort_setpoint_max",
     }
     # Cooling and boost params are excluded.
-    for excluded in ("900", "902", "770", "905", "903", "712"):
+    for excluded in ("900", "901", "902", "770", "905", "903", "712"):
         assert excluded not in config["heating"]
         assert excluded not in config["staticValues"]
     # Only a single circuit is supported.

@@ -70,6 +70,11 @@ async def test_state(monkeypatch: Any) -> None:
     assert state.hvac_mode_changeover.value == 2
     assert state.hvac_mode_changeover.desc == "Reduced"
 
+    # Cooling operating mode assertions
+    assert state.cooling_operating_mode is not None
+    assert state.cooling_operating_mode.value == 3
+    assert state.cooling_operating_mode.desc == "Comfort"
+
     # HVAC action assertions
     assert state.hvac_action is not None
     assert state.hvac_action.value == 122
@@ -87,7 +92,7 @@ async def test_state(monkeypatch: Any) -> None:
 
     # Verify API call
     request_mock.assert_awaited_once_with(
-        params={"Parameter": "700,710,900,902,8000,8740,770"}
+        params={"Parameter": "700,710,900,901,902,8000,8740,770"}
     )
 
 
@@ -156,3 +161,40 @@ async def test_state_without_cooling_strips_target_temperature_high(
         assert [
             call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
         ] == ["700,902", "700"]
+
+
+@pytest.mark.asyncio
+async def test_state_without_cooling_strips_cooling_operating_mode(
+    monkeypatch: Any,
+) -> None:
+    """Test unsupported cooling operating mode is stripped during validation."""
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+
+        monkeypatch.setattr(bsblan, "_firmware_version", "1.0.38-20200730234859")
+        monkeypatch.setattr(bsblan, "_supports_full_config", True)
+        bsblan._api_data = {
+            section: params.copy() for section, params in API_FULL.items()
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        state_data = json.loads(load_fixture("state.json"))
+        validation_response = {"700": state_data["700"]}
+        fetch_response = {"700": state_data["700"]}
+        request_mock: AsyncMock = AsyncMock(
+            side_effect=[validation_response, fetch_response]
+        )
+        monkeypatch.setattr(bsblan, "_request", request_mock)
+
+        state: State = await bsblan.state(
+            include=["hvac_mode", "cooling_operating_mode"]
+        )
+
+        assert state.hvac_mode is not None
+        assert state.cooling_operating_mode is None
+        assert bsblan._api_data is not None
+        assert "901" not in bsblan._api_data["heating"]
+        assert [
+            call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+        ] == ["700,901", "700"]
