@@ -59,7 +59,7 @@ JSON-API version reported by the `/JV` endpoint:
 
 - **Full configuration** — JSON-API version 2.0 or newer. All features are
   available: multiple heating circuits, hot water control, schedules, sensors,
-  and cooling setpoints.
+  and cooling setpoints and operating mode.
 - **Basic configuration** — JSON-API version 1.x. A reduced, single-circuit
   configuration covering essential heating, hot water, and sensor parameters.
 
