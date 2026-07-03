@@ -135,6 +135,7 @@ def print_state(state: State) -> None:
         "HVAC Action (category)": hvac_action_mapped,
         "HVAC Mode": get_attribute(state.hvac_mode, "desc", "Unknown Mode"),
         "Mode Changeover": get_attribute(state.hvac_mode_changeover, "desc"),
+        "Cooling Operating Mode": get_attribute(state.cooling_operating_mode, "desc"),
         "Target Temperature (heating)": get_attribute(state.target_temperature),
         "Cooling Setpoint (target high)": get_attribute(state.target_temperature_high),
         "Current Temperature": get_attribute(state.current_temperature),
