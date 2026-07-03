@@ -124,6 +124,29 @@ BSB-LAN writes one parameter at a time. If an application exposes a heat/cool
 temperature range, write `target_temperature` and `target_temperature_high` with
 separate `thermostat()` calls.
 
+## Cooling operating mode
+
+The cooling circuit has its own operating mode, separate from the heating
+`hvac_mode` (`700`/`1000`) and the read-only changeover status (`900`/`1200`).
+The client maps BSB-LAN parameter `901` for circuit 1 and `1201` for circuit 2
+to `cooling_operating_mode`. Valid values are `0` (Protection), `1`
+(Automatic), `2` (Reduced), and `3` (Comfort).
+
+Like the cooling setpoint, the parameter is optional and removed from the
+active API map when the device does not expose it, so integrations can detect
+support by checking whether `state.cooling_operating_mode` is present.
+
+```python
+async with BSBLAN(config) as client:
+    state = await client.state(include=["cooling_operating_mode"])
+
+    if state.cooling_operating_mode is not None:
+        print(f"Cooling mode: {state.cooling_operating_mode.desc}")
+        await client.thermostat(cooling_operating_mode=1)
+```
+
+Setting `cooling_operating_mode` is not supported on PPS devices.
+
 ## PPS bus support
 
 PPS bus devices are detected from the device metadata returned by BSB-LAN. The
