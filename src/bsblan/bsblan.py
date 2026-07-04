@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 import aiohttp
 from aiohttp.hdrs import METH_POST
 
+from ._parameters import ParameterReader
 from ._temperature import TemperatureManager
 from ._transport import BSBLANTransport
 from ._validation import SectionValidator
@@ -108,6 +109,7 @@ class BSBLAN:
     _version_resolver: VersionResolver = field(init=False)
     _temperature: TemperatureManager = field(init=False)
     _validator: SectionValidator = field(init=False)
+    _parameters: ParameterReader = field(init=False)
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
@@ -131,6 +133,10 @@ class BSBLAN:
             get_api_data=lambda: self._api_data,
             should_extract_temperature_unit=self._should_extract_temperature_unit,
             extract_temperature_unit=self._extract_temperature_unit_from_response,
+        )
+        self._parameters = ParameterReader(
+            request=lambda **kw: self._request(**kw),  # noqa: PLW0108
+            get_api_data=lambda: self._api_data,
         )
 
     async def __aenter__(self) -> Self:
@@ -1466,22 +1472,7 @@ class BSBLAN:
             BSBLANError: If no parameter IDs are provided or request fails.
 
         """
-        if not parameter_ids:
-            raise BSBLANError(ErrorMsg.NO_PARAMETER_IDS)
-
-        # Request the parameters from the device
-        params_string = ",".join(parameter_ids)
-        response_data = await self._request(params={"Parameter": params_string})
-
-        # Convert response to EntityInfo objects
-        result: dict[str, EntityInfo] = {}
-        for param_id in parameter_ids:
-            if param_id in response_data:
-                param_data = response_data[param_id]
-                if param_data and isinstance(param_data, dict):
-                    result[param_id] = EntityInfo.model_validate(param_data)
-
-        return result
+        return await self._parameters.read_parameters(parameter_ids)
 
     def get_parameter_id(self, parameter_name: str) -> str | None:
         """Look up the parameter ID for a given parameter name.
@@ -1500,17 +1491,7 @@ class BSBLAN:
             str | None: The parameter ID if found, None otherwise.
 
         """
-        if not self._api_data:
-            return None
-
-        # Search through all sections for the parameter name
-        for section_params in self._api_data.values():
-            section_dict = cast("dict[str, str]", section_params)
-            for param_id, param_name in section_dict.items():
-                if param_name == parameter_name:
-                    return param_id
-
-        return None
+        return self._parameters.get_parameter_id(parameter_name)
 
     def get_parameter_ids(self, parameter_names: list[str]) -> dict[str, str]:
         """Look up parameter IDs for multiple parameter names.
@@ -1527,12 +1508,7 @@ class BSBLAN:
                 Only includes parameters that were found.
 
         """
-        result: dict[str, str] = {}
-        for name in parameter_names:
-            param_id = self.get_parameter_id(name)
-            if param_id is not None:
-                result[name] = param_id
-        return result
+        return self._parameters.get_parameter_ids(parameter_names)
 
     async def read_parameters_by_name(
         self,
@@ -1564,29 +1540,4 @@ class BSBLAN:
                 or the client is not initialized.
 
         """
-        if not parameter_names:
-            raise BSBLANError(ErrorMsg.NO_PARAMETER_NAMES)
-
-        if not self._api_data:
-            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
-
-        # Resolve names to IDs
-        name_to_id = self.get_parameter_ids(parameter_names)
-
-        if not name_to_id:
-            unknown_params = ", ".join(parameter_names)
-            msg = f"{ErrorMsg.PARAMETER_NAMES_NOT_RESOLVED}: {unknown_params}"
-            raise BSBLANError(msg)
-
-        # Fetch parameters by ID
-        param_ids = list(name_to_id.values())
-        id_results = await self.read_parameters(param_ids)
-
-        # Convert back to name-keyed dictionary
-        # id_to_name maps param_id -> param_name for requested params only
-        id_to_name = {v: k for k, v in name_to_id.items()}
-        return {
-            id_to_name[param_id]: entity_info
-            for param_id, entity_info in id_results.items()
-            if param_id in id_to_name
-        }
+        return await self._parameters.read_parameters_by_name(parameter_names)
