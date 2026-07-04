@@ -138,7 +138,7 @@ support by checking whether `state.cooling_operating_mode` is present.
 
 ```python
 async with BSBLAN(config) as client:
-    state = await client.state(include=["cooling_operating_mode"])
+    state = await client.state(include=["hvac_mode", "cooling_operating_mode"])
 
     if state.cooling_operating_mode is not None:
         print(f"Cooling mode: {state.cooling_operating_mode.desc}")
