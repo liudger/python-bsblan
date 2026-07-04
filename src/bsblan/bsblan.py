@@ -16,6 +16,7 @@ from ._hot_water import HotWaterManager
 from ._parameters import ParameterReader
 from ._schedules import ScheduleManager
 from ._temperature import TemperatureManager
+from ._thermostat import ThermostatWriter
 from ._transport import BSBLANTransport
 from ._validation import SectionValidator
 from ._version import VersionResolver
@@ -106,6 +107,7 @@ class BSBLAN:
     _parameters: ParameterReader = field(init=False)
     _hot_water: HotWaterManager = field(init=False)
     _schedules: ScheduleManager = field(init=False)
+    _thermostat_writer: ThermostatWriter = field(init=False)
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
@@ -152,6 +154,11 @@ class BSBLAN:
             validate_circuit=self._validate_circuit,
             set_payload=self._set_payload,
             set_device_state=self._set_device_state,
+        )
+        self._thermostat_writer = ThermostatWriter(
+            uses_pps_bus=lambda: self._uses_pps_bus,
+            temperature=self._temperature,
+            set_payload=self._set_payload,
         )
 
     async def __aenter__(self) -> Self:
@@ -904,7 +911,7 @@ class BSBLAN:
             error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
-        state = await self._prepare_thermostat_state(
+        state = await self._thermostat_writer.prepare_state(
             target_temperature,
             hvac_mode,
             circuit,
@@ -912,76 +919,6 @@ class BSBLAN:
             cooling_operating_mode=cooling_operating_mode,
         )
         await self._set_device_state(state)
-
-    async def _prepare_thermostat_state(  # pylint: disable=too-many-arguments
-        self,
-        target_temperature: str | None,
-        hvac_mode: int | None,
-        circuit: int = 1,
-        target_temperature_high: str | float | None = None,
-        *,
-        cooling_operating_mode: int | None = None,
-    ) -> dict[str, Any]:
-        """Prepare the thermostat state for setting.
-
-        Args:
-            target_temperature (str | None): The target temperature to set.
-            hvac_mode (int | None): The HVAC mode to set as raw integer.
-            circuit: The heating circuit number (1 or 2).
-            target_temperature_high: The cooling comfort setpoint to set.
-            cooling_operating_mode: The cooling circuit operating mode to set
-                as raw integer.
-
-        Returns:
-            dict[str, Any]: The prepared state for the thermostat.
-
-        """
-        param_ids = self._thermostat_params(circuit)
-        state: dict[str, Any] = {}
-        if target_temperature is not None:
-            await self._validate_target_temperature(
-                target_temperature,
-                circuit,
-            )
-            state.update(
-                self._set_payload(param_ids["target_temperature"], target_temperature),
-            )
-        if target_temperature_high is not None:
-            param_id = param_ids.get("target_temperature_high")
-            if param_id is None:
-                parameter_name = "target_temperature_high"
-                raise BSBLANInvalidParameterError(parameter_name)
-            await self._validate_target_temperature_high(
-                target_temperature_high,
-                circuit,
-            )
-            state.update(
-                self._set_payload(param_id, str(target_temperature_high)),
-            )
-        if hvac_mode is not None:
-            self._validate_hvac_mode(hvac_mode)
-            hvac_value = str(hvac_mode)
-            if self._uses_pps_bus:
-                hvac_value = Validation.PPS_HVAC_MODE_TO_BSBLAN[hvac_mode]
-            state.update(
-                self._set_payload(param_ids["hvac_mode"], hvac_value),
-            )
-        if cooling_operating_mode is not None:
-            param_id = param_ids.get("cooling_operating_mode")
-            if param_id is None:
-                parameter_name = "cooling_operating_mode"
-                raise BSBLANInvalidParameterError(parameter_name)
-            self._validate_cooling_operating_mode(cooling_operating_mode)
-            state.update(
-                self._set_payload(param_id, str(cooling_operating_mode)),
-            )
-        return state
-
-    def _thermostat_params(self, circuit: int) -> dict[str, str]:
-        """Return thermostat write parameters for the active bus type."""
-        if self._uses_pps_bus:
-            return {"target_temperature": "15004", "hvac_mode": "15000"}
-        return CircuitConfig.THERMOSTAT_PARAMS[circuit]
 
     async def _validate_target_temperature_high(
         self,
@@ -1017,37 +954,6 @@ class BSBLAN:
             target_temperature,
             circuit,
         )
-
-    def _validate_hvac_mode(self, hvac_mode: int) -> None:
-        """Validate the HVAC mode.
-
-        Args:
-            hvac_mode (int): The HVAC mode to validate. BSB/LPB accepts 0-3;
-                PPS accepts 0, 1, and 3.
-
-        Raises:
-            BSBLANInvalidParameterError: If the HVAC mode is invalid.
-
-        """
-        valid_modes = (
-            Validation.PPS_HVAC_MODES if self._uses_pps_bus else Validation.HVAC_MODES
-        )
-        if hvac_mode not in valid_modes:
-            raise BSBLANInvalidParameterError(str(hvac_mode))
-
-    def _validate_cooling_operating_mode(self, cooling_operating_mode: int) -> None:
-        """Validate the cooling circuit operating mode.
-
-        Args:
-            cooling_operating_mode (int): The mode to validate. Valid values
-                are 0=Protection, 1=Automatic, 2=Reduced, 3=Comfort.
-
-        Raises:
-            BSBLANInvalidParameterError: If the mode is invalid.
-
-        """
-        if cooling_operating_mode not in Validation.COOLING_OPERATING_MODES:
-            raise BSBLANInvalidParameterError(str(cooling_operating_mode))
 
     def _validate_time_format(self, time_value: str) -> None:
         """Validate the time format.
