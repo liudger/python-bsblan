@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from bsblan.utility import APIValidator, validate_time_format
+from bsblan.utility import APIValidator, is_param_value_active, validate_time_format
 
 
 @pytest.fixture
@@ -61,6 +61,16 @@ def validator() -> APIValidator:
     }
     validated_sections: set[str] = set()
     return APIValidator(api_config=api_config, validated_sections=validated_sections)
+
+
+def test_is_param_value_active() -> None:
+    """Test the shared active-value predicate."""
+    assert is_param_value_active({"value": "20.0"}) is True
+
+    assert is_param_value_active({"value": None}) is False
+    assert is_param_value_active({"value": "---"}) is False
+    assert is_param_value_active({}) is False
+    assert is_param_value_active(None) is False
 
 
 def test_is_valid_param(validator: APIValidator) -> None:

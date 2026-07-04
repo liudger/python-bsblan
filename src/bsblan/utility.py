@@ -7,6 +7,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from .constants import CircuitConfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -67,6 +69,22 @@ def validate_time_format(
         if day > max_day:
             msg = f"Invalid day {day} for February in year {year}"
             raise ValueError(msg)
+
+
+def is_param_value_active(param: dict[str, Any] | None) -> bool:
+    """Check whether a parameter payload carries an active value.
+
+    Args:
+        param: The parameter payload returned by the device.
+
+    Returns:
+        bool: True if the payload is non-empty and its value is neither
+            None nor the inactive marker ("---").
+
+    """
+    if not param:
+        return False
+    return param.get("value") not in (None, CircuitConfig.INACTIVE_MARKER)
 
 
 @dataclass
@@ -146,7 +164,7 @@ class APIValidator:
 
     def _is_valid_param(self, param: dict[str, Any]) -> bool:
         """Check if parameter data is valid."""
-        return not (not param or param.get("value") in (None, "---"))
+        return is_param_value_active(param)
 
     def get_section_params(self, section: str) -> Any:
         """Get the parameter mapping for a section."""

@@ -23,7 +23,6 @@ from ._version import VersionResolver
 from .constants import (
     API_BASIC,
     API_FULL,
-    MIN_SUPPORTED_JSON_API,
     APIConfig,
     CircuitConfig,
     ErrorMsg,
@@ -51,7 +50,7 @@ from .models import (
     State,
     StaticState,
 )
-from .utility import validate_time_format
+from .utility import is_param_value_active, validate_time_format
 
 if TYPE_CHECKING:
     from typing import Self
@@ -216,10 +215,10 @@ class BSBLAN:
                 # circuits == [1, 2] for a dual-circuit controller
 
         """
-        if self._json_api_version == MIN_SUPPORTED_JSON_API:
+        if self._supports_full_config is False:
             logger.debug(
-                "BSBLAN JSON-API version 1.0 detected; skipping circuit discovery and "
-                "assuming only circuit 1 is available"
+                "Basic single-circuit configuration detected; skipping circuit "
+                "discovery and assuming only circuit 1 is available"
             )
             self._available_circuits = {1}
             return [1]
@@ -240,9 +239,9 @@ class BSBLAN:
                 continue
 
             # A circuit exists if the response contains the operating mode key
-            # with a valid value (not an empty dict, and not None/"---").
+            # with an active value (not an empty dict, and not None/"---").
             param_data = response.get(param_id)
-            if not param_data or param_data.get("value") in (None, "---"):
+            if not is_param_value_active(param_data):
                 logger.debug(
                     "Circuit %d has no operating mode data (not supported)",
                     circuit,
@@ -263,13 +262,8 @@ class BSBLAN:
             self._available_circuits = set()
             return []
 
-        if not response.get(param_id):
-            logger.debug("PPS climate circuit has no operating mode data")
-            self._available_circuits = set()
-            return []
-        param_data = response[param_id]
-        if param_data.get("value") in (None, "---"):
-            logger.debug("PPS climate circuit has invalid operating mode value")
+        if not is_param_value_active(response.get(param_id)):
+            logger.debug("PPS climate circuit has no active operating mode value")
             self._available_circuits = set()
             return []
         self._available_circuits = {1}

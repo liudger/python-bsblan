@@ -865,6 +865,7 @@ async def test_get_available_circuits_json_api_v1_skips_discovery(
 ) -> None:
     """Test that JSON-API version 1.0 skips circuit discovery and returns [1]."""
     bsblan = mock_bsblan_circuit
+    bsblan._supports_full_config = False
     bsblan._json_api_version = MIN_SUPPORTED_JSON_API
 
     request_mock = AsyncMock()
@@ -875,6 +876,53 @@ async def test_get_available_circuits_json_api_v1_skips_discovery(
     assert circuits == [1]
     assert bsblan._available_circuits == {1}
     request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_basic_config_skips_discovery(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test basic config skips discovery for any JSON-API version in [1.0, 2.0)."""
+    bsblan = mock_bsblan_circuit
+    bsblan._supports_full_config = False
+    bsblan._json_api_version = "1.2"
+
+    request_mock = AsyncMock()
+    bsblan._request = request_mock  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == [1]
+    assert bsblan._available_circuits == {1}
+    request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_unresolved_capability_probes(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test discovery still probes circuits when capability is unresolved."""
+    bsblan = mock_bsblan_circuit
+    bsblan._supports_full_config = None
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "700":
+            return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        if param_id == "1000":
+            return {"1000": {"value": "0", "unit": "", "desc": "Protection"}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == [1, 2]
+    assert bsblan._available_circuits == {1, 2}
 
 
 @pytest.mark.asyncio
