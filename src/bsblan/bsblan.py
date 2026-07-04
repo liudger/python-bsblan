@@ -14,6 +14,7 @@ from aiohttp.hdrs import METH_POST
 
 from ._hot_water import HotWaterManager
 from ._parameters import ParameterReader
+from ._schedules import ScheduleManager
 from ._temperature import TemperatureManager
 from ._transport import BSBLANTransport
 from ._validation import SectionValidator
@@ -25,8 +26,6 @@ from .constants import (
     APIConfig,
     CircuitConfig,
     ErrorMsg,
-    HeatingScheduleParams,
-    HotWaterParams,
     Validation,
 )
 from .exceptions import (
@@ -36,7 +35,6 @@ from .exceptions import (
 )
 from .models import (
     ApiVersion,
-    DaySchedule,
     Device,
     DeviceTime,
     DHWSchedule,
@@ -107,6 +105,7 @@ class BSBLAN:
     _validator: SectionValidator = field(init=False)
     _parameters: ParameterReader = field(init=False)
     _hot_water: HotWaterManager = field(init=False)
+    _schedules: ScheduleManager = field(init=False)
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
@@ -141,6 +140,16 @@ class BSBLAN:
             apply_include_filter=self._apply_include_filter,
             request_named_params=self._request_named_params,
             validate_single_parameter=self._validate_single_parameter,
+            set_payload=self._set_payload,
+            set_device_state=self._set_device_state,
+        )
+        self._schedules = ScheduleManager(
+            request=lambda **kw: self._request(**kw),  # noqa: PLW0108
+            extract_params_summary=(
+                lambda d: self._extract_params_summary(d)  # noqa: PLW0108
+            ),
+            apply_include_filter=self._apply_include_filter,
+            validate_circuit=self._validate_circuit,
             set_payload=self._set_payload,
             set_device_state=self._set_device_state,
         )
@@ -1193,23 +1202,7 @@ class BSBLAN:
             HeatingTimeSwitchPrograms: Heating schedule information.
 
         """
-        self._validate_circuit(circuit)
-        time_program_params = HeatingScheduleParams.TIME_PROGRAMS[circuit]
-
-        filtered_params = self._apply_include_filter(time_program_params, include)
-
-        params = self._extract_params_summary(filtered_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        mapped_data = {
-            name: data[param_id]
-            for param_id, name in filtered_params.items()
-            if param_id in data
-        }
-
-        if not mapped_data:
-            raise BSBLANError(ErrorMsg.NO_HEATING_SCHEDULE_PARAMS)
-
-        return HeatingTimeSwitchPrograms.model_validate(mapped_data)
+        return await self._schedules.heating_schedule(include, circuit)
 
     async def set_heating_schedule(
         self,
@@ -1229,23 +1222,7 @@ class BSBLAN:
             BSBLANError: If no schedule is provided.
 
         """
-        self._validate_circuit(circuit)
-
-        if not schedule.has_any_schedule():
-            raise BSBLANError(ErrorMsg.NO_SCHEDULE)
-
-        day_param_map = {
-            v: k
-            for k, v in HeatingScheduleParams.TIME_PROGRAMS[circuit].items()
-            if v != "standard_values"
-        }
-
-        for day_name, param_id in day_param_map.items():
-            day_schedule: DaySchedule | None = getattr(schedule, day_name)
-            if day_schedule is not None:
-                await self._set_device_state(
-                    self._set_payload(param_id, day_schedule.to_bsblan_format()),
-                )
+        await self._schedules.set_heating_schedule(schedule, circuit)
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
@@ -1290,23 +1267,7 @@ class BSBLAN:
             BSBLANError: If no schedule is provided.
 
         """
-        if not schedule.has_any_schedule():
-            raise BSBLANError(ErrorMsg.NO_SCHEDULE)
-
-        # Invert DHW_TIME_PROGRAM_PARAMS to get day_name -> param_id mapping
-        # Exclude standard_values as it's not a day of the week
-        day_param_map = {
-            v: k
-            for k, v in HotWaterParams.TIME_PROGRAMS.items()
-            if v != "standard_values"
-        }
-
-        for day_name, param_id in day_param_map.items():
-            day_schedule: DaySchedule | None = getattr(schedule, day_name)
-            if day_schedule is not None:
-                await self._set_device_state(
-                    self._set_payload(param_id, day_schedule.to_bsblan_format()),
-                )
+        await self._schedules.set_hot_water_schedule(schedule)
 
     def _prepare_hot_water_state(
         self,
