@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from .constants import ErrorMsg, HotWaterParams
@@ -22,8 +21,6 @@ if TYPE_CHECKING:
 HotWaterDataT = TypeVar(
     "HotWaterDataT", HotWaterState, HotWaterConfig, HotWaterSchedule
 )
-
-logger = logging.getLogger(__name__)
 
 
 class HotWaterManager:
