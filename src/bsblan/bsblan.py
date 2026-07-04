@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 import aiohttp
 from aiohttp.hdrs import METH_POST
 
+from ._hot_water import HotWaterManager
 from ._parameters import ParameterReader
 from ._temperature import TemperatureManager
 from ._transport import BSBLANTransport
@@ -68,11 +69,6 @@ SectionLiteral = Literal[
     "staticValues_circuit2",
 ]
 
-# TypeVar for hot water data models
-HotWaterDataT = TypeVar(
-    "HotWaterDataT", HotWaterState, HotWaterConfig, HotWaterSchedule
-)
-
 # TypeVar for section data models
 SectionDataT = TypeVar("SectionDataT", State, Sensor, StaticState, Info)
 
@@ -110,6 +106,7 @@ class BSBLAN:
     _temperature: TemperatureManager = field(init=False)
     _validator: SectionValidator = field(init=False)
     _parameters: ParameterReader = field(init=False)
+    _hot_water: HotWaterManager = field(init=False)
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
@@ -137,6 +134,15 @@ class BSBLAN:
         self._parameters = ParameterReader(
             request=lambda **kw: self._request(**kw),  # noqa: PLW0108
             get_api_data=lambda: self._api_data,
+        )
+        self._hot_water = HotWaterManager(
+            ensure_group_validated=self._ensure_hot_water_group_validated,
+            get_param_cache=lambda: self._validator.hot_water_param_cache,
+            apply_include_filter=self._apply_include_filter,
+            request_named_params=self._request_named_params,
+            validate_single_parameter=self._validate_single_parameter,
+            set_payload=self._set_payload,
+            set_device_state=self._set_device_state,
         )
 
     async def __aenter__(self) -> Self:
@@ -1077,55 +1083,6 @@ class BSBLAN:
         response = await self._request(base_path="/JS", data=state)
         logger.debug("Response for setting: %s", response)
 
-    async def _fetch_hot_water_data(
-        self,
-        param_filter: set[str],
-        model_class: type[HotWaterDataT],
-        error_msg: str,
-        group_name: str,
-        include: list[str] | None = None,
-    ) -> HotWaterDataT:
-        """Fetch hot water data for a specific parameter set.
-
-        This is a generic helper method that fetches hot water parameters
-        based on the provided filter and returns the appropriate model.
-        It uses granular lazy loading to validate only the specific param group.
-
-        Args:
-            param_filter: Set of parameter IDs to fetch.
-            model_class: The dataclass type to deserialize the response into.
-            error_msg: Error message if no parameters are available.
-            group_name: Name of the param group for lazy validation tracking.
-            include: Optional list of parameter names to fetch. If None,
-                fetches all parameters in the group.
-
-        Returns:
-            The populated model instance.
-
-        Raises:
-            BSBLANError: If no parameters are available for the filter.
-
-        """
-        # Granular lazy load: validate only this param group on first access
-        # Pass include filter so we only validate requested params
-        await self._ensure_hot_water_group_validated(group_name, param_filter, include)
-
-        # Use cached validated params
-        filtered_params = {
-            param_id: param_name
-            for param_id, param_name in self._validator.hot_water_param_cache.items()
-            if param_id in param_filter
-        }
-
-        # Apply include filter if specified
-        filtered_params = self._apply_include_filter(filtered_params, include)
-
-        if not filtered_params:
-            raise BSBLANError(error_msg)
-
-        data = await self._request_named_params(filtered_params)
-        return model_class.model_validate(data)
-
     async def hot_water_state(self, include: list[str] | None = None) -> HotWaterState:
         """Get essential hot water state for frequent polling.
 
@@ -1152,13 +1109,7 @@ class BSBLAN:
             )
 
         """
-        return await self._fetch_hot_water_data(
-            param_filter=HotWaterParams.ESSENTIAL,
-            model_class=HotWaterState,
-            error_msg="No essential hot water parameters available",
-            group_name="essential",
-            include=include,
-        )
+        return await self._hot_water.state(include)
 
     async def hot_water_config(
         self, include: list[str] | None = None
@@ -1192,13 +1143,7 @@ class BSBLAN:
             )
 
         """
-        return await self._fetch_hot_water_data(
-            param_filter=HotWaterParams.CONFIG,
-            model_class=HotWaterConfig,
-            error_msg="No hot water configuration parameters available",
-            group_name="config",
-            include=include,
-        )
+        return await self._hot_water.config(include)
 
     async def hot_water_schedule(
         self, include: list[str] | None = None
@@ -1228,13 +1173,7 @@ class BSBLAN:
             )
 
         """
-        return await self._fetch_hot_water_data(
-            param_filter=HotWaterParams.SCHEDULE,
-            model_class=HotWaterSchedule,
-            error_msg="No hot water schedule parameters available",
-            group_name="schedule",
-            include=include,
-        )
+        return await self._hot_water.schedule(include)
 
     async def heating_schedule(
         self,
@@ -1324,44 +1263,7 @@ class BSBLAN:
             BSBLANError: If multiple parameters are set or no parameter is set.
 
         """
-        # Validate only one parameter is being set
-        time_program_params: list[str] = []
-        if params.dhw_time_programs:
-            programs = params.dhw_time_programs
-            time_program_params.extend(
-                prog
-                for prog in [
-                    programs.monday,
-                    programs.tuesday,
-                    programs.wednesday,
-                    programs.thursday,
-                    programs.friday,
-                    programs.saturday,
-                    programs.sunday,
-                    programs.standard_values,
-                ]
-                if prog
-            )
-
-        self._validate_single_parameter(
-            params.nominal_setpoint,
-            params.reduced_setpoint,
-            params.nominal_setpoint_max,
-            params.operating_mode,
-            params.eco_mode_selection,
-            params.dhw_charging_priority,
-            params.legionella_function_setpoint,
-            params.legionella_function_periodicity,
-            params.legionella_function_day,
-            params.legionella_function_time,
-            params.legionella_function_dwelling_time,
-            params.operating_mode_changeover,
-            *time_program_params,
-            error_msg=ErrorMsg.MULTI_PARAMETER,
-        )
-
-        state = self._prepare_hot_water_state(params)
-        await self._set_device_state(state)
+        await self._hot_water.set_hot_water(params)
 
     async def set_hot_water_schedule(self, schedule: DHWSchedule) -> None:
         """Set hot water time program schedules.
@@ -1422,24 +1324,7 @@ class BSBLAN:
             BSBLANError: If no state is provided.
 
         """
-        state: dict[str, Any] = {}
-
-        # Process all mapped parameters using constants
-        for param_id, attr_name in HotWaterParams.SETTABLE.items():
-            value = getattr(params, attr_name)
-            if value is not None:
-                state.update(self._set_payload(param_id, str(value)))
-
-        # Process time programs if provided using constants
-        if params.dhw_time_programs:
-            for param_id, attr_name in HotWaterParams.TIME_PROGRAMS.items():
-                value = getattr(params.dhw_time_programs, attr_name)
-                if value is not None:
-                    state.update(self._set_payload(param_id, value))
-
-        if not state:
-            raise BSBLANError(ErrorMsg.NO_STATE)
-        return state
+        return self._hot_water.prepare_state(params)
 
     # -------------------------------------------------------------------------
     # Low-level parameter access methods
