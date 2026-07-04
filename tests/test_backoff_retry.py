@@ -12,7 +12,7 @@ from aresponses import ResponsesMockServer
 
 from bsblan import BSBLAN
 from bsblan.bsblan import BSBLANConfig
-from bsblan.exceptions import BSBLANConnectionError
+from bsblan.exceptions import BSBLANAuthError, BSBLANConnectionError
 
 
 @pytest.mark.asyncio
@@ -137,6 +137,42 @@ async def test_no_retry_on_404_giveup(aresponses: ResponsesMockServer) -> None:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
         with pytest.raises(BSBLANConnectionError):
+            await bsblan._request()
+
+
+@pytest.mark.asyncio
+async def test_no_retry_on_401_auth_error(aresponses: ResponsesMockServer) -> None:
+    """Test that 401 responses raise BSBLANAuthError without retrying."""
+    # Only one response registered - a retry would find no response and fail
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(status=401, text="Unauthorized"),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+        with pytest.raises(BSBLANAuthError):
+            await bsblan._request()
+
+
+@pytest.mark.asyncio
+async def test_no_retry_on_403_auth_error(aresponses: ResponsesMockServer) -> None:
+    """Test that 403 responses raise BSBLANAuthError without retrying."""
+    # Only one response registered - a retry would find no response and fail
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(status=403, text="Forbidden"),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        config = BSBLANConfig(host="example.com")
+        bsblan = BSBLAN(config, session=session)
+        with pytest.raises(BSBLANAuthError):
             await bsblan._request()
 
 
