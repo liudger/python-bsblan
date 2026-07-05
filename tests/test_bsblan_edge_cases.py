@@ -71,13 +71,13 @@ async def test_value_error_path(monkeypatch: Any) -> None:
         # Mock a successful response but with invalid JSON processing
         mock_response = MagicMock()
         mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(side_effect=ValueError("Invalid JSON"))
+        mock_response.read = AsyncMock(return_value=b"Invalid JSON")
         mock_response.__aenter__ = AsyncMock(return_value=mock_response)
         mock_response.__aexit__ = AsyncMock(return_value=None)
 
         monkeypatch.setattr(session, "request", MagicMock(return_value=mock_response))
 
-        with pytest.raises(BSBLANError, match="Invalid JSON"):
+        with pytest.raises(BSBLANError, match="Invalid response format"):
             await bsblan._request()
 
 
