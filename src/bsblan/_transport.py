@@ -9,6 +9,7 @@ stable ``_request`` facade that delegates here.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
@@ -131,7 +132,7 @@ class BSBLANTransport:
                     headers=headers,
                 ) as response:
                     response.raise_for_status()
-                    response_data = cast("dict[str, Any]", await response.json())
+                    response_data = await self._read_json(response)
                     return self._process_response(response_data, base_path)
         except aiohttp.ClientResponseError as e:
             if e.status in HTTP_AUTH_STATUSES:
@@ -141,6 +142,33 @@ class BSBLANTransport:
             # Handle JSON decode errors and other parsing issues
             msg = ErrorMsg.INVALID_RESPONSE.format(e)
             raise BSBLANError(msg) from e
+
+    @staticmethod
+    async def _read_json(response: aiohttp.ClientResponse) -> dict[str, Any]:
+        """Decode a BSB-LAN JSON response tolerant of non-UTF-8 encodings.
+
+        Some BSB-LAN firmwares serve custom parameter descriptions using
+        Latin-1 (ISO-8859-1) bytes (for example the ``§`` or ``°`` characters)
+        while declaring no charset. ``aiohttp`` assumes UTF-8 and raises
+        ``UnicodeDecodeError``. Read the raw body and fall back to Latin-1,
+        which can decode any byte sequence, before parsing the JSON.
+
+        Args:
+            response: The active aiohttp response to read.
+
+        Returns:
+            dict[str, Any]: The parsed JSON payload.
+
+        Raises:
+            ValueError: If the body is not valid JSON.
+
+        """
+        raw = await response.read()
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1")
+        return cast("dict[str, Any]", json.loads(text))
 
     def _process_response(
         self, response_data: dict[str, Any], base_path: str
