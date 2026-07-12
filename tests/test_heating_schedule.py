@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from bsblan.exceptions import BSBLANError
+from bsblan.exceptions import BSBLANError, BSBLANUnsupportedFeatureError
 from bsblan.models import HeatingTimeSwitchPrograms
 
 if TYPE_CHECKING:
@@ -138,8 +138,14 @@ async def test_heating_schedule_invalid_include_raises(mock_bsblan: BSBLAN) -> N
 
 @pytest.mark.asyncio
 async def test_heating_schedule_no_params_raises(mock_bsblan: BSBLAN) -> None:
-    """Test no schedule params in response raises error."""
+    """Test no schedule params in response raises unsupported-feature error."""
     mock_bsblan._request = AsyncMock(return_value={})  # type: ignore[method-assign]
 
-    with pytest.raises(BSBLANError, match="No heating schedule parameters available"):
+    with pytest.raises(
+        BSBLANUnsupportedFeatureError,
+        match="No heating schedule parameters available",
+    ) as exc_info:
         await mock_bsblan.heating_schedule(circuit=1)
+
+    # Permanent error must remain catchable as the generic BSBLANError.
+    assert isinstance(exc_info.value, BSBLANError)

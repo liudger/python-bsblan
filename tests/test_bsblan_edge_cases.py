@@ -9,7 +9,11 @@ import aiohttp
 import pytest
 
 from bsblan import BSBLAN, BSBLANConfig
-from bsblan.exceptions import BSBLANConnectionError, BSBLANError
+from bsblan.exceptions import (
+    BSBLANConnectionError,
+    BSBLANError,
+    BSBLANMalformedResponseError,
+)
 
 
 @pytest.mark.asyncio
@@ -77,8 +81,13 @@ async def test_value_error_path(monkeypatch: Any) -> None:
 
         monkeypatch.setattr(session, "request", MagicMock(return_value=mock_response))
 
-        with pytest.raises(BSBLANError, match="Invalid response format"):
+        with pytest.raises(
+            BSBLANMalformedResponseError, match="Invalid response format"
+        ) as exc_info:
             await bsblan._request()
+
+        # Transient error must remain catchable as the generic BSBLANError.
+        assert isinstance(exc_info.value, BSBLANError)
 
 
 def test_bsblan_config_initialization_edge_cases() -> None:

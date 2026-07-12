@@ -12,6 +12,8 @@ from .exceptions import (
     BSBLANAuthError,
     BSBLANConnectionError,
     BSBLANError,
+    BSBLANMalformedResponseError,
+    BSBLANUnsupportedFeatureError,
     BSBLANVersionError,
 )
 from .models import (
@@ -45,6 +47,8 @@ __all__ = [
     "BSBLANConfig",
     "BSBLANConnectionError",
     "BSBLANError",
+    "BSBLANMalformedResponseError",
+    "BSBLANUnsupportedFeatureError",
     "BSBLANVersionError",
     "DHWSchedule",
     "DHWTimeSwitchPrograms",
