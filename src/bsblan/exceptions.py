@@ -77,3 +77,20 @@ class BSBLANAuthError(BSBLANError):
     """Raised when authentication fails."""
 
     message: str = "Authentication failed. Please check your username and password."
+
+
+class BSBLANUnsupportedFeatureError(BSBLANError):
+    """Raised when the device does not support a requested feature.
+
+    This signals a permanent condition: the device does not expose the
+    requested parameters (for example a heating or hot water schedule), so
+    retrying the same request will never succeed.
+    """
+
+
+class BSBLANMalformedResponseError(BSBLANError):
+    """Raised when a device response cannot be decoded or parsed.
+
+    This signals a transient condition: the response body could not be decoded
+    or parsed as valid JSON, so a retry may succeed.
+    """

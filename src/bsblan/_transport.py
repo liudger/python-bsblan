@@ -20,7 +20,7 @@ from packaging import version as pkg_version
 from yarl import URL
 
 from .constants import ErrorMsg
-from .exceptions import BSBLANAuthError, BSBLANError
+from .exceptions import BSBLANAuthError, BSBLANError, BSBLANMalformedResponseError
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -110,8 +110,10 @@ class BSBLANTransport:
             dict[str, Any]: The JSON response from the BSBLAN device.
 
         Raises:
-            BSBLANError: If the session is missing or the response is invalid.
+            BSBLANError: If the session is missing.
             BSBLANAuthError: If authentication fails (401/403, not retried).
+            BSBLANMalformedResponseError: If the response body cannot be
+                decoded or parsed as JSON (a transient condition).
 
         """
         session = self._session_getter()
@@ -141,7 +143,7 @@ class BSBLANTransport:
         except (ValueError, UnicodeDecodeError) as e:
             # Handle JSON decode errors and other parsing issues
             msg = ErrorMsg.INVALID_RESPONSE.format(e)
-            raise BSBLANError(msg) from e
+            raise BSBLANMalformedResponseError(msg) from e
 
     @staticmethod
     async def _read_json(response: aiohttp.ClientResponse) -> dict[str, Any]:

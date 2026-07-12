@@ -12,7 +12,7 @@ import pytest
 
 from bsblan import BSBLAN, BSBLANConfig
 from bsblan.constants import API_FULL
-from bsblan.exceptions import BSBLANError
+from bsblan.exceptions import BSBLANError, BSBLANUnsupportedFeatureError
 from bsblan.models import HotWaterConfig, HotWaterSchedule
 from bsblan.utility import APIValidator
 from tests import load_fixture
@@ -253,10 +253,13 @@ async def test_hot_water_schedule_no_params_error(
         bsblan._validator._validated_hot_water_groups.add("schedule")
 
         with pytest.raises(
-            BSBLANError,
+            BSBLANUnsupportedFeatureError,
             match="No hot water schedule parameters available",
-        ):
+        ) as exc_info:
             await bsblan.hot_water_schedule()
+
+        # Permanent error must remain catchable as the generic BSBLANError.
+        assert isinstance(exc_info.value, BSBLANError)
 
 
 @pytest.mark.asyncio
@@ -285,8 +288,11 @@ async def test_hot_water_state_no_params_error(
         with pytest.raises(
             BSBLANError,
             match="No essential hot water parameters available",
-        ):
+        ) as exc_info:
             await bsblan.hot_water_state()
+
+        # State group must NOT be reclassified as an unsupported-feature error.
+        assert not isinstance(exc_info.value, BSBLANUnsupportedFeatureError)
 
 
 @pytest.mark.asyncio

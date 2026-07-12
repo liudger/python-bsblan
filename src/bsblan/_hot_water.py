@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from .constants import ErrorMsg, HotWaterParams
-from .exceptions import BSBLANError
+from .exceptions import BSBLANError, BSBLANUnsupportedFeatureError
 from .models import (
     HotWaterConfig,
     HotWaterSchedule,
@@ -87,7 +87,10 @@ class HotWaterManager:
             The populated model instance.
 
         Raises:
-            BSBLANError: If no parameters are available for the filter.
+            BSBLANUnsupportedFeatureError: If the schedule group exposes no
+                parameters (a permanent condition).
+            BSBLANError: If no parameters are available for a non-schedule
+                group.
 
         """
         # Granular lazy load: validate only this param group on first access
@@ -105,6 +108,8 @@ class HotWaterManager:
         filtered_params = self._apply_include_filter(filtered_params, include)
 
         if not filtered_params:
+            if group_name == "schedule":
+                raise BSBLANUnsupportedFeatureError(error_msg)
             raise BSBLANError(error_msg)
 
         data = await self._request_named_params(filtered_params)

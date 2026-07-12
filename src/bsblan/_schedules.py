@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .constants import ErrorMsg, HeatingScheduleParams, HotWaterParams
-from .exceptions import BSBLANError
+from .exceptions import BSBLANError, BSBLANUnsupportedFeatureError
 from .models import HeatingTimeSwitchPrograms
 
 if TYPE_CHECKING:
@@ -62,7 +62,8 @@ class ScheduleManager:
             HeatingTimeSwitchPrograms: Heating schedule information.
 
         Raises:
-            BSBLANError: If no schedule parameters are available.
+            BSBLANUnsupportedFeatureError: If the device exposes no heating
+                schedule parameters (a permanent condition).
 
         """
         self._validate_circuit(circuit)
@@ -79,7 +80,7 @@ class ScheduleManager:
         }
 
         if not mapped_data:
-            raise BSBLANError(ErrorMsg.NO_HEATING_SCHEDULE_PARAMS)
+            raise BSBLANUnsupportedFeatureError(ErrorMsg.NO_HEATING_SCHEDULE_PARAMS)
 
         return HeatingTimeSwitchPrograms.model_validate(mapped_data)
 
