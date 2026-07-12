@@ -13,3 +13,11 @@ Custom exceptions raised by the library.
 ## BSBLANAuthError
 
 ::: bsblan.BSBLANAuthError
+
+## BSBLANUnsupportedFeatureError
+
+::: bsblan.BSBLANUnsupportedFeatureError
+
+## BSBLANMalformedResponseError
+
+::: bsblan.BSBLANMalformedResponseError
