@@ -178,6 +178,7 @@ async def test_validate_api_section_validation_error(
             _section: str,
             _response: dict[str, Any],
             _include: list[str] | None = None,
+            **_kwargs: Any,
         ) -> NoReturn:
             error_message = "Validation error"
             raise BSBLANError(error_message)
@@ -368,6 +369,111 @@ async def test_ensure_section_validated_concurrent_double_check() -> None:
 
         # Only one validation should have occurred due to double-check locking
         assert validation_count == 1
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_validates_uncovered_params_once() -> None:
+    """Test a complete read validates only IDs missed by an include read."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {  # type: ignore[assignment]
+            "heating": {
+                "700": "operating_mode",
+                "710": "target_temperature",
+            }
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        requests: list[set[str]] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            param_ids = set((params or {})["Parameter"].split(","))
+            requests.append(param_ids)
+            return {param_id: {"value": "1", "unit": ""} for param_id in param_ids}
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        await bsblan._ensure_section_validated("heating", include=["operating_mode"])
+        await bsblan._ensure_section_validated("heating")
+        await bsblan._ensure_section_validated("heating")
+
+        assert requests == [{"700"}, {"710"}]
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_validates_different_include() -> None:
+    """Test a different include validates the newly requested ID."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {  # type: ignore[assignment]
+            "heating": {
+                "700": "operating_mode",
+                "710": "target_temperature",
+            }
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        requests: list[set[str]] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            param_ids = set((params or {})["Parameter"].split(","))
+            requests.append(param_ids)
+            return {param_id: {"value": "1", "unit": ""} for param_id in param_ids}
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        await bsblan._ensure_section_validated("heating", include=["operating_mode"])
+        await bsblan._ensure_section_validated(
+            "heating", include=["target_temperature"]
+        )
+
+        assert requests == [{"700"}, {"710"}]
+
+
+@pytest.mark.asyncio
+async def test_ensure_section_validated_removes_later_unsupported_param() -> None:
+    """Test a later validation removes an unsupported parameter before reads."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {  # type: ignore[assignment]
+            "heating": {
+                "700": "operating_mode",
+                "710": "target_temperature",
+            }
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        requests: list[set[str]] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            param_ids = set((params or {})["Parameter"].split(","))
+            requests.append(param_ids)
+            if "700" in param_ids:
+                return {"700": {"value": "1", "unit": ""}}
+            return {}
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        await bsblan._ensure_section_validated("heating", include=["operating_mode"])
+        await bsblan._ensure_section_validated("heating")
+        await bsblan._ensure_section_validated("heating")
+
+        assert requests == [{"700"}, {"710"}]
+        assert bsblan._validator.get_section_params("heating") == {
+            "700": "operating_mode"
+        }
 
 
 @pytest.mark.asyncio

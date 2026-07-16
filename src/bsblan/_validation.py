@@ -75,8 +75,9 @@ class SectionValidator:
         self._api_validator: APIValidator | None = None
         # Cache of validated hot water parameter id -> name.
         self._hot_water_param_cache: dict[str, str] = {}
-        # Track which hot water param groups have been validated.
+        # Track which hot water param groups have been fully validated.
         self._validated_hot_water_groups: set[str] = set()
+        self._validated_hot_water_parameters: dict[str, set[str]] = {}
         # Locks to prevent concurrent validation of the same section/group.
         self._section_locks: dict[str, asyncio.Lock] = {}
         self._hot_water_group_locks: dict[str, asyncio.Lock] = {}
@@ -192,6 +193,11 @@ class SectionValidator:
             raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
 
         api_validator = self._api_validator
+        if api_validator.is_section_validated(section):
+            return
+
+        def _requested_parameter_ids() -> set[str]:
+            return set(self._get_section_params(section, include))
 
         async def _validate() -> None:
             logger.debug("Lazy loading section: %s", section)
@@ -205,7 +211,9 @@ class SectionValidator:
         await self._run_once_locked(
             section,
             self._section_locks,
-            lambda: api_validator.is_section_validated(section),
+            lambda: api_validator.are_parameters_validated(
+                section, _requested_parameter_ids()
+            ),
             _validate,
         )
 
@@ -231,49 +239,38 @@ class SectionValidator:
                 If provided, only these parameters will be validated.
 
         """
+        if group_name in self._validated_hot_water_groups:
+            return
+
+        def _group_params() -> dict[str, str]:
+            return self._get_hot_water_group_params(param_filter, include)
+
+        def _requested_parameter_ids() -> set[str]:
+            return set(_group_params())
 
         async def _validate() -> None:
-            if not self._api_validator:
-                raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
-
-            api_data = self._get_api_data()
-            if not api_data:
-                raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
-
             logger.debug("Lazy loading hot water group: %s", group_name)
-
-            # Get the base hot water params from API config
-            section_data = api_data.get("hot_water", {})
-
-            # Filter to only the params in this group
-            group_params = {
-                param_id: param_name
-                for param_id, param_name in section_data.items()
-                if param_id in param_filter
+            group_params = _group_params()
+            uncovered_params = {
+                param_id: name
+                for param_id, name in group_params.items()
+                if param_id
+                not in self._validated_hot_water_parameters.get(group_name, set())
             }
 
-            # Apply include filter if specified - only validate requested params
-            if include is not None:
-                group_params = {
-                    param_id: name
-                    for param_id, name in group_params.items()
-                    if name in include
-                }
-
-            if not group_params:
+            if not uncovered_params:
                 logger.debug("No parameters to validate for group %s", group_name)
-                self._validated_hot_water_groups.add(group_name)
                 return
 
             # Request only these specific parameters from the device
-            params = self._extract_params_summary(group_params)
+            params = self._extract_params_summary(uncovered_params)
             response_data = await self._request(
                 params={"Parameter": params["string_par"]}
             )
 
             # Validate and filter out unsupported params
             params_to_remove = []
-            for param_id, param_name in group_params.items():
+            for param_id, param_name in uncovered_params.items():
                 if param_id not in response_data:
                     logger.info(
                         "Hot water param %s (%s) not found in response",
@@ -294,24 +291,85 @@ class SectionValidator:
                     params_to_remove.append(param_id)
 
             # Update the cache with validated params for this group
-            for param_id, param_name in group_params.items():
+            for param_id, param_name in uncovered_params.items():
                 if param_id not in params_to_remove:
                     self._hot_water_param_cache[param_id] = param_name
 
-            # Mark this group as validated
-            self._validated_hot_water_groups.add(group_name)
+            validated_ids = self._validated_hot_water_parameters.setdefault(
+                group_name, set()
+            )
+            validated_ids.update(uncovered_params)
+            if (
+                self._get_hot_water_group_params(param_filter, None).keys()
+                <= validated_ids
+            ):
+                self._validated_hot_water_groups.add(group_name)
+            else:
+                self._validated_hot_water_groups.discard(group_name)
             logger.debug(
                 "Validated hot water group '%s': %d params, removed %d unsupported",
                 group_name,
-                len(group_params),
+                len(uncovered_params),
                 len(params_to_remove),
             )
 
         await self._run_once_locked(
             group_name,
             self._hot_water_group_locks,
-            lambda: group_name in self._validated_hot_water_groups,
+            lambda: self._are_hot_water_parameters_validated(
+                group_name, _requested_parameter_ids()
+            ),
             _validate,
+        )
+
+    def _get_section_params(
+        self, section: SectionLiteral, include: list[str] | None
+    ) -> dict[str, str]:
+        """Get the configured parameters selected for a section request."""
+        api_data = self._get_api_data()
+        if not api_data:
+            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
+
+        try:
+            section_data = api_data[section]
+        except KeyError as err:
+            msg = ErrorMsg.SECTION_NOT_FOUND.format(section)
+            raise BSBLANError(msg) from err
+
+        if include is None:
+            return section_data
+        return {
+            param_id: name for param_id, name in section_data.items() if name in include
+        }
+
+    def _get_hot_water_group_params(
+        self, param_filter: set[str], include: list[str] | None
+    ) -> dict[str, str]:
+        """Get configured parameters selected for a hot water group request."""
+        if not self._api_validator:
+            raise BSBLANError(ErrorMsg.API_VALIDATOR_NOT_INITIALIZED)
+
+        api_data = self._get_api_data()
+        if not api_data:
+            raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
+
+        group_params = {
+            param_id: param_name
+            for param_id, param_name in api_data.get("hot_water", {}).items()
+            if param_id in param_filter
+        }
+        if include is None:
+            return group_params
+        return {
+            param_id: name for param_id, name in group_params.items() if name in include
+        }
+
+    def _are_hot_water_parameters_validated(
+        self, group_name: str, parameter_ids: set[str]
+    ) -> bool:
+        """Check whether every requested hot water parameter ID was validated."""
+        return group_name in self._validated_hot_water_groups or parameter_ids.issubset(
+            self._validated_hot_water_parameters.get(group_name, set())
         )
 
     async def _validate_api_section(
@@ -340,36 +398,31 @@ class SectionValidator:
         if not api_data:
             raise BSBLANError(ErrorMsg.API_DATA_NOT_INITIALIZED)
 
-        # Assign to local variable after asserting it's not None
         api_validator = self._api_validator
-
         if api_validator.is_section_validated(section):
             return None
 
-        # Get parameters for the section
-        try:
-            section_data = api_data[section]
-        except KeyError as err:
-            msg = ErrorMsg.SECTION_NOT_FOUND.format(section)
-            raise BSBLANError(msg) from err
+        section_data = self._get_section_params(section, include)
+        uncovered_params = {
+            param_id: name
+            for param_id, name in section_data.items()
+            if not api_validator.are_parameters_validated(section, {param_id})
+        }
 
-        # Filter to only included params if specified
-        if include is not None:
-            section_data = {
-                param_id: name
-                for param_id, name in section_data.items()
-                if name in include
-            }
+        if not uncovered_params:
+            return None
 
         try:
             # Request data from device for validation
-            params = self._extract_params_summary(section_data)
+            params = self._extract_params_summary(uncovered_params)
             response_data = await self._request(
                 params={"Parameter": params["string_par"]}
             )
 
             # Validate the section against actual device response
-            api_validator.validate_section(section, response_data, include)
+            api_validator.validate_section(
+                section, response_data, parameter_ids=set(uncovered_params)
+            )
             # Update API data with validated configuration
             api_data[section] = api_validator.get_section_params(section)
 

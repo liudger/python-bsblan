@@ -235,8 +235,9 @@ async def test_validate_section_skips_params_not_in_include() -> None:
     # Validate with include filter - should skip params not in include
     api_validator.validate_section("heating", request_data, include=["hvac_mode"])
 
-    # Section should be validated
-    assert api_validator.is_section_validated("heating")
+    # Only the included parameter should be covered.
+    assert api_validator.are_parameters_validated("heating", {"700"})
+    assert not api_validator.is_section_validated("heating")
 
     # hvac_mode (700) should still be in config since it was valid
     # Other params should NOT be removed since they weren't in include
