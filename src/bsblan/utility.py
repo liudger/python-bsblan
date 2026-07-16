@@ -94,12 +94,14 @@ class APIValidator:
     # Flexible type for API data (accepts `APIConfig`, plain dicts, or None)
     api_config: Any  # intentionally permissive to support tests and dynamic data
     validated_sections: set[str] = field(default_factory=set)
+    validated_parameters: dict[str, set[str]] = field(default_factory=dict)
 
     def validate_section(
         self,
         section: str,
         request_data: dict[str, Any],
         include: list[str] | None = None,
+        parameter_ids: set[str] | None = None,
     ) -> None:
         """Validate and update a section of API config based on actual device support.
 
@@ -109,6 +111,8 @@ class APIValidator:
             request_data: Response data from the device for validation
             include: Optional list of parameter names to validate. If None,
                 validates all parameters for the section.
+            parameter_ids: Optional parameter IDs to validate. When supplied,
+                takes precedence over ``include``.
 
         """
         # Check if the section exists in the APIConfig object
@@ -116,19 +120,27 @@ class APIValidator:
             logger.warning("Unknown section '%s' in API configuration", section)
             return
 
-        # Skip if section was already validated
         if section in self.validated_sections:
             logger.debug("Section '%s' was already validated", section)
             return
 
         section_config = self.api_config[section]
         params_to_remove = []
+        validated_ids = set()
 
         # Check each parameter in the section (filtered by include if specified)
-        for param_id, param_name in section_config.items():
+        for param_id, param_name in list(section_config.items()):
             # Skip params not in include list (if include is specified)
-            if include is not None and param_name not in include:
+            if parameter_ids is not None and param_id not in parameter_ids:
                 continue
+            if (
+                parameter_ids is None
+                and include is not None
+                and param_name not in include
+            ):
+                continue
+
+            validated_ids.add(param_id)
 
             if param_id not in request_data:
                 logger.info(
@@ -153,8 +165,11 @@ class APIValidator:
         for param_id in params_to_remove:
             section_config.pop(param_id)
 
-        # Mark section as validated
-        self.validated_sections.add(section)
+        self.validated_parameters.setdefault(section, set()).update(validated_ids)
+        if set(section_config).issubset(self.validated_parameters[section]):
+            self.validated_sections.add(section)
+        else:
+            self.validated_sections.discard(section)
 
         logger.debug(
             "Validated section '%s': removed %d unsupported parameters",
@@ -170,8 +185,14 @@ class APIValidator:
         """Get the parameter mapping for a section."""
         return (self.api_config or {}).get(section, {}).copy()
 
+    def are_parameters_validated(self, section: str, parameter_ids: set[str]) -> bool:
+        """Check whether every requested parameter ID was validated."""
+        return section in self.validated_sections or parameter_ids.issubset(
+            self.validated_parameters.get(section, set())
+        )
+
     def is_section_validated(self, section: str) -> bool:
-        """Check if a section has been validated."""
+        """Check whether every current parameter in a section was validated."""
         return section in self.validated_sections
 
     def reset_validation(self, section: str | None = None) -> None:
@@ -183,5 +204,9 @@ class APIValidator:
         """
         if section is None:
             self.validated_sections.clear()
+            self.validated_parameters.clear()
         elif section in self.validated_sections:
             self.validated_sections.remove(section)
+            self.validated_parameters.pop(section, None)
+        else:
+            self.validated_parameters.pop(section, None)

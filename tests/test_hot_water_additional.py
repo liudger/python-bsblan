@@ -348,7 +348,7 @@ async def test_granular_hot_water_validation(
 async def test_granular_validation_empty_params(
     monkeypatch: Any,
 ) -> None:
-    """Test granular validation when no params match filter."""
+    """Test granular validation leaves an empty group incomplete."""
     async with aiohttp.ClientSession() as session:
         config = BSBLANConfig(host="example.com")
         bsblan = BSBLAN(config, session=session)
@@ -362,11 +362,11 @@ async def test_granular_validation_empty_params(
         api_validator = APIValidator(api_data)
         bsblan._validator._api_validator = api_validator
 
-        # Validation should complete without error even with empty params
+        # Validation should complete without error even with empty params.
         await bsblan._ensure_hot_water_group_validated("essential", {"1600", "1610"})
 
-        # Group should be marked as validated
-        assert "essential" in bsblan._validator._validated_hot_water_groups
+        # No parameter coverage means the group is not complete.
+        assert "essential" not in bsblan._validator._validated_hot_water_groups
 
 
 @pytest.mark.asyncio
@@ -632,7 +632,7 @@ async def test_ensure_hot_water_group_validated_with_include_filter() -> None:
 
 @pytest.mark.asyncio
 async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
-    """Test that include filter with no matching params marks group validated."""
+    """Test that include filter with no matching params leaves group incomplete."""
     async with aiohttp.ClientSession() as session:
         bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
         bsblan._supports_full_config = True
@@ -645,9 +645,14 @@ async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
 
         request_count = 0
 
-        async def mock_request(**_kwargs: Any) -> dict[str, Any]:
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
             nonlocal request_count
             request_count += 1
+            if params and params.get("Parameter") == "1640":
+                return {"1640": {"value": "1", "unit": ""}}
             return {}
 
         bsblan._request = mock_request  # type: ignore[method-assign]
@@ -661,8 +666,17 @@ async def test_ensure_hot_water_group_validated_include_empty_result() -> None:
 
         # No request should be made since no params match
         assert request_count == 0
-        # Group should still be marked as validated
-        assert "config" in bsblan._validator._validated_hot_water_groups
+        # No matching parameters means no coverage or completion state.
+        assert "config" not in bsblan._validator._validated_hot_water_groups
+
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640"},
+            include=["legionella_function"],
+        )
+
+        assert request_count == 1
+        assert "1640" in bsblan._validator._hot_water_param_cache
 
 
 @pytest.mark.asyncio
@@ -712,3 +726,140 @@ async def test_ensure_hot_water_group_validated_without_include() -> None:
         assert "1640" in bsblan._validator._hot_water_param_cache
         assert "1645" in bsblan._validator._hot_water_param_cache
         assert "1648" in bsblan._validator._hot_water_param_cache
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_loads_uncovered_params() -> None:
+    """Test a complete group read validates IDs missed by an include read."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {  # type: ignore[assignment]
+            "hot_water": {
+                "1640": "legionella_function",
+                "1645": "legionella_function_setpoint",
+                "1648": "legionella_circulation_temp_diff",
+            }
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        requests: list[set[str]] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            param_ids = set((params or {})["Parameter"].split(","))
+            requests.append(param_ids)
+            return {param_id: {"value": "1", "unit": ""} for param_id in param_ids}
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640", "1645", "1648"},
+            include=["legionella_function"],
+        )
+        await bsblan._ensure_hot_water_group_validated(
+            "config", {"1640", "1645", "1648"}
+        )
+        await bsblan._ensure_hot_water_group_validated(
+            "config", {"1640", "1645", "1648"}
+        )
+
+        assert requests == [{"1640"}, {"1645", "1648"}]
+        assert set(bsblan._validator._hot_water_param_cache) == {
+            "1640",
+            "1645",
+            "1648",
+        }
+
+
+@pytest.mark.asyncio
+async def test_ensure_hot_water_group_validated_loads_different_include() -> None:
+    """Test a different include validates its newly requested parameter."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {  # type: ignore[assignment]
+            "hot_water": {
+                "1640": "legionella_function",
+                "1645": "legionella_function_setpoint",
+            }
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        requests: list[set[str]] = []
+
+        async def mock_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            param_ids = set((params or {})["Parameter"].split(","))
+            requests.append(param_ids)
+            return {param_id: {"value": "1", "unit": ""} for param_id in param_ids}
+
+        bsblan._request = mock_request  # type: ignore[method-assign]
+
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640", "1645"},
+            include=["legionella_function"],
+        )
+        await bsblan._ensure_hot_water_group_validated(
+            "config",
+            {"1640", "1645"},
+            include=["legionella_function_setpoint"],
+        )
+
+        assert requests == [{"1640"}, {"1645"}]
+
+
+@pytest.mark.asyncio
+async def test_concurrent_hot_water_includes_recheck_coverage() -> None:
+    """Test a waiting include request validates its own uncovered parameter."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {  # type: ignore[assignment]
+            "hot_water": {
+                "1640": "legionella_function",
+                "1645": "legionella_function_setpoint",
+            }
+        }
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+
+        requests: list[set[str]] = []
+        request_started = asyncio.Event()
+
+        async def slow_request(
+            params: dict[str, str] | None = None,
+            **_kwargs: Any,
+        ) -> dict[str, Any]:
+            param_ids = set((params or {})["Parameter"].split(","))
+            requests.append(param_ids)
+            request_started.set()
+            await asyncio.sleep(0.1)
+            return {param_id: {"value": "1", "unit": ""} for param_id in param_ids}
+
+        bsblan._request = slow_request  # type: ignore[method-assign]
+
+        first = asyncio.create_task(
+            bsblan._ensure_hot_water_group_validated(
+                "config",
+                {"1640", "1645"},
+                include=["legionella_function"],
+            )
+        )
+        await request_started.wait()
+        second = asyncio.create_task(
+            bsblan._ensure_hot_water_group_validated(
+                "config",
+                {"1640", "1645"},
+                include=["legionella_function_setpoint"],
+            )
+        )
+
+        await asyncio.gather(first, second)
+
+        assert requests == [{"1640"}, {"1645"}]

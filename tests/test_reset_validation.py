@@ -27,6 +27,18 @@ def test_reset_validation_specific_section() -> None:
     assert validator.is_section_validated("sensor") is True
 
 
+def test_reset_validation_clears_parameter_coverage() -> None:
+    """Test resetting a section clears its recorded parameter coverage."""
+    validator = APIValidator({"heating": {"700": "operating_mode"}})
+    validator.validate_section("heating", {"700": {"value": "1"}})
+
+    assert validator.are_parameters_validated("heating", {"700"}) is True
+
+    validator.reset_validation("heating")
+
+    assert validator.are_parameters_validated("heating", {"700"}) is False
+
+
 def test_reset_validation_nonexistent_section() -> None:
     """Test resetting validation for a section that wasn't validated."""
     # Create a test API config
