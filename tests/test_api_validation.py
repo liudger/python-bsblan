@@ -116,6 +116,17 @@ async def test_validate_api_section_no_api_data() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_section_params_no_api_data() -> None:
+    """Test selected section parameter lookup without API data."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._api_data = None
+
+        with pytest.raises(BSBLANError, match=ErrorMsg.API_DATA_NOT_INITIALIZED):
+            bsblan._validator._get_section_params("device", None)
+
+
+@pytest.mark.asyncio
 async def test_validate_api_section_invalid_section() -> None:
     """Test API section validation with invalid section."""
     async with aiohttp.ClientSession() as session:
@@ -233,6 +244,19 @@ async def test_validate_section_already_validated(monkeypatch: Any) -> None:
         # Second call should return None (already validated)
         response_data = await client._validator._validate_api_section("heating")
         assert response_data is None
+
+
+@pytest.mark.asyncio
+async def test_validate_api_section_skips_covered_parameters() -> None:
+    """Test section validation returns when every selected ID is covered."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {"heating": {"700": "operating_mode"}}  # type: ignore[assignment]
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._api_validator.validated_parameters["heating"] = {"700"}
+
+        assert await bsblan._validator._validate_api_section("heating") is None
 
 
 @pytest.mark.asyncio

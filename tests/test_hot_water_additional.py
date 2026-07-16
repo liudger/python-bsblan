@@ -542,6 +542,30 @@ async def test_ensure_hot_water_group_double_check_after_lock() -> None:
 
 
 @pytest.mark.asyncio
+async def test_ensure_hot_water_group_skips_recheck_without_uncovered_params(
+    monkeypatch: Any,
+) -> None:
+    """Test the locked recheck skips a group whose IDs are already covered."""
+    async with aiohttp.ClientSession() as session:
+        bsblan = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        bsblan._supports_full_config = True
+        bsblan._api_data = {"hot_water": {"1600": "operating_mode"}}  # type: ignore[assignment]
+        bsblan._validator._api_validator = APIValidator(bsblan._api_data)
+        bsblan._validator._validated_hot_water_parameters["essential"] = {"1600"}
+        bsblan._request = AsyncMock()  # type: ignore[method-assign]
+
+        monkeypatch.setattr(
+            bsblan._validator,
+            "_are_hot_water_parameters_validated",
+            lambda _group_name, _parameter_ids: False,
+        )
+
+        await bsblan._ensure_hot_water_group_validated("essential", {"1600"})
+
+        bsblan._request.assert_not_awaited()  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
 async def test_ensure_hot_water_group_concurrent_double_check() -> None:
     """Test that concurrent hot water group validation doesn't duplicate."""
     async with aiohttp.ClientSession() as session:
