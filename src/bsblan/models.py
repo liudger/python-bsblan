@@ -254,7 +254,11 @@ def _convert_bsblan_value(
         The converted value, or None if the value is inactive.
 
     """
-    if raw_value is None or raw_value in {"---", ""}:
+    # BSB-LAN's `replaceDisabled` setting decides what the firmware sends for a
+    # deactivated/inactive numeric parameter. It defaults to "---", but its own
+    # BSB_LAN_config.h documents "None" as the value Home Assistant users should
+    # pick, so both spellings reach us in the wild.
+    if raw_value is None or raw_value in {"---", "", "None"}:
         return None
 
     raw = str(raw_value)
@@ -302,7 +306,8 @@ class EntityInfo(BaseModel, Generic[T]):
     - ``EntityInfo[time]`` for HH:MM time values
     - ``EntityInfo[str]`` for string / datetime values
 
-    When the device returns ``"---"`` (sensor not in use), ``value`` is set
+    When the device returns ``"---"`` or ``"None"`` (sensor not in use, per
+    BSB-LAN's ``replaceDisabled`` setting), ``value`` is set
     to ``None``.
 
     Attributes:
