@@ -31,11 +31,12 @@ def test_entity_info_invalid_time_conversion(
     [
         pytest.param("---", id="dash_inactive"),
         pytest.param("", id="empty_string"),
+        pytest.param("None", id="none_string_inactive"),
         pytest.param(None, id="none_value"),
     ],
 )
 def test_entity_info_undefined_value_becomes_none(raw_value: str | None) -> None:
-    """Test that inactive values ('---', '', None) are converted to None."""
+    """Test that inactive values ('---', '', 'None', None) become None."""
     entity = EntityInfo(
         name="Inactive Sensor",
         value=raw_value,
