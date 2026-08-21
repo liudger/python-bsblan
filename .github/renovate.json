@@ -19,7 +19,7 @@
     {
       "description": "Pin UV development dependencies",
       "matchFileNames": ["pyproject.toml", "uv.lock"],
-      "matchDepTypes": ["dev"],
+      "matchDepTypes": ["dependency-groups"],
       "rangeStrategy": "pin"
     },
     {
