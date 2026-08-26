@@ -3,5 +3,9 @@ extend = "../pyproject.toml"
 
 [lint]
 extend-ignore = [
+  # Example scripts and fake-server builders legitimately exceed these limits
+  "PLR0913",
+  "PLR0915",
+  "PLR0917",
   "T201", # Allow the use of print() in examples
 ]

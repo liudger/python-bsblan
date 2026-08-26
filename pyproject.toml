@@ -143,6 +143,7 @@ ignore = [
   "ANN001", # Self... explanatory
   "ANN002", # cls... Not classy enough
   "ANN401", # Opinioated warning on disallowing dynamically typed expressions
+  "CPY001", # Repo does not use per-file copyright headers
   "D203", # Conflicts with other rules
   "D213", # Conflicts with other rules
   "D417", # False positives in some occasions
