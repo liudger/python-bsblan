@@ -32,6 +32,7 @@ from .exceptions import (
     BSBLANConnectionError,
     BSBLANError,
     BSBLANInvalidParameterError,
+    BSBLANUnsupportedFeatureError,
 )
 from .models import (
     ApiVersion,
@@ -666,6 +667,8 @@ class BSBLAN:
             The populated model instance.
 
         Raises:
+            BSBLANUnsupportedFeatureError: If a PPS sensor section has no valid
+                parameters after validation.
             BSBLANError: If include is specified but none of the parameters
                 are valid for this section.
 
@@ -678,6 +681,8 @@ class BSBLAN:
         # Guard: if validation removed all params, the section is not available
         if not section_params:
             msg = ErrorMsg.EMPTY_SECTION_PARAMS.format(section)
+            if section == "sensor" and self._uses_pps_bus:
+                raise BSBLANUnsupportedFeatureError(msg)
             raise BSBLANError(msg)
 
         # Filter to requested parameter names (if an include list was given)
@@ -753,6 +758,12 @@ class BSBLAN:
 
         Returns:
             Sensor: The sensor information from the BSBLAN device.
+
+        Raises:
+            BSBLANUnsupportedFeatureError: If validation leaves no supported
+                sensor parameters on a PPS device.
+            BSBLANError: If the sensor request fails or the requested parameter
+                names are invalid.
 
         Example:
             # Fetch only outside_temperature

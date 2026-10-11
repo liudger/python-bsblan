@@ -18,7 +18,11 @@ from bsblan.constants import (
     ErrorMsg,
     build_api_config,
 )
-from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
+from bsblan.exceptions import (
+    BSBLANError,
+    BSBLANInvalidParameterError,
+    BSBLANUnsupportedFeatureError,
+)
 from bsblan.utility import APIValidator
 
 from . import load_fixture
@@ -414,6 +418,35 @@ async def test_pps_rejects_second_circuit(pps_bsblan: BSBLAN) -> None:
     """Test PPS devices expose only one climate circuit."""
     with pytest.raises(BSBLANInvalidParameterError):
         await pps_bsblan.state(circuit=2)
+
+
+@pytest.mark.asyncio
+async def test_pps_empty_sensor_section_is_unsupported(pps_bsblan: BSBLAN) -> None:
+    """Test an empty validated PPS sensor section is explicitly unsupported."""
+    assert pps_bsblan._validator._api_validator is not None
+    pps_bsblan._validator._api_validator.api_config["sensor"] = {}
+    pps_bsblan._validator._api_validator.validated_sections.add("sensor")
+    request_mock = AsyncMock()
+    pps_bsblan._request = request_mock  # type: ignore[method-assign]
+
+    with pytest.raises(
+        BSBLANUnsupportedFeatureError, match="No valid parameters found"
+    ):
+        await pps_bsblan.sensor(include=["current_temperature", "outside_temperature"])
+
+    request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_pps_sensor_request_error_is_not_unsupported(pps_bsblan: BSBLAN) -> None:
+    """Test real sensor request failures retain their original exception."""
+    error = BSBLANError("Sensor request failed")
+    pps_bsblan._request = AsyncMock(side_effect=error)  # type: ignore[method-assign]
+
+    with pytest.raises(BSBLANError) as exc_info:
+        await pps_bsblan.sensor(include=["outside_temperature"])
+
+    assert exc_info.value is error
 
 
 def test_pps_normalization_ignores_missing_mode(pps_bsblan: BSBLAN) -> None:
