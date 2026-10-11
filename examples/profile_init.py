@@ -32,7 +32,7 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
 # Add src to path for development
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -62,7 +62,7 @@ class TimingStats:
         return elapsed
 
     @asynccontextmanager
-    async def measure(self, name: str) -> AsyncIterator[None]:
+    async def measure(self, name: str) -> AsyncGenerator[None]:
         """Context manager to measure async operation time."""
         self.start(name)
         try:
