@@ -157,10 +157,16 @@ Supported PPS climate operations:
 
 - `state()` for `hvac_mode`, `target_temperature`, and `current_temperature`
 - `static_values()` for `min_temp` and `max_temp`
+- `sensor()` for `outside_temperature` (`15030`) and `current_temperature` (`15008`)
 - `thermostat()` for target temperature and HVAC mode
 - `get_available_circuits()`, which returns `[1]` when the single PPS
   climate circuit is available, otherwise `[]`; PPS devices only ever expose
   circuit `1`
+
+PPS sensor parameters are selected only when device metadata identifies the PPS
+bus. BSB/LPB devices retain their existing sensor mappings. Sensor reads remain
+on demand; `sensor(include=["outside_temperature"])` requests only `15030` on PPS
+and only `8700` otherwise, without probing both parameter ranges.
 
 PPS devices currently have these limitations:
 

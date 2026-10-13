@@ -421,6 +421,40 @@ async def test_pps_rejects_second_circuit(pps_bsblan: BSBLAN) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("bus", "parameter"),
+    [("PPS", "15030"), ("BSB", "8700"), ("LPB", "8700"), (None, "8700")],
+)
+@pytest.mark.parametrize("full", [True, False])
+async def test_outside_temperature_uses_bus_specific_parameter(
+    pps_bsblan: BSBLAN, bus: str | None, parameter: str, *, full: bool
+) -> None:
+    """Test outside temperature reads only the selected bus parameter on demand."""
+    assert pps_bsblan.device_info is not None
+    pps_bsblan._device = pps_bsblan.device_info.model_copy(update={"bus": bus})
+    pps_bsblan._api_data = build_api_config(full=full)
+    response = json.loads(load_fixture("sensor.json"))["8700"]
+    response["value"] = "-2.5"
+    request_mock = AsyncMock(return_value={parameter: response})
+    pps_bsblan._request = request_mock  # type: ignore[method-assign]
+    pps_bsblan._validator.setup(
+        pps_bsblan._api_data, uses_pps_bus=pps_bsblan._uses_pps_bus
+    )
+    request_mock.assert_not_awaited()
+
+    for _ in range(2):
+        sensor = await pps_bsblan.sensor(include=["outside_temperature"])
+        assert sensor.outside_temperature is not None
+        assert sensor.outside_temperature.value == -2.5
+        assert sensor.outside_temperature.unit == "&deg;C"
+        assert sensor.current_temperature is None
+
+    assert [call.kwargs for call in request_mock.await_args_list] == [
+        {"params": {"Parameter": parameter}}
+    ] * 3
+
+
+@pytest.mark.asyncio
 async def test_pps_empty_sensor_section_is_unsupported(pps_bsblan: BSBLAN) -> None:
     """Test an empty validated PPS sensor section is explicitly unsupported."""
     assert pps_bsblan._validator._api_validator is not None
