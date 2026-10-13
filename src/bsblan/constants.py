@@ -156,6 +156,11 @@ PPS_STATIC_VALUES_PARAMS: Final[dict[str, str]] = {
     "15007": "max_temp",
 }
 
+PPS_SENSOR_PARAMS: Final[dict[str, str]] = {
+    "15030": "outside_temperature",
+    "15008": "current_temperature",
+}
+
 
 # Circuit configuration
 class CircuitConfig:

@@ -17,7 +17,12 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, cast
 
-from .constants import PPS_HEATING_PARAMS, PPS_STATIC_VALUES_PARAMS, ErrorMsg
+from .constants import (
+    PPS_HEATING_PARAMS,
+    PPS_SENSOR_PARAMS,
+    PPS_STATIC_VALUES_PARAMS,
+    ErrorMsg,
+)
 from .exceptions import BSBLANError
 from .utility import APIValidator
 
@@ -117,6 +122,7 @@ class SectionValidator:
 
         api_data["heating"] = PPS_HEATING_PARAMS.copy()
         api_data["staticValues"] = PPS_STATIC_VALUES_PARAMS.copy()
+        api_data["sensor"] = PPS_SENSOR_PARAMS.copy()
         api_data["heating_circuit2"] = {}
         api_data["staticValues_circuit2"] = {}
 
