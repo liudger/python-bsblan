@@ -421,6 +421,31 @@ async def test_pps_rejects_second_circuit(pps_bsblan: BSBLAN) -> None:
 
 
 @pytest.mark.asyncio
+async def test_pps_sensor_current_temperature_uses_pps_parameter(
+    pps_bsblan: BSBLAN,
+) -> None:
+    """Test sensor() reads PPS room temperature through parameter 15008."""
+    assert pps_bsblan._api_data is not None
+    pps_bsblan._validator.setup(
+        pps_bsblan._api_data, uses_pps_bus=pps_bsblan._uses_pps_bus
+    )
+    assert pps_bsblan._validator._api_validator is not None
+    pps_bsblan._validator._api_validator.validated_sections.add("sensor")
+
+    response = json.loads(load_fixture("sensor.json"))["8740"]
+    response["value"] = "19.5"
+    request_mock = AsyncMock(return_value={"15008": response})
+    pps_bsblan._request = request_mock  # type: ignore[method-assign]
+
+    sensor = await pps_bsblan.sensor(include=["current_temperature"])
+
+    assert sensor.current_temperature is not None
+    assert sensor.current_temperature.value == 19.5
+    assert sensor.outside_temperature is None
+    request_mock.assert_awaited_once_with(params={"Parameter": "15008"})
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("bus", "parameter"),
     [("PPS", "15030"), ("BSB", "8700"), ("LPB", "8700"), (None, "8700")],
