@@ -95,6 +95,26 @@ example, on PPS devices). The upper heating bound is the comfort maximum (`716`
 for circuit 1 and `1016` for circuit 2) when the device exposes those
 parameters.
 
+## Reduced setpoint and temporary override
+
+The reduced room setpoint (`712` for circuit 1, `1012` for circuit 2) can be
+written with `temp_reduced_setpoint`. It uses the same bounds as
+`target_temperature`.
+
+To switch a circuit to comfort or reduced only until the next time program
+switch point, write `temporary_mode` (`10110` for circuit 1, `10111` for circuit
+2): `0` (no override), `1` (reduced), or `2` (comfort). The override only has an
+effect in automatic mode and cannot be read back.
+
+```python
+async with BSBLAN(config) as client:
+    await client.thermostat(temp_reduced_setpoint="18.0")
+    await client.thermostat(temporary_mode=2)
+```
+
+Setting `temp_reduced_setpoint` and `temporary_mode` is not supported on PPS
+devices.
+
 ## Cooling setpoint support
 
 Some BSB/LPB controllers expose a cooling comfort setpoint for each heating

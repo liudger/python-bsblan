@@ -491,6 +491,39 @@ async def test_thermostat_circuit2_cooling_operating_mode(
     )
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("kwargs", "parameter", "value"),
+    [
+        ({"temp_reduced_setpoint": "17"}, "1012", "17"),
+        ({"temporary_mode": 2}, "10111", "2"),
+    ],
+)
+async def test_thermostat_circuit2_reduced_and_temporary_mode(
+    mock_bsblan_circuit: BSBLAN,
+    aresponses: ResponsesMockServer,
+    kwargs: dict[str, Any],
+    parameter: str,
+    value: str,
+) -> None:
+    """Test setting the reduced setpoint and temporary mode on circuit 2."""
+    mock_bsblan_circuit._temperature._circuit_temp_ranges[2] = {
+        "min": 16.0,
+        "max": 28.0,
+    }
+    mock_bsblan_circuit._temperature._circuit_temp_initialized.add(2)
+
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(
+            {"Parameter": parameter, "Value": value, "Type": "1"},
+        ),
+    )
+    await mock_bsblan_circuit.thermostat(**kwargs, circuit=2)
+
+
 # --- Temperature range initialization tests ---
 
 

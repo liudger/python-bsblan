@@ -181,12 +181,16 @@ class CircuitConfig:
             "target_temperature_high": "902",
             "hvac_mode": "700",
             "cooling_operating_mode": "901",
+            "temp_reduced_setpoint": "712",
+            "temporary_mode": "10110",
         },
         2: {
             "target_temperature": "1010",
             "target_temperature_high": "1202",
             "hvac_mode": "1000",
             "cooling_operating_mode": "1201",
+            "temp_reduced_setpoint": "1012",
+            "temporary_mode": "10111",
         },
     }
     PROBE_PARAMS: Final[dict[int, str]] = {
@@ -252,6 +256,9 @@ class Validation:
     # 901/1201 cooling circuit operating mode (ENUM, verified on device):
     # 0=Protection, 1=Automatic, 2=Reduced, 3=Comfort
     COOLING_OPERATING_MODES: Final[set[int]] = {0, 1, 2, 3}
+    # 10110/10111 temporary operating mode (write-only, verified on device):
+    # 0=No override, 1=Reduced, 2=Comfort, until the next time program switch
+    TEMPORARY_MODES: Final[set[int]] = {0, 1, 2}
     PPS_HVAC_MODES: Final[set[int]] = {0, 1, 3}
     PPS_HVAC_MODE_TO_BSBLAN: Final[dict[int, str]] = {
         0: "2",  # off
