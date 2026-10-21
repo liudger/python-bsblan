@@ -171,7 +171,20 @@ class BSBLAN:
         if self.session is None:
             self.session = aiohttp.ClientSession()
             self._close_session = True
-        await self.initialize()
+        try:
+            await self.initialize()
+        except BaseException:
+            if self._close_session and self.session:
+                session = self.session
+                self.session = None
+                self._close_session = False
+                try:
+                    await session.close()
+                except Exception:
+                    logger.exception(
+                        "Failed to close session after initialization failure"
+                    )
+            raise
         return self
 
     async def __aexit__(self, *args: object) -> None:
@@ -906,7 +919,6 @@ class BSBLAN:
         self._validate_circuit(circuit)
         if self._uses_pps_bus:
             self._validate_bus_write_supported()
-        await self._initialize_temperature_range(circuit)
 
         self._validate_single_parameter(
             target_temperature,
