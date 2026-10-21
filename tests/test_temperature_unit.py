@@ -49,6 +49,20 @@ async def test_initialize_temperature_range_celsius() -> None:
 
 
 @pytest.mark.asyncio
+async def test_initialize_temperature_range_is_idempotent() -> None:
+    """Test repeated initialization does not fetch static values again."""
+    config = BSBLANConfig(host="example.com")
+    bsblan = BSBLAN(config)
+    static_values = AsyncMock(return_value=StaticState())
+
+    with patch.object(bsblan, "static_values", static_values):
+        await bsblan._initialize_temperature_range()
+        await bsblan._initialize_temperature_range()
+
+    static_values.assert_awaited_once_with(circuit=1)
+
+
+@pytest.mark.asyncio
 async def test_initialize_temperature_range_fahrenheit() -> None:
     """Test initialization of temperature range with Fahrenheit unit."""
     config = BSBLANConfig(host="example.com")
