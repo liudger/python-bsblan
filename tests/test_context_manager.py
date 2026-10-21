@@ -78,6 +78,29 @@ async def test_aenter_closes_owned_session_when_initialization_fails(
 
 
 @pytest.mark.asyncio
+async def test_aenter_keeps_external_session_when_initialization_fails() -> None:
+    """Test that initialization failure does not close a caller-owned session."""
+    config = BSBLANConfig(host="example.com")
+    session = AsyncMock()
+    session.closed = False
+    bsblan = BSBLAN(config, session=session)
+
+    with (
+        patch.object(
+            BSBLAN,
+            "initialize",
+            AsyncMock(side_effect=RuntimeError("Initialization failed")),
+        ),
+        pytest.raises(RuntimeError, match="Initialization failed"),
+    ):
+        await bsblan.__aenter__()
+
+    session.close.assert_not_awaited()
+    assert bsblan.session is session
+    assert bsblan._close_session is False
+
+
+@pytest.mark.asyncio
 async def test_aenter_preserves_initialization_error_if_close_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
