@@ -345,7 +345,7 @@ class BSBLAN:
 
         This enables more granular lazy loading for hot water - instead of
         validating all 29 hot water parameters at once, we only validate
-        the specific group needed (essential: 5, config: 16, schedule: 8).
+        the specific group needed (essential: 6, config: 16, schedule: 8).
 
         Uses a per-group lock to prevent concurrent validation of the same
         group, which could cause duplicate network requests.
@@ -733,7 +733,7 @@ class BSBLAN:
             include: Optional list of parameter names to fetch. If None,
                 fetches all state parameters. Valid names include:
                 hvac_mode, target_temperature, hvac_action,
-                hvac_mode_changeover, current_temperature,
+                hvac_mode_changeover, current_temperature, current_setpoint,
                 room1_temp_setpoint_boost.
             circuit: The heating circuit number (1 or 2). Defaults to 1.
                 Circuit 2 uses separate parameter IDs but returns the
@@ -1042,14 +1042,15 @@ class BSBLAN:
         that are typically checked frequently for monitoring purposes.
         This reduces API calls and improves performance for regular polling.
 
-        Uses granular lazy loading - only validates the 5 essential params,
+        Uses granular lazy loading - only validates the 6 essential params,
         not all 29 hot water parameters.
 
         Args:
             include: Optional list of parameter names to fetch. If None,
                 fetches all essential hot water parameters. Valid names include:
                 operating_mode, nominal_setpoint, release,
-                dhw_actual_value_top_temperature, state_dhw_pump.
+                dhw_actual_value_top_temperature, dhw_current_setpoint,
+                state_dhw_pump.
 
         Returns:
             HotWaterState: Essential hot water state information.

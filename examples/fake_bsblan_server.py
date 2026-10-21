@@ -161,6 +161,7 @@ def build_parameter_db(
         db["1663"] = _param("DHW circulation setpoint", "40.0", unit="&deg;C")
         db["1680"] = _param("DHW changeover", "0", desc="---", data_type=1)
         db["8830"] = _param("DHW actual top temp", "48.2", unit="&deg;C", readonly=1)
+        db["8831"] = _param("DHW current setpoint", "50.0", unit="&deg;C", readonly=1)
         db["8820"] = _param(
             "DHW pump state", "255", desc="Off", data_type=1, readonly=1
         )
@@ -340,6 +341,7 @@ class FakeBSBLAN:
                     "1680",
                     "8820",
                     "8830",
+                    "8831",
                 }
             )
 

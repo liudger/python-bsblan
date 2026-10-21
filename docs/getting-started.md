@@ -167,6 +167,24 @@ async with BSBLAN(config) as client:
 
 Setting `cooling_operating_mode` is not supported on PPS devices.
 
+## Active setpoints
+
+In automatic mode the controller switches between the comfort setpoint
+(`710`/`1010`) and the reduced setpoint (`712`/`1012`) following the time
+program, and room units can shift it temporarily. `target_temperature` always
+holds the comfort setpoint. The setpoint the controller currently applies is
+exposed as `current_setpoint` (`8741` for circuit 1, `8771` for circuit 2).
+
+Hot water works the same way: `nominal_setpoint` (`1610`) applies during the
+release periods (`1620`) and `reduced_setpoint` (`1612`) outside them. The
+setpoint currently applied is exposed as `dhw_current_setpoint` (`8831`).
+
+```python
+async with BSBLAN(config) as client:
+    state = await client.state(include=["target_temperature", "current_setpoint"])
+    hw_state = await client.hot_water_state(include=["dhw_current_setpoint"])
+```
+
 ## PPS bus support
 
 PPS bus devices are detected from the device metadata returned by BSB-LAN. The

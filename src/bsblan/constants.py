@@ -45,6 +45,7 @@ BASE_HEATING_PARAMS: Final[dict[str, str]] = {
     # -------
     "8000": "hvac_action",
     "8740": "current_temperature",
+    "8741": "current_setpoint",
     "770": "room1_temp_setpoint_boost",
 }
 
@@ -90,6 +91,7 @@ BASE_HOT_WATER_PARAMS: Final[dict[str, str]] = {
     "1680": "operating_mode_changeover",
     # -------
     "8830": "dhw_actual_value_top_temperature",
+    "8831": "dhw_current_setpoint",
     "8820": "state_dhw_pump",
     # -------
     "561": "dhw_time_program_monday",
@@ -113,6 +115,7 @@ BASE_HEATING_CIRCUIT2_PARAMS: Final[dict[str, str]] = {
     # -------
     "8001": "hvac_action",
     "8770": "current_temperature",
+    "8771": "current_setpoint",
     "1070": "room1_temp_setpoint_boost",
 }
 
@@ -650,6 +653,7 @@ class HotWaterParams:
             "nominal_setpoint",
             "release",
             "dhw_actual_value_top_temperature",
+            "dhw_current_setpoint",
             "state_dhw_pump",
         }
     }

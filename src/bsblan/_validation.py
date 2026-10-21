@@ -233,7 +233,7 @@ class SectionValidator:
 
         This enables more granular lazy loading for hot water - instead of
         validating all 29 hot water parameters at once, we only validate
-        the specific group needed (essential: 5, config: 16, schedule: 8).
+        the specific group needed (essential: 6, config: 16, schedule: 8).
 
         Uses a per-group lock to prevent concurrent validation of the same
         group, which could cause duplicate network requests.
