@@ -9,6 +9,7 @@ import json
 import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
+from unittest.mock import AsyncMock
 
 import aiohttp
 import pytest
@@ -118,6 +119,38 @@ async def test_change_temperature(
 
 
 @pytest.mark.asyncio
+async def test_first_temperature_write_loads_bounds_lazily(
+    mock_bsblan: BSBLAN,
+    mock_aresponses: ResponsesMockServer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that temperature validation initializes bounds on demand."""
+    mock_bsblan._temperature._circuit_temp_initialized.clear()
+    fetch_range = AsyncMock(
+        return_value={
+            "min": 17.0,
+            "max": 23.0,
+            "cooling_min": None,
+            "cooling_max": None,
+        }
+    )
+    monkeypatch.setattr(
+        mock_bsblan._temperature, "_fetch_temperature_range", fetch_range
+    )
+    mock_aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler({"Parameter": "710", "Value": "20", "Type": "1"}),
+    )
+
+    await mock_bsblan.thermostat(target_temperature="20")
+
+    fetch_range.assert_awaited_once_with(1)
+    assert 1 in mock_bsblan._temperature._circuit_temp_initialized
+
+
+@pytest.mark.asyncio
 async def test_change_cooling_temperature(
     mock_bsblan: BSBLAN,
     mock_aresponses: ResponsesMockServer,
@@ -141,8 +174,14 @@ async def test_change_cooling_temperature(
 async def test_change_hvac_mode(
     mock_bsblan: BSBLAN,
     mock_aresponses: ResponsesMockServer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test changing BSBLAN HVAC mode."""
+    mock_bsblan._temperature._circuit_temp_initialized.clear()
+    initialize_range = AsyncMock()
+    monkeypatch.setattr(
+        mock_bsblan._temperature, "initialize_temperature_range", initialize_range
+    )
     expected_data = {
         "Parameter": "700",
         "Value": "1",  # 1 corresponds to "auto" mode
@@ -155,6 +194,7 @@ async def test_change_hvac_mode(
         create_response_handler(expected_data),
     )
     await mock_bsblan.thermostat(hvac_mode=1)  # 1 = auto
+    initialize_range.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -213,32 +253,52 @@ async def test_valid_hvac_mode_boundaries(
 
 
 @pytest.mark.asyncio
-async def test_no_parameters(mock_bsblan: BSBLAN) -> None:
+async def test_no_parameters(
+    mock_bsblan: BSBLAN,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test calling thermostat without parameters."""
+    initialize_range = AsyncMock()
+    monkeypatch.setattr(
+        mock_bsblan._temperature, "initialize_temperature_range", initialize_range
+    )
     with pytest.raises(BSBLANError) as exc_info:
         await mock_bsblan.thermostat()
     assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
+    initialize_range.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 async def test_cooling_temperature_with_other_parameter_raises(
     mock_bsblan: BSBLAN,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test cooling setpoint respects one-parameter-per-call rule."""
+    initialize_range = AsyncMock()
+    monkeypatch.setattr(
+        mock_bsblan._temperature, "initialize_temperature_range", initialize_range
+    )
     with pytest.raises(BSBLANError) as exc_info:
         await mock_bsblan.thermostat(
             target_temperature="20",
             target_temperature_high="24",
         )
     assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
+    initialize_range.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 async def test_set_cooling_operating_mode(
     mock_bsblan: BSBLAN,
     aresponses: ResponsesMockServer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test setting the cooling operating mode on circuit 1."""
+    mock_bsblan._temperature._circuit_temp_initialized.clear()
+    initialize_range = AsyncMock()
+    monkeypatch.setattr(
+        mock_bsblan._temperature, "initialize_temperature_range", initialize_range
+    )
     expected_data = {"Parameter": "901", "Value": "1", "Type": "1"}
     aresponses.add(
         "example.com",
@@ -247,6 +307,7 @@ async def test_set_cooling_operating_mode(
         create_response_handler(expected_data),
     )
     await mock_bsblan.thermostat(cooling_operating_mode=1)
+    initialize_range.assert_not_awaited()
 
 
 @pytest.mark.asyncio
