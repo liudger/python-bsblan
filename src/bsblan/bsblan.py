@@ -782,15 +782,17 @@ class BSBLAN:
         Args:
             include: Optional list of parameter names to fetch. If None,
                 fetches all static parameters. Valid names include:
-                min_temp, max_temp.
+                temp_reduced_setpoint, heating_protective_setpoint,
+                comfort_setpoint_max, cooling_comfort_setpoint_min,
+                cooling_reduced_setpoint, and min_temp, max_temp on PPS.
             circuit: The heating circuit number (1 or 2). Defaults to 1.
 
         Returns:
             StaticState: The static information from the BSBLAN device.
 
         Example:
-            # Fetch only min_temp
-            static = await client.static_values(include=["min_temp"])
+            # Fetch only the reduced setpoint
+            static = await client.static_values(include=["temp_reduced_setpoint"])
 
             # Fetch static values for heating circuit 2
             static_hc2 = await client.static_values(circuit=2)
@@ -866,7 +868,7 @@ class BSBLAN:
         )
         logger.debug("Response for setting time: %s", response)
 
-    async def thermostat(  # pylint: disable=too-many-arguments
+    async def thermostat(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         self,
         target_temperature: str | None = None,
         hvac_mode: int | None = None,
@@ -874,6 +876,8 @@ class BSBLAN:
         target_temperature_high: str | float | None = None,
         *,
         cooling_operating_mode: int | None = None,
+        temp_reduced_setpoint: str | float | None = None,
+        temporary_mode: int | None = None,
     ) -> None:
         """Change the state of the thermostat through BSB-Lan.
 
@@ -888,6 +892,12 @@ class BSBLAN:
             cooling_operating_mode: The cooling circuit operating mode to set
                 as raw integer value: 0=Protection, 1=Automatic, 2=Reduced,
                 3=Comfort. Not supported on PPS devices.
+            temp_reduced_setpoint: The reduced (eco) room setpoint to set.
+                Not supported on PPS devices.
+            temporary_mode: Temporary operating mode override, active until
+                the next time program switch point. Raw integer value:
+                0=No override, 1=Reduced, 2=Comfort. Only has an effect in
+                automatic mode. Not supported on PPS devices.
 
         Example:
             # Set HC1 temperature
@@ -898,6 +908,12 @@ class BSBLAN:
 
             # Set HC1 cooling operating mode
             await client.thermostat(cooling_operating_mode=1)
+
+            # Set HC1 reduced setpoint
+            await client.thermostat(temp_reduced_setpoint="18.0")
+
+            # Switch HC1 to comfort until the next time program switch point
+            await client.thermostat(temporary_mode=2)
 
             # Set HC2 mode
             await client.thermostat(hvac_mode=1, circuit=2)
@@ -913,6 +929,8 @@ class BSBLAN:
             hvac_mode,
             target_temperature_high,
             cooling_operating_mode,
+            temp_reduced_setpoint,
+            temporary_mode,
             error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
@@ -922,6 +940,8 @@ class BSBLAN:
             circuit,
             target_temperature_high,
             cooling_operating_mode=cooling_operating_mode,
+            temp_reduced_setpoint=temp_reduced_setpoint,
+            temporary_mode=temporary_mode,
         )
         await self._set_device_state(state)
 

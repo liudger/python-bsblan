@@ -267,3 +267,72 @@ async def test_cooling_operating_mode_with_other_parameter_raises(
             cooling_operating_mode=1,
         )
     assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER
+
+
+@pytest.mark.asyncio
+async def test_set_temp_reduced_setpoint(
+    mock_bsblan: BSBLAN,
+    aresponses: ResponsesMockServer,
+) -> None:
+    """Test setting the reduced setpoint on circuit 1."""
+    expected_data = {"Parameter": "712", "Value": "18.5", "Type": "1"}
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan.thermostat(temp_reduced_setpoint=18.5)
+
+
+@pytest.mark.asyncio
+async def test_invalid_temp_reduced_setpoint(mock_bsblan: BSBLAN) -> None:
+    """Test that an out-of-range reduced setpoint is rejected."""
+    with pytest.raises(BSBLANInvalidParameterError):
+        await mock_bsblan.thermostat(temp_reduced_setpoint="35")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("temporary_mode", [0, 1, 2])
+async def test_set_temporary_mode(
+    mock_bsblan: BSBLAN,
+    aresponses: ResponsesMockServer,
+    temporary_mode: int,
+) -> None:
+    """Test setting the temporary operating mode override on circuit 1."""
+    expected_data = {
+        "Parameter": "10110",
+        "Value": str(temporary_mode),
+        "Type": "1",
+    }
+    aresponses.add(
+        "example.com",
+        "/JS",
+        "POST",
+        create_response_handler(expected_data),
+    )
+    await mock_bsblan.thermostat(temporary_mode=temporary_mode)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("temporary_mode", [-1, 3])
+async def test_invalid_temporary_mode(
+    mock_bsblan: BSBLAN,
+    temporary_mode: int,
+) -> None:
+    """Test that an invalid temporary operating mode is rejected."""
+    with pytest.raises(BSBLANInvalidParameterError):
+        await mock_bsblan.thermostat(temporary_mode=temporary_mode)
+
+
+@pytest.mark.asyncio
+async def test_temporary_mode_with_other_parameter_raises(
+    mock_bsblan: BSBLAN,
+) -> None:
+    """Test temporary mode respects one-parameter-per-call rule."""
+    with pytest.raises(BSBLANError) as exc_info:
+        await mock_bsblan.thermostat(
+            temp_reduced_setpoint="18",
+            temporary_mode=1,
+        )
+    assert str(exc_info.value) == ErrorMsg.MULTI_PARAMETER

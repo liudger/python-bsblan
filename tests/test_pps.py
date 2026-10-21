@@ -301,6 +301,31 @@ async def test_pps_thermostat_rejects_cooling_temperature(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("kwargs", "parameter_name"),
+    [
+        ({"temp_reduced_setpoint": "18.0"}, "temp_reduced_setpoint"),
+        ({"temporary_mode": 2}, "temporary_mode"),
+    ],
+)
+async def test_pps_thermostat_rejects_reduced_and_temporary_mode(
+    pps_bsblan: BSBLAN,
+    kwargs: dict[str, Any],
+    parameter_name: str,
+) -> None:
+    """Test PPS climate rejects reduced setpoint and temporary mode writes."""
+    pps_bsblan._temperature._circuit_temp_ranges[1] = {"min": 8.0, "max": 30.0}
+    pps_bsblan._temperature._circuit_temp_initialized.add(1)
+    request_mock = AsyncMock(return_value={"status": "ok"})
+    pps_bsblan._request = request_mock  # type: ignore[method-assign]
+
+    with pytest.raises(BSBLANInvalidParameterError, match=parameter_name):
+        await pps_bsblan.thermostat(**kwargs)
+
+    request_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_pps_thermostat_rejects_cooling_operating_mode(
     pps_bsblan: BSBLAN,
 ) -> None:

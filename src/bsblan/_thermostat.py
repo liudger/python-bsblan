@@ -35,7 +35,7 @@ class ThermostatWriter:
         self._temperature = temperature
         self._set_payload = set_payload
 
-    async def prepare_state(  # pylint: disable=too-many-arguments
+    async def prepare_state(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         self,
         target_temperature: str | None,
         hvac_mode: int | None,
@@ -43,6 +43,8 @@ class ThermostatWriter:
         target_temperature_high: str | float | None = None,
         *,
         cooling_operating_mode: int | None = None,
+        temp_reduced_setpoint: str | float | None = None,
+        temporary_mode: int | None = None,
     ) -> dict[str, Any]:
         """Prepare the thermostat state for setting.
 
@@ -53,6 +55,9 @@ class ThermostatWriter:
             target_temperature_high: The cooling comfort setpoint to set.
             cooling_operating_mode: The cooling circuit operating mode to set
                 as raw integer.
+            temp_reduced_setpoint: The reduced (eco) room setpoint to set.
+            temporary_mode: The temporary operating mode override to set as
+                raw integer.
 
         Returns:
             dict[str, Any]: The prepared state for the thermostat.
@@ -69,10 +74,7 @@ class ThermostatWriter:
                 self._set_payload(param_ids["target_temperature"], target_temperature),
             )
         if target_temperature_high is not None:
-            param_id = param_ids.get("target_temperature_high")
-            if param_id is None:
-                parameter_name = "target_temperature_high"
-                raise BSBLANInvalidParameterError(parameter_name)
+            param_id = self._param_id(param_ids, "target_temperature_high")
             await self._temperature.validate_target_temperature_high(
                 target_temperature_high,
                 circuit,
@@ -89,15 +91,34 @@ class ThermostatWriter:
                 self._set_payload(param_ids["hvac_mode"], hvac_value),
             )
         if cooling_operating_mode is not None:
-            param_id = param_ids.get("cooling_operating_mode")
-            if param_id is None:
-                parameter_name = "cooling_operating_mode"
-                raise BSBLANInvalidParameterError(parameter_name)
+            param_id = self._param_id(param_ids, "cooling_operating_mode")
             self.validate_cooling_operating_mode(cooling_operating_mode)
             state.update(
                 self._set_payload(param_id, str(cooling_operating_mode)),
             )
+        if temp_reduced_setpoint is not None:
+            param_id = self._param_id(param_ids, "temp_reduced_setpoint")
+            await self._temperature.validate_target_temperature(
+                str(temp_reduced_setpoint),
+                circuit,
+            )
+            state.update(
+                self._set_payload(param_id, str(temp_reduced_setpoint)),
+            )
+        if temporary_mode is not None:
+            param_id = self._param_id(param_ids, "temporary_mode")
+            self.validate_temporary_mode(temporary_mode)
+            state.update(
+                self._set_payload(param_id, str(temporary_mode)),
+            )
         return state
+
+    @staticmethod
+    def _param_id(param_ids: dict[str, str], parameter_name: str) -> str:
+        """Return the parameter ID for a write, or raise if unsupported."""
+        if (param_id := param_ids.get(parameter_name)) is None:
+            raise BSBLANInvalidParameterError(parameter_name)
+        return param_id
 
     def thermostat_params(self, circuit: int) -> dict[str, str]:
         """Return thermostat write parameters for the active bus type."""
@@ -135,3 +156,17 @@ class ThermostatWriter:
         """
         if cooling_operating_mode not in Validation.COOLING_OPERATING_MODES:
             raise BSBLANInvalidParameterError(str(cooling_operating_mode))
+
+    def validate_temporary_mode(self, temporary_mode: int) -> None:
+        """Validate the temporary operating mode override.
+
+        Args:
+            temporary_mode (int): The mode to validate. Valid values are
+                0=No override, 1=Reduced, 2=Comfort.
+
+        Raises:
+            BSBLANInvalidParameterError: If the mode is invalid.
+
+        """
+        if temporary_mode not in Validation.TEMPORARY_MODES:
+            raise BSBLANInvalidParameterError(str(temporary_mode))
