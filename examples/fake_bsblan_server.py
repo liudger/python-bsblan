@@ -128,6 +128,7 @@ def build_parameter_db(
     # ---- Sensor params ----
     db["8700"] = _param("Outside temp sensor local", "6.1", unit="&deg;C", readonly=1)
     db["8740"] = _param("Room temp 1 actual value", "21.3", unit="&deg;C", readonly=1)
+    db["8741"] = _param("Room setpoint 1", "21.0", unit="&deg;C", readonly=1)
     db["3113"] = _param("Total energy", "7968", unit="kWh", readonly=1)
 
     # ---- Time param (0) ----
@@ -220,9 +221,10 @@ def build_parameter_db(
             data_type=1,
             readonly=1,
         )
-        db["8741"] = _param(
+        db["8770"] = _param(
             "Room temp 2 actual value", "19.8", unit="&deg;C", readonly=1
         )
+        db["8771"] = _param("Room setpoint 2", "19.0", unit="&deg;C", readonly=1)
         db["8750"] = _param(
             "HC2 Room1 thermostat mode",
             "1",
@@ -251,7 +253,7 @@ def build_parameter_db(
             data_type=1,
             readonly=1,
         )
-        db["8742"] = _param(
+        db["8800"] = _param(
             "Room temp 3 actual value", "17.5", unit="&deg;C", readonly=1
         )
         db["8751"] = _param(
