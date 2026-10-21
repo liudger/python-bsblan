@@ -52,6 +52,59 @@ async def test_context_manager_with_existing_session() -> None:
 
 
 @pytest.mark.asyncio
+async def test_aenter_closes_owned_session_when_initialization_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that a failed initialization closes the session it created."""
+    config = BSBLANConfig(host="example.com")
+    session = AsyncMock()
+    session.closed = False
+    monkeypatch.setattr("bsblan.bsblan.aiohttp.ClientSession", lambda: session)
+    bsblan = BSBLAN(config)
+
+    with (
+        patch.object(
+            BSBLAN,
+            "initialize",
+            AsyncMock(side_effect=RuntimeError("Initialization failed")),
+        ),
+        pytest.raises(RuntimeError, match="Initialization failed"),
+    ):
+        await bsblan.__aenter__()
+
+    session.close.assert_awaited_once()
+    assert bsblan.session is None
+    assert bsblan._close_session is False
+
+
+@pytest.mark.asyncio
+async def test_aenter_preserves_initialization_error_if_close_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that cleanup errors do not replace initialization errors."""
+    config = BSBLANConfig(host="example.com")
+    session = AsyncMock()
+    session.closed = False
+    session.close.side_effect = RuntimeError("Session close failed")
+    monkeypatch.setattr("bsblan.bsblan.aiohttp.ClientSession", lambda: session)
+    bsblan = BSBLAN(config)
+
+    with (
+        patch.object(
+            BSBLAN,
+            "initialize",
+            AsyncMock(side_effect=RuntimeError("Initialization failed")),
+        ),
+        pytest.raises(RuntimeError, match="Initialization failed"),
+    ):
+        await bsblan.__aenter__()
+
+    session.close.assert_awaited_once()
+    assert bsblan.session is None
+    assert bsblan._close_session is False
+
+
+@pytest.mark.asyncio
 async def test_aexit_exception_handling() -> None:
     """Test that BSBLAN doesn't swallow exceptions during session close."""
     config = BSBLANConfig(host="example.com")
