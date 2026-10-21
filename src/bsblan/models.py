@@ -481,6 +481,8 @@ class State(BaseModel):
     # (0=Protection, 1=Automatic, 2=Reduced, 3=Comfort)
     cooling_operating_mode: EntityInfo[int] | None = None
     current_temperature: EntityInfo[float] | None = None
+    # 8741/8771: room setpoint currently applied by the controller
+    current_setpoint: EntityInfo[float] | None = None
     room1_temp_setpoint_boost: EntityInfo[float] | None = None
 
 
@@ -525,6 +527,7 @@ class HotWaterState(BaseModel):
     nominal_setpoint: EntityInfo[float] | None = None
     release: EntityInfo[int] | None = None
     dhw_actual_value_top_temperature: EntityInfo[float] | None = None
+    dhw_current_setpoint: EntityInfo[float] | None = None
     state_dhw_pump: EntityInfo[int] | None = None
 
 

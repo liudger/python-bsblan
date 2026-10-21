@@ -149,6 +149,8 @@ async def test_state_circuit2(monkeypatch: Any) -> None:
         assert state.hvac_mode.desc == "Automatic"
         assert state.current_temperature is not None
         assert state.current_temperature.value == 18.5
+        assert state.current_setpoint is not None
+        assert state.current_setpoint.value == 19.0
         assert state.target_temperature_high is not None
         assert state.target_temperature_high.value == 24.0
         assert state.cooling_operating_mode is not None

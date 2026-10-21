@@ -249,6 +249,19 @@
       "readwrite": 1,
       "unit": "°C"
   },
+  "8831": {
+      "name": "DHW temperature setpoint",
+      "dataType_name": "TEMP",
+      "dataType_family": "VALS",
+      "error": 0,
+      "value": "45.0",
+      "desc": "",
+      "precision": 0.1,
+      "dataType": 0,
+      "readonly": 1,
+      "readwrite": 1,
+      "unit": "°C"
+  },
   "8820": {
       "name": "State DHW pump",
       "dataType_name": "ONOFF",

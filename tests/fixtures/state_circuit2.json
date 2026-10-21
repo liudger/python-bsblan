@@ -86,6 +86,19 @@
     "readwrite": 1,
     "unit": "°C"
   },
+  "8771": {
+    "name": "Room temperature setpoint 2",
+    "dataType_name": "TEMP",
+    "dataType_family": "VALS",
+    "error": 0,
+    "value": "19.0",
+    "desc": "",
+    "precision": 0.1,
+    "dataType": 0,
+    "readonly": 1,
+    "readwrite": 1,
+    "unit": "°C"
+  },
   "1070": {
     "name": "Room temp setpoint boost (boost heating)",
     "dataType_name": "TEMP",

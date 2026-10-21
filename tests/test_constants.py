@@ -122,7 +122,7 @@ def test_hot_water_parameter_groups_no_overlap(
 @pytest.mark.parametrize(
     ("group", "expected_count"),
     [
-        (HotWaterParams.ESSENTIAL, 5),  # Current optimized count
+        (HotWaterParams.ESSENTIAL, 6),  # Current optimized count
         (HotWaterParams.CONFIG, 16),  # Configuration parameters
         (HotWaterParams.SCHEDULE, 8),  # Time program parameters
     ],
