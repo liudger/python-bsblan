@@ -871,15 +871,19 @@ class BSBLAN:
 
         Raises:
             BSBLANInvalidParameterError: If the time format is invalid.
+            BSBLANError: If the device does not accept the new time.
 
         """
         await self._ensure_device_metadata()
         self._validate_time_sync_supported()
         self._validate_time_format(time_value)
+        # BSB-LAN before 5.0 needs an underscore between the date and the time
         response = await self._request(
-            base_path="/JS", data=self._set_payload("0", time_value)
+            base_path="/JS", data=self._set_payload("0", time_value.replace(" ", "_"))
         )
         logger.debug("Response for setting time: %s", response)
+        if response.get("0", {}).get("status") != 1:
+            raise BSBLANError(ErrorMsg.TIME_SYNC_FAILED)
 
     async def thermostat(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         self,

@@ -10,7 +10,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from bsblan import BSBLAN
-from bsblan.exceptions import BSBLANInvalidParameterError
+from bsblan.constants import ErrorMsg
+from bsblan.exceptions import BSBLANError, BSBLANInvalidParameterError
 from bsblan.models import Device, DeviceTime, EntityInfo
 from tests import load_fixture
 
@@ -18,6 +19,12 @@ from tests import load_fixture
 def set_bsb_device_metadata(bsblan: BSBLAN) -> None:
     """Seed cached BSB device metadata for time tests."""
     bsblan._device = Device.model_validate(json.loads(load_fixture("device.json")))
+
+
+def set_time_status(bsblan: BSBLAN, status: int) -> None:
+    """Make BSB-LAN answer a time write with the given status."""
+    assert isinstance(bsblan._request, AsyncMock)
+    bsblan._request.return_value = {"0": {"status": status}}
 
 
 @pytest.mark.asyncio
@@ -61,6 +68,7 @@ async def test_set_time(mock_bsblan: BSBLAN) -> None:
     # Test setting time
     assert isinstance(mock_bsblan._request, AsyncMock)
     set_bsb_device_metadata(mock_bsblan)
+    set_time_status(mock_bsblan, 1)
     await mock_bsblan.set_time("01.01.2024 12:30:45")
 
     # Verify the request was made correctly
@@ -68,10 +76,20 @@ async def test_set_time(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "0",
-            "Value": "01.01.2024 12:30:45",
+            "Value": "01.01.2024_12:30:45",
             "Type": "1",
         },
     )
+
+
+@pytest.mark.asyncio
+async def test_set_time_rejected(mock_bsblan: BSBLAN) -> None:
+    """Test setting device time raises when BSB-LAN rejects it."""
+    set_bsb_device_metadata(mock_bsblan)
+    set_time_status(mock_bsblan, 0)
+
+    with pytest.raises(BSBLANError, match=ErrorMsg.TIME_SYNC_FAILED):
+        await mock_bsblan.set_time("01.01.2024 12:30:45")
 
 
 @pytest.mark.asyncio
@@ -85,6 +103,7 @@ async def test_set_time_different_format(mock_bsblan: BSBLAN) -> None:
     # Test setting time with correct format
     assert isinstance(mock_bsblan._request, AsyncMock)
     set_bsb_device_metadata(mock_bsblan)
+    set_time_status(mock_bsblan, 1)
     await mock_bsblan.set_time("13.08.2025 10:25:55")
 
     # Verify the request was made correctly
@@ -92,7 +111,7 @@ async def test_set_time_different_format(mock_bsblan: BSBLAN) -> None:
         base_path="/JS",
         data={
             "Parameter": "0",
-            "Value": "13.08.2025 10:25:55",
+            "Value": "13.08.2025_10:25:55",
             "Type": "1",
         },
     )
@@ -148,6 +167,7 @@ async def test_set_time_valid_formats(mock_bsblan: BSBLAN) -> None:
     """
     assert isinstance(mock_bsblan._request, AsyncMock)
     set_bsb_device_metadata(mock_bsblan)
+    set_time_status(mock_bsblan, 1)
 
     # Test various valid formats
     valid_formats = [
@@ -173,6 +193,7 @@ async def test_set_time_leap_year_validation(mock_bsblan: BSBLAN) -> None:
 
     """
     set_bsb_device_metadata(mock_bsblan)
+    set_time_status(mock_bsblan, 1)
 
     # 2024 is a leap year, so Feb 29 should be valid
     await mock_bsblan.set_time("29.02.2024 12:30:45")
