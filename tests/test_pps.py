@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
 
@@ -126,7 +127,7 @@ async def test_pps_set_time_raises_without_posting(pps_bsblan: BSBLAN) -> None:
     pps_bsblan._request = request_mock  # type: ignore[method-assign]
 
     with pytest.raises(BSBLANError, match=ErrorMsg.TIME_SYNC_NOT_SUPPORTED):
-        await pps_bsblan.set_time("01.01.2024 12:30:45")
+        await pps_bsblan.set_time(datetime(2024, 1, 1, 12, 30, 45, tzinfo=UTC))
 
     request_mock.assert_not_awaited()
 
@@ -178,7 +179,7 @@ async def test_set_time_fetches_device_metadata_before_sync() -> None:
         bsblan._request = request_mock  # type: ignore[method-assign]
 
         with pytest.raises(BSBLANError, match=ErrorMsg.TIME_SYNC_NOT_SUPPORTED):
-            await bsblan.set_time("01.01.2024 12:30:45")
+            await bsblan.set_time(datetime(2024, 1, 1, 12, 30, 45, tzinfo=UTC))
 
     request_mock.assert_awaited_once_with(base_path="/JI")
 
