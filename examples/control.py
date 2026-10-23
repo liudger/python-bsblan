@@ -409,11 +409,9 @@ async def main() -> None:
         # Example: Set device time
         if bsblan.supports_time_sync:
             print("\nSetting device time to current system time")
-            # Get current local system time and format it for BSB-LAN.
-            current_time = datetime.now().replace(microsecond=0)  # noqa: DTZ005
-            formatted_time = current_time.strftime("%d.%m.%Y %H:%M:%S")
-            print(f"Current system time: {formatted_time}")
-            await bsblan.set_time(formatted_time)
+            current_time = datetime.now()  # noqa: DTZ005
+            print(f"Current system time: {current_time:%d.%m.%Y %H:%M:%S}")
+            await bsblan.set_time(current_time)
         else:
             print("\nSkipping device time sync for this bus type")
 
