@@ -51,9 +51,10 @@ from .models import (
     State,
     StaticState,
 )
-from .utility import is_param_value_active, validate_time_format
+from .utility import is_param_value_active
 
 if TYPE_CHECKING:
+    from datetime import datetime
     from typing import Self
 
     from aiohttp.client import ClientSession
@@ -862,24 +863,31 @@ class BSBLAN:
         time_data = {"time": data["0"]}
         return DeviceTime.model_validate(time_data)
 
-    async def set_time(self, time_value: str) -> None:
+    async def set_time(self, value: datetime) -> None:
         """Set the time on the BSB-LAN device.
 
         Args:
-            time_value (str): The time value to set in format "DD.MM.YYYY HH:MM:SS"
-                (e.g., "13.08.2025 10:25:55").
+            value (datetime): The local time of the heating system. Its date and
+                time are written as they are, without timezone conversion.
 
         Raises:
-            BSBLANInvalidParameterError: If the time format is invalid.
+            BSBLANInvalidParameterError: If the year is out of range.
+            BSBLANError: If the device does not accept the new time.
 
         """
         await self._ensure_device_metadata()
         self._validate_time_sync_supported()
-        self._validate_time_format(time_value)
+        if not Validation.MIN_YEAR <= value.year <= Validation.MAX_YEAR:
+            msg = f"Invalid year: {value.year}"
+            raise BSBLANInvalidParameterError(msg)
+        # BSB-LAN 4.1 rejects a space between the date and the time
         response = await self._request(
-            base_path="/JS", data=self._set_payload("0", time_value)
+            base_path="/JS",
+            data=self._set_payload("0", value.strftime("%d.%m.%Y_%H:%M:%S")),
         )
         logger.debug("Response for setting time: %s", response)
+        if response.get("0", {}).get("status") != 1:
+            raise BSBLANError(ErrorMsg.TIME_SYNC_FAILED)
 
     async def thermostat(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         self,
@@ -991,21 +999,6 @@ class BSBLAN:
             target_temperature,
             circuit,
         )
-
-    def _validate_time_format(self, time_value: str) -> None:
-        """Validate the time format.
-
-        Args:
-            time_value (str): The time value to validate.
-
-        Raises:
-            BSBLANInvalidParameterError: If the time format is invalid.
-
-        """
-        try:
-            validate_time_format(time_value, Validation.MIN_YEAR, Validation.MAX_YEAR)
-        except ValueError as err:
-            raise BSBLANInvalidParameterError(str(err)) from err
 
     def _set_payload(
         self, parameter: str, value: str, type_: str = "1"

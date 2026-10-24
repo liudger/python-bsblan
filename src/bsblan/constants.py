@@ -561,6 +561,7 @@ class ErrorMsg:
     )
     NO_HEATING_SCHEDULE_PARAMS = "No heating schedule parameters available"
     TIME_SYNC_NOT_SUPPORTED = "Time synchronization is not supported by this device"
+    TIME_SYNC_FAILED = "The device did not accept the new time"
     BUS_WRITE_NOT_SUPPORTED = "Writing parameters is not supported by this device"
 
 
