@@ -255,3 +255,5 @@ async with BSBLAN(config) as client:
     # Read state for a specific circuit
     state = await client.state(circuit=2)
 ```
+
+`get_available_circuits()` reads parameter `6217` (check number heating circuits), where each heating circuit has a two-digit column starting from the right, and returns the circuits whose column is not `00`. When the controller does not give a usable value for `6217`, it keeps each circuit whose operating mode (`700` or `1000`) has a value.
