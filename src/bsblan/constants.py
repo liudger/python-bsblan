@@ -200,6 +200,7 @@ class CircuitConfig:
         1: "700",
         2: "1000",
     }
+    CHECK_NUMBER_PARAM: Final[str] = "6217"
     STATUS_PARAMS: Final[dict[int, str]] = {
         1: "8000",
         2: "8001",

@@ -212,10 +212,12 @@ class BSBLAN:
     async def get_available_circuits(self) -> list[int]:
         """Detect which heating circuits are available on the device.
 
-        Uses the configured operating mode probe parameters from
-        CircuitConfig.PROBE_PARAMS as the only discovery signal. Status
-        parameters are not queried during discovery to keep setup lightweight
-        and avoid excluding valid circuits when status data is unavailable.
+        Reads the heating circuits check number first: when it is usable, the
+        circuits it reports as configured are returned. Otherwise the operating
+        mode probe parameters from CircuitConfig.PROBE_PARAMS are used as the
+        discovery signal. Status parameters are not queried during discovery
+        to keep setup lightweight and avoid excluding valid circuits when
+        status data is unavailable.
 
         This is useful for integration setup flows (e.g., Home Assistant
         config flow) to discover how many circuits the user's controller
@@ -239,6 +241,10 @@ class BSBLAN:
             return [1]
         if self._uses_pps_bus:
             return await self._get_available_pps_circuits()
+
+        if configured := await self._get_circuits_from_check_number():
+            self._available_circuits = set(configured)
+            return configured
 
         available: list[int] = []
         for circuit, param_id in CircuitConfig.PROBE_PARAMS.items():
@@ -266,6 +272,36 @@ class BSBLAN:
             available.append(circuit)
         self._available_circuits = set(available)
         return sorted(available)
+
+    async def _get_circuits_from_check_number(self) -> list[int]:
+        """Detect heating circuits from the heating circuits check number.
+
+        The value holds one two-digit column per heating circuit, starting
+        from the right with circuit 1. A column of 00 means the circuit is
+        not configured.
+
+        Returns:
+            list[int]: Sorted list of configured circuit numbers, or an empty
+                list when the check number is unavailable or not usable.
+
+        """
+        param_id = CircuitConfig.CHECK_NUMBER_PARAM
+        try:
+            response = await self._request(params={"Parameter": param_id})
+        except BSBLANError:
+            logger.debug("Heating circuits check number not available")
+            return []
+
+        value = str((response.get(param_id) or {}).get("value", ""))
+        if not value.isdecimal():
+            logger.debug("Heating circuits check number %r not usable", value)
+            return []
+        check_number = int(value)
+        return [
+            circuit
+            for circuit in sorted(CircuitConfig.VALID)
+            if check_number // 100 ** (circuit - 1) % 100
+        ]
 
     async def _get_available_pps_circuits(self) -> list[int]:
         """Detect the single PPS room-unit climate circuit."""

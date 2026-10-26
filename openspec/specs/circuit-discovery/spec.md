@@ -33,19 +33,40 @@ JSON-API version string.
 - **THEN** no parameter requests are made, the method returns `[1]`, and
   `_available_circuits` is `{1}`
 
-#### Scenario: Full-config device probes circuits unchanged
+#### Scenario: Full-config device detects circuits
 
 - **WHEN** `_supports_full_config` is `True` and `get_available_circuits()`
   is called
-- **THEN** each circuit in `CircuitConfig.PROBE_PARAMS` is probed and
-  circuits with an active operating-mode value are reported
+- **THEN** circuits are detected as described in "Check number detects the
+  circuits"
 
-#### Scenario: Unresolved capability probes circuits unchanged
+#### Scenario: Unresolved capability detects circuits
 
 - **WHEN** `_supports_full_config` is `None` (discovery called before
   capability resolution) and `get_available_circuits()` is called
-- **THEN** discovery probes circuits exactly as it does today (no
+- **THEN** circuits are detected as for a full-config device (no
   short-circuit)
+
+### Requirement: Check number detects the circuits
+
+`get_available_circuits()` SHALL first read the heating circuits check number
+(`CircuitConfig.CHECK_NUMBER_PARAM`, parameter `6217`). Its value holds one
+two-digit column per heating circuit, starting from the right with circuit 1,
+and a column of `00` means the circuit is not configured. When the value is
+usable, the configured circuits are returned without probing. Otherwise each
+circuit in `CircuitConfig.PROBE_PARAMS` is probed and circuits with an active
+operating-mode value are reported.
+
+#### Scenario: Usable check number returns the configured circuits
+
+- **WHEN** parameter `6217` has the value `"3"`
+- **THEN** no operating-mode parameter is probed and the method returns `[1]`
+
+#### Scenario: Unusable check number probes every circuit
+
+- **WHEN** the `6217` request fails, or its value is missing, not a whole
+  number, or has no configured circuit 1 or 2
+- **THEN** every circuit in `CircuitConfig.PROBE_PARAMS` is probed
 
 ### Requirement: Single shared active-value predicate
 

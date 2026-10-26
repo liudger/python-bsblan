@@ -677,6 +677,8 @@ async def test_get_available_circuits_two_circuits(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         # HC1 operating mode
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
@@ -694,7 +696,7 @@ async def test_get_available_circuits_two_circuits(
     assert bsblan._available_circuits == {1, 2}
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
-    ] == ["700", "1000"]
+    ] == ["6217", "700", "1000"]
 
 
 @pytest.mark.asyncio
@@ -709,6 +711,8 @@ async def test_get_available_circuits_only_one(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id == "700":
             return {"700": {"value": "3", "unit": "", "desc": "Comfort"}}
         # HC2 operating mode - return empty
@@ -725,7 +729,7 @@ async def test_get_available_circuits_only_one(
     assert bsblan._available_circuits == {1}
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
-    ] == ["700", "1000"]
+    ] == ["6217", "700", "1000"]
 
 
 @pytest.mark.asyncio
@@ -740,6 +744,8 @@ async def test_get_available_circuits_does_not_probe_status_params(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         # All circuits return valid operating mode
         if param_id in {"700", "1000"}:
             return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
@@ -754,6 +760,7 @@ async def test_get_available_circuits_does_not_probe_status_params(
     assert {
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
     } == {
+        "6217",
         "700",
         "1000",
     }
@@ -771,6 +778,8 @@ async def test_get_available_circuits_request_failure(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
         # HC2 fail with connection error
@@ -798,6 +807,8 @@ async def test_get_available_circuits_param_not_in_response(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
         # Returns a response but without the expected param key
@@ -825,6 +836,8 @@ async def test_get_available_circuits_all_probes_missing(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id in expected_params:
             return {}
         msg = f"Unexpected parameter probe: {param_id}"
@@ -838,7 +851,7 @@ async def test_get_available_circuits_all_probes_missing(
     assert bsblan._available_circuits == set()
     assert [
         call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
-    ] == expected_params
+    ] == [CircuitConfig.CHECK_NUMBER_PARAM, *expected_params]
 
 
 @pytest.mark.asyncio
@@ -853,6 +866,8 @@ async def test_get_available_circuits_inactive_marker_excludes_circuit(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
         # HC2 reports the inactive marker value
@@ -880,6 +895,8 @@ async def test_get_available_circuits_none_value_excludes_circuit(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
         if param_id == "1000":
@@ -892,6 +909,124 @@ async def test_get_available_circuits_none_value_excludes_circuit(
     circuits = await bsblan.get_available_circuits()
     assert circuits == [1]
     assert bsblan._available_circuits == {1}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("check_number", "expected"),
+    [
+        ("301", [1, 2]),
+        ("701", [1, 2]),
+        ("303", [1, 2]),
+        ("202", [1, 2]),
+        ("3", [1]),
+        ("2", [1]),
+    ],
+)
+async def test_get_available_circuits_from_check_number(
+    mock_bsblan_circuit: BSBLAN,
+    check_number: str,
+    expected: list[int],
+) -> None:
+    """Test the circuits configured in the check number are returned."""
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "6217":
+            return {"6217": {"value": check_number, "unit": "", "desc": ""}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
+
+    request_mock = AsyncMock(side_effect=mock_request)
+    bsblan._request = request_mock  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == expected
+    assert bsblan._available_circuits == set(expected)
+    assert [
+        call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+    ] == ["6217"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "check_number_response",
+    [
+        {},
+        {"6217": {}},
+        {"6217": {"value": "0", "unit": "", "desc": ""}},
+        {"6217": {"value": "10000", "unit": "", "desc": ""}},
+        {"6217": {"value": "---", "unit": "", "desc": ""}},
+        {"6217": {"value": "", "unit": "", "desc": ""}},
+        {"6217": {"value": None, "unit": "", "desc": ""}},
+        {"6217": {"value": "-1", "unit": "", "desc": ""}},
+        {"6217": {"value": "3.5", "unit": "", "desc": ""}},
+    ],
+)
+async def test_get_available_circuits_unusable_check_number_probes(
+    mock_bsblan_circuit: BSBLAN,
+    check_number_response: dict[str, Any],
+) -> None:
+    """Test an unusable check number falls back to the operating mode probes."""
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "6217":
+            return check_number_response
+        if param_id == "700":
+            return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
+        if param_id == "1000":
+            return {"1000": {"value": "---", "unit": "", "desc": ""}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
+
+    request_mock = AsyncMock(side_effect=mock_request)
+    bsblan._request = request_mock  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == [1]
+    assert bsblan._available_circuits == {1}
+    assert [
+        call.kwargs["params"]["Parameter"] for call in request_mock.await_args_list
+    ] == ["6217", "700", "1000"]
+
+
+@pytest.mark.asyncio
+async def test_get_available_circuits_check_number_request_failure_probes(
+    mock_bsblan_circuit: BSBLAN,
+) -> None:
+    """Test a failed check number request falls back to the probes."""
+    bsblan = mock_bsblan_circuit
+
+    async def mock_request(
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        params = kwargs.get("params", {})
+        param_id = params.get("Parameter", "")
+        if param_id == "6217":
+            msg = "Connection failed"
+            raise BSBLANError(msg)
+        if param_id in {"700", "1000"}:
+            return {param_id: {"value": "1", "unit": "", "desc": "Automatic"}}
+        msg = f"Unexpected parameter probe: {param_id}"
+        raise AssertionError(msg)
+
+    bsblan._request = AsyncMock(side_effect=mock_request)  # type: ignore[method-assign]
+
+    circuits = await bsblan.get_available_circuits()
+
+    assert circuits == [1, 2]
+    assert bsblan._available_circuits == {1, 2}
 
 
 @pytest.mark.asyncio
@@ -945,6 +1080,8 @@ async def test_get_available_circuits_unresolved_capability_probes(
     ) -> dict[str, Any]:
         params = kwargs.get("params", {})
         param_id = params.get("Parameter", "")
+        if param_id == CircuitConfig.CHECK_NUMBER_PARAM:
+            return {}
         if param_id == "700":
             return {"700": {"value": "1", "unit": "", "desc": "Automatic"}}
         if param_id == "1000":
