@@ -46,6 +46,8 @@ from .models import (
     HotWaterSchedule,
     HotWaterState,
     Info,
+    ScheduleReadMapping,
+    ScheduleSnapshot,
     Sensor,
     SetHotWaterParam,
     State,
@@ -155,6 +157,7 @@ class BSBLAN:
             validate_circuit=self._validate_circuit,
             set_payload=self._set_payload,
             set_device_state=self._set_device_state,
+            uses_pps_bus=lambda: self._uses_pps_bus,
         )
         self._thermostat_writer = ThermostatWriter(
             uses_pps_bus=lambda: self._uses_pps_bus,
@@ -1156,6 +1159,20 @@ class BSBLAN:
 
         """
         return await self._hot_water.schedule(include)
+
+    async def get_hot_water_schedule(
+        self, *, mapping: ScheduleReadMapping | None = None
+    ) -> ScheduleSnapshot:
+        """Read a fresh snapshot using a caller-confirmed hot-water mapping."""
+        return await self._schedules.structured_schedule("hot_water", mapping=mapping)
+
+    async def get_heating_schedule(
+        self, circuit: int = 1, *, mapping: ScheduleReadMapping | None = None
+    ) -> ScheduleSnapshot:
+        """Read a fresh snapshot using a caller-confirmed heating mapping."""
+        return await self._schedules.structured_schedule(
+            "heating", circuit, mapping=mapping
+        )
 
     async def heating_schedule(
         self,

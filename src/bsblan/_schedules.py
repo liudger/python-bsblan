@@ -2,16 +2,129 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import re
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, Literal
+
+from pydantic import ValidationError
 
 from .constants import ErrorMsg, HeatingScheduleParams, HotWaterParams
-from .exceptions import BSBLANError, BSBLANUnsupportedFeatureError
-from .models import HeatingTimeSwitchPrograms
+from .exceptions import (
+    BSBLANError,
+    BSBLANInvalidParameterError,
+    BSBLANMalformedResponseError,
+    BSBLANScheduleMappingError,
+    BSBLANUnsupportedFeatureError,
+)
+from .models import (
+    MAX_TIME_SLOTS_PER_DAY,
+    DataType,
+    DaySchedule,
+    EntityInfo,
+    HeatingTimeSwitchPrograms,
+    ScheduleDay,
+    ScheduleReadMapping,
+    ScheduleSnapshot,
+    TimeSlot,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from .models import DaySchedule, DHWSchedule, HeatingSchedule
+    from .models import DHWSchedule, HeatingSchedule
+
+
+def _parse_schedule_day(param_id: str, raw: Any) -> ScheduleDay:
+    """Validate and parse one present device response entity."""
+    if not isinstance(raw, dict):
+        msg = "entity must be an object"
+        raise TypeError(msg)
+    if "value" not in raw or type(raw.get("error")) is not int:
+        msg = "entity must contain a value and integer error"
+        raise ValueError(msg)
+    value = raw["value"]
+    if value is not None and not isinstance(value, str):
+        msg = "schedule value must be a string or null"
+        raise TypeError(msg)
+    metadata_input = raw.copy()
+    if raw["error"] and raw.get("dataType") != DataType.TIMEPROG:
+        # Preserve the wire value in raw_value, without converting error data
+        # to an incompatible numeric EntityInfo[str] value.
+        metadata_input["value"] = None
+    metadata = EntityInfo[str].model_validate(metadata_input)
+    if metadata.error:
+        return ScheduleDay(
+            parameter_id=param_id,
+            status="unavailable",
+            raw_value=value,
+            metadata=metadata,
+            reason=f"device error {metadata.error}",
+            reason_code="device_error",
+            error_code=metadata.error,
+            retry_hint=(
+                "requires_reconfiguration"
+                if metadata.error == 7
+                else "retry_later"
+                if metadata.error == 261
+                else "unknown"
+            ),
+        )
+    if value is None or value in {"", "---", "None"}:
+        return ScheduleDay(
+            parameter_id=param_id,
+            status="unavailable",
+            raw_value=value,
+            metadata=metadata,
+            reason="inactive value",
+            reason_code="inactive",
+            retry_hint="unknown",
+        )
+    if type(raw.get("dataType")) is not int or raw["dataType"] != DataType.TIMEPROG:
+        msg = "unsupported or missing schedule data type"
+        raise ValueError(msg)
+    tokens = value.split()
+    if not tokens or len(tokens) > MAX_TIME_SLOTS_PER_DAY:
+        msg = "unsupported number of physical schedule slots"
+        raise ValueError(msg)
+    if any(
+        slot_text != "##:##-##:##"
+        and not re.fullmatch(r"[0-9]{2}:[0-9]{2}-[0-9]{2}:[0-9]{2}", slot_text)
+        for slot_text in tokens
+    ):
+        msg = "unsupported structured schedule format"
+        raise ValueError(msg)
+    schedule = DaySchedule(
+        slots=[TimeSlot.from_bsblan_format(s) for s in tokens if s != "##:##-##:##"]
+    )
+    for index, slot in enumerate(schedule.slots):
+        if any(
+            slot.start < other.end and other.start < slot.end
+            for other in schedule.slots[index + 1 :]
+        ):
+            msg = "overlapping slots are unsupported in the structured representation"
+            raise ValueError(msg)
+    return ScheduleDay(
+        parameter_id=param_id,
+        status="readable" if schedule.slots else "empty",
+        raw_value=value,
+        metadata=metadata,
+        schedule=schedule,
+    )
+
+
+def _schedule_day(
+    param_id: str,
+    name: str,
+    raw: Any,
+    circuit: int | None,
+    kind: str,
+) -> ScheduleDay:
+    """Add day and circuit context to parsing errors."""
+    try:
+        return _parse_schedule_day(param_id, raw)
+    except (ValueError, TypeError, AttributeError) as err:
+        msg = f"Invalid {kind} schedule circuit {circuit} {name} parameter {param_id}"
+        raise BSBLANMalformedResponseError(msg) from err
 
 
 class ScheduleManager:
@@ -28,6 +141,7 @@ class ScheduleManager:
         validate_circuit: Callable[[int], None],
         set_payload: Callable[[str, str], dict[str, Any]],
         set_device_state: Callable[[dict[str, Any]], Awaitable[None]],
+        uses_pps_bus: Callable[[], bool],
     ) -> None:
         """Initialize the schedule manager.
 
@@ -46,6 +160,71 @@ class ScheduleManager:
         self._validate_circuit = validate_circuit
         self._set_payload = set_payload
         self._set_device_state = set_device_state
+        self._uses_pps_bus = uses_pps_bus
+
+    async def structured_schedule(
+        self,
+        kind: Literal["hot_water", "heating"],
+        circuit: int | None = None,
+        *,
+        mapping: ScheduleReadMapping | None = None,
+    ) -> ScheduleSnapshot:
+        """Query all day IDs and build a fresh, ID-mapped snapshot."""
+        if kind == "heating":
+            if circuit is None:
+                msg = "A heating circuit is required"
+                raise BSBLANError(msg)
+            if type(circuit) is not int or circuit not in (1, 2):
+                msg = f"circuit {circuit}"
+                raise BSBLANInvalidParameterError(msg)
+        if self._uses_pps_bus():
+            msg = f"{kind} circuit {circuit}: PPS structured schedules unsupported"
+            raise BSBLANUnsupportedFeatureError(msg)
+        if mapping is None:
+            raise BSBLANScheduleMappingError(kind, circuit, "mapping_unknown")
+        if not isinstance(mapping, ScheduleReadMapping):
+            raise BSBLANScheduleMappingError(kind, circuit, "invalid_mapping")
+        try:
+            days = ScheduleReadMapping.model_validate(mapping.model_dump()).model_dump()
+        except ValidationError as err:
+            raise BSBLANScheduleMappingError(kind, circuit, "invalid_mapping") from err
+        context = (
+            f"Invalid {kind} schedule circuit {circuit} "
+            f"response for IDs {list(days.values())}"
+        )
+        try:
+            response = await self._request(
+                params={"Parameter": ",".join(days.values())}
+            )
+        except BSBLANMalformedResponseError as err:
+            # Keep the original error and its decode cause, if any.
+            err.message = f"{context}: {err}"
+            err.args = (err.message,)
+            raise
+        received_at = datetime.now(UTC)
+        if not isinstance(response, dict):
+            raise BSBLANMalformedResponseError(context)
+        results = {
+            name: (
+                _schedule_day(param, name, response[param], circuit, kind)
+                if param in response
+                else ScheduleDay(
+                    parameter_id=param,
+                    status="unavailable",
+                    reason="missing",
+                    reason_code="missing",
+                    retry_hint="unknown",
+                )
+            )
+            for name, param in days.items()
+        }
+        return ScheduleSnapshot(
+            kind=kind,
+            circuit=circuit,
+            received_at=received_at,
+            complete=all(day.status != "unavailable" for day in results.values()),
+            days=results,
+        )
 
     async def heating_schedule(
         self,

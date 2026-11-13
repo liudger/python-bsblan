@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import time
+from datetime import datetime, time
 from enum import IntEnum
-from typing import Any, Final, Generic, TypeVar
+from typing import Any, Final, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from bsblan.constants import (
     TEMPERATURE_UNITS,
@@ -419,6 +419,68 @@ class EntityInfo(BaseModel, Generic[T]):
         if self.data_type != DataType.PLAIN_NUMBER:
             return None
         return UNIT_STATE_CLASS_MAP.get(self.unit)
+
+
+class ScheduleReadMapping(BaseModel):
+    """Caller-confirmed IDs for one target and one schedule group."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    monday: str
+    tuesday: str
+    wednesday: str
+    thursday: str
+    friday: str
+    saturday: str
+    sunday: str
+
+    @field_validator(
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+    )
+    @classmethod
+    def validate_id(cls, value: str) -> str:
+        """Reject noncanonical or potentially injectable parameter IDs."""
+        if not re.fullmatch(r"[1-9][0-9]*(?:\.[1-9])?", value):
+            msg = "Invalid schedule parameter ID"
+            raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def validate_unique(self) -> ScheduleReadMapping:
+        """Require seven distinct IDs."""
+        if len(set(self.model_dump().values())) != 7:
+            msg = "Schedule parameter IDs must be unique"
+            raise ValueError(msg)
+        return self
+
+
+class ScheduleDay(BaseModel):
+    """One day from a device response; unavailable is never an empty schedule."""
+
+    parameter_id: str
+    status: Literal["readable", "empty", "unavailable"]
+    raw_value: str | None = None
+    metadata: EntityInfo[str] | None = None
+    reason: str | None = None
+    reason_code: Literal["missing", "inactive", "device_error"] | None = None
+    error_code: int | None = None
+    retry_hint: Literal[
+        "not_applicable", "requires_reconfiguration", "retry_later", "unknown"
+    ] = "not_applicable"
+    schedule: DaySchedule | None = None
+
+
+class ScheduleSnapshot(BaseModel):
+    """A received weekly snapshot, not an atomic read or a write payload."""
+
+    kind: Literal["hot_water", "heating"]
+    circuit: int | None
+    source: Literal["device_response"] = "device_response"
+    mapping_source: Literal["explicit"] = "explicit"
+    day_assignment: Literal["caller_configured"] = "caller_configured"
+    received_at: datetime
+    complete: bool
+    days: dict[str, ScheduleDay]
 
 
 @dataclass

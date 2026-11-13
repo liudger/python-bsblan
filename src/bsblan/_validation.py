@@ -23,7 +23,7 @@ from .constants import (
     PPS_STATIC_VALUES_PARAMS,
     ErrorMsg,
 )
-from .exceptions import BSBLANError
+from .exceptions import BSBLANError, BSBLANMalformedResponseError
 from .utility import APIValidator
 
 if TYPE_CHECKING:
@@ -418,12 +418,14 @@ class SectionValidator:
         if not uncovered_params:
             return None
 
+        response_received = False
         try:
             # Request data from device for validation
             params = self._extract_params_summary(uncovered_params)
             response_data = await self._request(
                 params={"Parameter": params["string_par"]}
             )
+            response_received = True
 
             # Validate the section against actual device response
             api_validator.validate_section(
@@ -436,6 +438,9 @@ class SectionValidator:
             if section == "hot_water":
                 self.populate_hot_water_cache()
         except BSBLANError as err:
+            if isinstance(err, BSBLANMalformedResponseError) and not response_received:
+                # The request failed before validation could mutate any state.
+                raise
             logger.warning("Failed to validate section %s: %s", section, str(err))
             # Reset validation state for this section
             api_validator.reset_validation(section)

@@ -22,10 +22,12 @@ The main entry point for interacting with BSB-LAN devices.
         - set_time
         - thermostat
         - heating_schedule
+        - get_heating_schedule
         - set_heating_schedule
         - hot_water_state
         - hot_water_config
         - hot_water_schedule
+        - get_hot_water_schedule
         - set_hot_water
         - set_hot_water_schedule
 
@@ -34,3 +36,9 @@ The main entry point for interacting with BSB-LAN devices.
 ::: bsblan.BSBLANConfig
     options:
       show_bases: false
+
+## Schedule read mapping
+
+::: bsblan.ScheduleReadMapping
+
+::: bsblan.BSBLANScheduleMappingError

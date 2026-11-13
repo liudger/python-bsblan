@@ -80,17 +80,19 @@ class BSBLANAuthError(BSBLANError):
 
 
 class BSBLANUnsupportedFeatureError(BSBLANError):
-    """Raised when the device does not support a requested feature.
-
-    This signals a permanent condition: the device does not expose the
-    requested parameters (for example a heating or hot water schedule), so
-    retrying the same request will never succeed.
-    """
+    """A feature is unavailable in the current context; permanence is not implied."""
 
 
 class BSBLANMalformedResponseError(BSBLANError):
-    """Raised when a device response cannot be decoded or parsed.
+    """A response cannot be decoded or parsed; its retryability is unknown."""
 
-    This signals a transient condition: the response body could not be decoded
-    or parsed as valid JSON, so a retry may succeed.
-    """
+
+class BSBLANScheduleMappingError(BSBLANError):
+    """An explicit caller mapping is missing or invalid for a schedule read."""
+
+    def __init__(self, kind: str, circuit: int | None, reason: str) -> None:
+        """Retain the schedule group, circuit, and local failure reason."""
+        self.kind = kind
+        self.circuit = circuit
+        self.reason = reason
+        super().__init__(f"{kind} circuit {circuit}: {reason}")
