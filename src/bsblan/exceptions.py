@@ -93,7 +93,7 @@ class BSBLANMalformedResponseError(BSBLANError):
 
 
 class BSBLANScheduleMappingError(BSBLANError):
-    """An explicit caller mapping is missing or invalid for a schedule read."""
+    """A configured mapping is missing or invalid for a schedule operation."""
 
     def __init__(self, kind: str, circuit: int | None, reason: str) -> None:
         """Retain the schedule group, circuit, and local failure reason."""

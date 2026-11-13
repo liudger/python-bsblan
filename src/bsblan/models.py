@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, field
-from datetime import datetime, time
+from dataclasses import dataclass
+from datetime import time
 from enum import IntEnum
-from typing import Any, Final, Generic, Literal, TypeVar
+from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from bsblan.constants import (
     TEMPERATURE_UNITS,
@@ -17,210 +17,11 @@ from bsblan.constants import (
     UNIT_STATE_CLASS_MAP,
 )
 
-# Maximum number of time slots per day supported by BSB-LAN
-MAX_TIME_SLOTS_PER_DAY: Final[int] = 3
-
 # All possible EntityInfo value types after conversion
 EntityValue = float | int | str | time
 
 # TypeVar for EntityInfo generic
 T = TypeVar("T", bound=EntityValue)
-
-
-@dataclass
-class TimeSlot:
-    """A single time slot with start and end time.
-
-    Attributes:
-        start: Start time of the slot.
-        end: End time of the slot.
-
-    Example:
-        >>> slot = TimeSlot(time(6, 0), time(8, 0))
-        >>> slot.to_bsblan_format()
-        '06:00-08:00'
-
-    """
-
-    start: time
-    end: time
-
-    def __post_init__(self) -> None:
-        """Validate that start is before end."""
-        if self.start >= self.end:
-            msg = f"Start time {self.start} must be before end time {self.end}"
-            raise ValueError(msg)
-
-    def to_bsblan_format(self) -> str:
-        """Convert to BSB-LAN format 'HH:MM-HH:MM'.
-
-        Returns:
-            str: Time slot in BSB-LAN format.
-
-        """
-        return f"{self.start.strftime('%H:%M')}-{self.end.strftime('%H:%M')}"
-
-    @classmethod
-    def from_bsblan_format(cls, value: str) -> TimeSlot:
-        """Parse from BSB-LAN format 'HH:MM-HH:MM'.
-
-        Args:
-            value: Time slot string in format 'HH:MM-HH:MM'.
-
-        Returns:
-            TimeSlot: Parsed time slot.
-
-        Raises:
-            ValueError: If the format is invalid.
-
-        """
-        try:
-            start_str, end_str = value.split("-")
-            start_h, start_m = map(int, start_str.split(":"))
-            end_h, end_m = map(int, end_str.split(":"))
-            return cls(start=time(start_h, start_m), end=time(end_h, end_m))
-        except (ValueError, AttributeError) as e:
-            msg = f"Invalid time slot format: {value}"
-            raise ValueError(msg) from e
-
-
-@dataclass
-class DaySchedule:
-    """Schedule for a single day with up to 3 time slots (BSB-LAN limit).
-
-    Attributes:
-        slots: List of time slots for the day.
-
-    Example:
-        >>> schedule = DaySchedule(slots=[
-        ...     TimeSlot(time(6, 0), time(8, 0)),
-        ...     TimeSlot(time(17, 0), time(21, 0)),
-        ... ])
-        >>> schedule.to_bsblan_format()
-        '06:00-08:00 17:00-21:00'
-
-    """
-
-    slots: list[TimeSlot] = field(default_factory=list)
-
-    def __post_init__(self) -> None:
-        """Validate max 3 slots per day (BSB-LAN limitation)."""
-        if len(self.slots) > MAX_TIME_SLOTS_PER_DAY:
-            msg = (
-                f"BSB-LAN supports maximum {MAX_TIME_SLOTS_PER_DAY} time slots per day"
-            )
-            raise ValueError(msg)
-
-    def to_bsblan_format(self) -> str:
-        """Convert to BSB-LAN string format like '06:00-08:00 17:00-21:00'.
-
-        Returns:
-            str: Day schedule in BSB-LAN format, or empty string if no slots.
-
-        """
-        if not self.slots:
-            return ""
-        return " ".join(slot.to_bsblan_format() for slot in self.slots)
-
-    @classmethod
-    def from_bsblan_format(cls, value: str) -> DaySchedule:
-        """Parse from BSB-LAN format like '06:00-08:00 17:00-21:00'.
-
-        Args:
-            value: Day schedule string in BSB-LAN format.
-
-        Returns:
-            DaySchedule: Parsed day schedule.
-
-        """
-        if not value or value == "---":
-            return cls(slots=[])
-        slot_strings = value.split()
-        slots = [TimeSlot.from_bsblan_format(s) for s in slot_strings]
-        return cls(slots=slots)
-
-
-@dataclass
-class WeeklySchedule:
-    """Base weekly schedule with optional day schedules.
-
-    Each day can have up to 3 time slots (validated by DaySchedule).
-
-    """
-
-    monday: DaySchedule | None = None
-    tuesday: DaySchedule | None = None
-    wednesday: DaySchedule | None = None
-    thursday: DaySchedule | None = None
-    friday: DaySchedule | None = None
-    saturday: DaySchedule | None = None
-    sunday: DaySchedule | None = None
-
-    def has_any_schedule(self) -> bool:
-        """Check if any day has a schedule set.
-
-        Returns:
-            bool: True if at least one day has a schedule.
-
-        """
-        return any(
-            day is not None
-            for day in [
-                self.monday,
-                self.tuesday,
-                self.wednesday,
-                self.thursday,
-                self.friday,
-                self.saturday,
-                self.sunday,
-            ]
-        )
-
-
-@dataclass
-class DHWSchedule(WeeklySchedule):
-    """Weekly hot water schedule for setting time programs.
-
-    Use this dataclass to set DHW time programs via set_hot_water_schedule().
-    Each day can have up to 3 time slots.
-
-    Example:
-        >>> schedule = DHWSchedule(
-        ...     monday=DaySchedule(slots=[
-        ...         TimeSlot(time(6, 0), time(8, 0)),
-        ...         TimeSlot(time(17, 0), time(21, 0)),
-        ...     ]),
-        ...     tuesday=DaySchedule(slots=[
-        ...         TimeSlot(time(6, 0), time(8, 0)),
-        ...     ])
-        ... )
-        >>> await client.set_hot_water_schedule(schedule)
-
-    """
-
-
-@dataclass
-class HeatingSchedule(WeeklySchedule):
-    """Weekly heating schedule for setting time programs.
-
-    Use this dataclass to set heating time programs via set_heating_schedule().
-    Each day can have up to 3 time slots.
-
-    """
-
-
-@dataclass
-class DHWTimeSwitchPrograms:
-    """Dataclass for DHW time switch programs."""
-
-    monday: str | None = None
-    tuesday: str | None = None
-    wednesday: str | None = None
-    thursday: str | None = None
-    friday: str | None = None
-    saturday: str | None = None
-    sunday: str | None = None
-    standard_values: str | None = None
 
 
 class DataType(IntEnum):
@@ -421,68 +222,6 @@ class EntityInfo(BaseModel, Generic[T]):
         return UNIT_STATE_CLASS_MAP.get(self.unit)
 
 
-class ScheduleReadMapping(BaseModel):
-    """Caller-confirmed IDs for one target and one schedule group."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
-
-    monday: str
-    tuesday: str
-    wednesday: str
-    thursday: str
-    friday: str
-    saturday: str
-    sunday: str
-
-    @field_validator(
-        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
-    )
-    @classmethod
-    def validate_id(cls, value: str) -> str:
-        """Reject noncanonical or potentially injectable parameter IDs."""
-        if not re.fullmatch(r"[1-9][0-9]*(?:\.[1-9])?", value):
-            msg = "Invalid schedule parameter ID"
-            raise ValueError(msg)
-        return value
-
-    @model_validator(mode="after")
-    def validate_unique(self) -> ScheduleReadMapping:
-        """Require seven distinct IDs."""
-        if len(set(self.model_dump().values())) != 7:
-            msg = "Schedule parameter IDs must be unique"
-            raise ValueError(msg)
-        return self
-
-
-class ScheduleDay(BaseModel):
-    """One day from a device response; unavailable is never an empty schedule."""
-
-    parameter_id: str
-    status: Literal["readable", "empty", "unavailable"]
-    raw_value: str | None = None
-    metadata: EntityInfo[str] | None = None
-    reason: str | None = None
-    reason_code: Literal["missing", "inactive", "device_error"] | None = None
-    error_code: int | None = None
-    retry_hint: Literal[
-        "not_applicable", "requires_reconfiguration", "retry_later", "unknown"
-    ] = "not_applicable"
-    schedule: DaySchedule | None = None
-
-
-class ScheduleSnapshot(BaseModel):
-    """A received weekly snapshot, not an atomic read or a write payload."""
-
-    kind: Literal["hot_water", "heating"]
-    circuit: int | None
-    source: Literal["device_response"] = "device_response"
-    mapping_source: Literal["explicit"] = "explicit"
-    day_assignment: Literal["caller_configured"] = "caller_configured"
-    received_at: datetime
-    complete: bool
-    days: dict[str, ScheduleDay]
-
-
 @dataclass
 class SetHotWaterParam:
     """Parameters for setting hot water configuration.
@@ -492,14 +231,13 @@ class SetHotWaterParam:
 
     Note:
         This is for WRITING to the device. For READING hot water data,
-        use HotWaterState, HotWaterConfig, or HotWaterSchedule.
+        use HotWaterState or HotWaterConfig. Schedules use bsblan.schedules.
 
     Attributes:
         nominal_setpoint: The nominal setpoint temperature.
         reduced_setpoint: The reduced setpoint temperature.
         nominal_setpoint_max: The maximum nominal setpoint temperature.
         operating_mode: The operating mode (e.g., "0"=Off, "1"=On).
-        dhw_time_programs: Time switch programs for DHW.
         eco_mode_selection: Eco mode selection.
         dhw_charging_priority: DHW charging priority.
         legionella_function_setpoint: Legionella function setpoint temperature.
@@ -515,7 +253,6 @@ class SetHotWaterParam:
     reduced_setpoint: float | None = None
     nominal_setpoint_max: float | None = None
     operating_mode: str | None = None
-    dhw_time_programs: DHWTimeSwitchPrograms | None = None
     eco_mode_selection: str | None = None
     dhw_charging_priority: str | None = None
     legionella_function_setpoint: float | None = None
@@ -623,61 +360,6 @@ class HotWaterConfig(BaseModel):  # pylint: disable=too-many-instance-attributes
     dhw_circulation_pump_release: EntityInfo[int] | None = None
     dhw_circulation_pump_cycling: EntityInfo[int] | None = None
     dhw_circulation_setpoint: EntityInfo[float] | None = None
-
-
-class HotWaterSchedule(BaseModel):
-    """Hot water time program schedules (READ from device).
-
-    This class contains time program settings that are typically
-    configured once and rarely changed.
-
-    The daily time programs (Monday-Sunday) use BSB-LAN dataType 9
-    (TIMEPROG) and return schedule strings like
-    ``"13:00-15:00 ##:##-##:## ##:##-##:##"`` where ``##:##`` marks
-    unused time slots.
-
-    ``dhw_time_program_standard_values`` is a YESNO enum (0=No, 1=Yes)
-    that resets all daily schedules back to the controller's factory
-    defaults when set to Yes. It is typically read-only via the API.
-
-    Note:
-        This is for READING from the device. For WRITING time programs,
-        use SetHotWaterParam with set_hot_water().
-
-    """
-
-    dhw_time_program_monday: EntityInfo[str | int] | None = None
-    dhw_time_program_tuesday: EntityInfo[str | int] | None = None
-    dhw_time_program_wednesday: EntityInfo[str | int] | None = None
-    dhw_time_program_thursday: EntityInfo[str | int] | None = None
-    dhw_time_program_friday: EntityInfo[str | int] | None = None
-    dhw_time_program_saturday: EntityInfo[str | int] | None = None
-    dhw_time_program_sunday: EntityInfo[str | int] | None = None
-    # YESNO enum: resets all daily schedules to factory defaults when Yes (1)
-    dhw_time_program_standard_values: EntityInfo[int] | None = None
-
-
-class HeatingTimeSwitchPrograms(BaseModel):
-    """Heating time switch programs for a specific heating circuit (READ).
-
-    The daily time programs (Monday-Sunday) use BSB-LAN dataType 9
-    (TIMEPROG) and return schedule strings like
-    ``"13:00-15:00 ##:##-##:## ##:##-##:##"`` where ``##:##`` marks
-    unused time slots.
-
-    ``standard_values`` is a YESNO enum (0=No, 1=Yes) that resets
-    all daily schedules back to the controller's factory defaults.
-
-    """
-
-    monday: EntityInfo[str | int] | None = None
-    tuesday: EntityInfo[str | int] | None = None
-    wednesday: EntityInfo[str | int] | None = None
-    thursday: EntityInfo[str | int] | None = None
-    friday: EntityInfo[str | int] | None = None
-    saturday: EntityInfo[str | int] | None = None
-    sunday: EntityInfo[str | int] | None = None
-    standard_values: EntityInfo[int] | None = None
 
 
 class DeviceTime(BaseModel):
