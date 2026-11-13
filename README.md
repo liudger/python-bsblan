@@ -50,6 +50,9 @@ asyncio.run(main())
 
 For more examples, including hot water control, multi-circuit support, and
 authentication setup, see the [Getting Started][docs-getting-started] guide.
+The [structured schedule reads guide](docs/getting-started.md#structured-schedule-reads)
+also describes the control example's read-only schedule mode and its required
+device-confirmed mappings.
 
 ## Compatibility
 
