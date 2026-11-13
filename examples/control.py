@@ -4,7 +4,6 @@
 This example demonstrates the optimized hot water functionality:
 - HotWaterState: Essential parameters for frequent polling (5 fields)
 - HotWaterConfig: Configuration parameters checked less frequently (16 fields)
-- HotWaterSchedule: Time program schedules checked occasionally (8 fields)
 
 This three-tier approach reduces API calls by 79% for regular monitoring.
 """
@@ -16,8 +15,6 @@ import asyncio
 from datetime import datetime
 from typing import Any
 
-from pydantic import ValidationError
-
 from bsblan import (
     BSBLAN,
     BSBLANConfig,
@@ -25,18 +22,13 @@ from bsblan import (
     DeviceTime,
     HeatingCircuitStatus,
     HotWaterConfig,
-    HotWaterSchedule,
     HotWaterState,
     Info,
-    ScheduleReadMapping,
-    ScheduleSnapshot,
     Sensor,
-    SetHotWaterParam,
     State,
     StaticState,
     get_hvac_action_category,
 )
-from bsblan.models import DHWTimeSwitchPrograms
 from discovery import get_bsblan_host, get_config_from_env
 
 
@@ -301,76 +293,7 @@ def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
     print_attributes("Hot Water Configuration", attributes)
 
 
-def print_hot_water_schedule(hot_water_schedule: HotWaterSchedule) -> None:
-    """Print hot water schedule information.
-
-    Args:
-        hot_water_schedule (HotWaterSchedule): The hot water schedule information
-            from the BSBLan device (time programs).
-
-    """
-    days = (
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-    )
-    attributes = {
-        day.capitalize(): get_attribute(
-            getattr(hot_water_schedule, f"dhw_time_program_{day}")
-        )
-        for day in days
-    }
-    attributes["Standard Values"] = get_attribute(
-        hot_water_schedule.dhw_time_program_standard_values
-    )
-    print_attributes("Hot Water Schedule", attributes)
-
-
-def print_structured_schedule(snapshot: ScheduleSnapshot) -> None:
-    """Display the observed day statuses and parsed slots without writing them."""
-    print(f"\n{snapshot.kind} schedule, circuit={snapshot.circuit}:")
-    print(
-        f"Received: {snapshot.received_at.isoformat()}, complete: {snapshot.complete}"
-    )
-    for day_name, day in snapshot.days.items():
-        print(
-            f"{day_name}: parameter={day.parameter_id}, status={day.status}, "
-            f"raw={day.raw_value!r}, reason={day.reason}, "
-            f"error_code={day.error_code}, retry_hint={day.retry_hint}"
-        )
-        if day.schedule is not None:
-            for slot in day.schedule.slots:
-                print(f"  {slot.start:%H:%M}-{slot.end:%H:%M}")
-
-
-async def read_structured_schedules(
-    bsblan: BSBLAN,
-    hot_water_mapping: ScheduleReadMapping | None,
-    heating_mapping: ScheduleReadMapping | None,
-    circuit: int,
-) -> None:
-    """Read only explicitly configured schedule groups."""
-    if hot_water_mapping is not None:
-        snapshot = await bsblan.get_hot_water_schedule(mapping=hot_water_mapping)
-        print_structured_schedule(snapshot)
-    if heating_mapping is not None:
-        snapshot = await bsblan.get_heating_schedule(
-            circuit=circuit, mapping=heating_mapping
-        )
-        print_structured_schedule(snapshot)
-
-
-async def main(
-    *,
-    structured_schedules: bool = False,
-    hot_water_mapping: ScheduleReadMapping | None = None,
-    heating_mapping: ScheduleReadMapping | None = None,
-    circuit: int = 1,
-) -> None:
+async def main() -> None:
     """Show example on controlling your BSBLan device."""
     # Get host from environment variable or mDNS discovery
     host, port = await get_bsblan_host()
@@ -389,12 +312,6 @@ async def main(
 
     # Initialize BSBLAN with the configuration object
     async with BSBLAN(config) as bsblan:
-        if structured_schedules:
-            await read_structured_schedules(
-                bsblan, hot_water_mapping, heating_mapping, circuit
-            )
-            return
-
         # Get and print device and general info, including bus metadata
         device: Device = bsblan.device_info or await bsblan.device()
         info: Info = await bsblan.info()
@@ -442,21 +359,6 @@ async def main(
         except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
             print(f"Hot water configuration not available: {e}")
 
-        # Get hot water schedule (time programs)
-        try:
-            hot_water_schedule: HotWaterSchedule = await bsblan.hot_water_schedule()
-            print_hot_water_schedule(hot_water_schedule)
-        except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
-            print(f"Hot water schedule not available: {e}")
-
-        # Example: Set DHW time program for Monday
-        print("\nSetting DHW time program for Monday to 13:00-14:00")
-
-        dhw_programs = DHWTimeSwitchPrograms(
-            monday="13:00-14:00 ##:##-##:## ##:##-##:##"
-        )
-        await bsblan.set_hot_water(SetHotWaterParam(dhw_time_programs=dhw_programs))
-
         # Example: Set device time
         if bsblan.supports_time_sync:
             print("\nSetting device time to current system time")
@@ -468,46 +370,5 @@ async def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--structured-schedules",
-        action="store_true",
-        help="Read configured structured schedules only; do not perform writes.",
-    )
-    parser.add_argument(
-        "--hot-water-mapping",
-        help="JSON object of independently confirmed weekday parameter IDs.",
-    )
-    parser.add_argument(
-        "--heating-mapping",
-        help="JSON object of independently confirmed weekday parameter IDs.",
-    )
-    parser.add_argument(
-        "--circuit", type=int, choices=(1, 2), default=1, help="Heating circuit."
-    )
-    args = parser.parse_args()
-    if args.structured_schedules != bool(
-        args.hot_water_mapping or args.heating_mapping
-    ):
-        parser.error("Use --structured-schedules with at least one schedule mapping.")
-    try:
-        hot_water_mapping = (
-            ScheduleReadMapping.model_validate_json(args.hot_water_mapping)
-            if args.hot_water_mapping is not None
-            else None
-        )
-        heating_mapping = (
-            ScheduleReadMapping.model_validate_json(args.heating_mapping)
-            if args.heating_mapping is not None
-            else None
-        )
-    except ValidationError as err:
-        parser.error(f"Invalid schedule mapping: {err}")
-    asyncio.run(
-        main(
-            structured_schedules=args.structured_schedules,
-            hot_water_mapping=hot_water_mapping,
-            heating_mapping=heating_mapping,
-            circuit=args.circuit,
-        )
-    )
+    argparse.ArgumentParser(description=__doc__).parse_args()
+    asyncio.run(main())

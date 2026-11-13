@@ -92,57 +92,15 @@ def test_pre_built_api_configuration() -> None:
         assert param_id not in all_params
 
 
-def test_hot_water_parameter_groups_completeness() -> None:
-    """Test that hot water parameter groups cover all parameters."""
-    all_grouped_params = (
-        HotWaterParams.ESSENTIAL | HotWaterParams.CONFIG | HotWaterParams.SCHEDULE
-    )
-
-    # All BASE_HOT_WATER_PARAMS should be categorized into one of the groups
-    all_base_param_ids = set(BASE_HOT_WATER_PARAMS.keys())
-    assert all_grouped_params == all_base_param_ids
-
-
-@pytest.mark.parametrize(
-    ("group1", "group2"),
-    [
-        (HotWaterParams.ESSENTIAL, HotWaterParams.CONFIG),
-        (HotWaterParams.ESSENTIAL, HotWaterParams.SCHEDULE),
-        (HotWaterParams.CONFIG, HotWaterParams.SCHEDULE),
-    ],
-)
-def test_hot_water_parameter_groups_no_overlap(
-    group1: set[str],
-    group2: set[str],
-) -> None:
-    """Test that hot water parameter groups don't overlap."""
-    assert not (group1 & group2), f"Groups should not overlap: {group1 & group2}"
-
-
-@pytest.mark.parametrize(
-    ("group", "expected_count"),
-    [
-        (HotWaterParams.ESSENTIAL, 6),  # Current optimized count
-        (HotWaterParams.CONFIG, 16),  # Configuration parameters
-        (HotWaterParams.SCHEDULE, 8),  # Time program parameters
-    ],
-)
-def test_hot_water_parameter_groups_expected_counts(
-    group: set[str],
-    expected_count: int,
-) -> None:
-    """Test that hot water parameter groups have expected counts."""
-    assert len(group) == expected_count
-
-
-def test_hot_water_parameter_groups_total_count() -> None:
-    """Test that total grouped parameters match base parameters."""
-    total_grouped = (
-        len(HotWaterParams.ESSENTIAL)
-        + len(HotWaterParams.CONFIG)
-        + len(HotWaterParams.SCHEDULE)
-    )
-    assert total_grouped == len(BASE_HOT_WATER_PARAMS)
+def test_hot_water_groups_cover_only_state_and_configuration() -> None:
+    """Normal polling groups do not claim controller-specific weekday mappings."""
+    grouped = HotWaterParams.ESSENTIAL | HotWaterParams.CONFIG
+    assert not HotWaterParams.ESSENTIAL & HotWaterParams.CONFIG
+    assert grouped == {
+        param
+        for param, name in BASE_HOT_WATER_PARAMS.items()
+        if not name.startswith("dhw_time_program_")
+    }
 
 
 def test_cooling_target_uses_single_base_parameter() -> None:

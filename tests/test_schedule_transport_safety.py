@@ -10,7 +10,7 @@ from unittest.mock import Mock
 import aiohttp
 import pytest
 
-from bsblan import BSBLAN, BSBLANConfig, ScheduleReadMapping
+from bsblan import BSBLAN, BSBLANConfig, ScheduleMapping, ScheduleMappings
 from bsblan.exceptions import (
     BSBLANAuthError,
     BSBLANConnectionError,
@@ -20,7 +20,7 @@ from bsblan.exceptions import (
 if TYPE_CHECKING:
     from aresponses import ResponsesMockServer
 
-PROFILE = ScheduleReadMapping(
+PROFILE = ScheduleMapping(
     monday="502",
     tuesday="502.1",
     wednesday="502.2",
@@ -30,6 +30,21 @@ PROFILE = ScheduleReadMapping(
     sunday="502.6",
 )
 PARAMS = "502,502.1,502.2,502.3,502.4,502.5,502.6"
+
+
+def configured(
+    host: str = "example.com",
+    profile: ScheduleMapping = PROFILE,
+    request_timeout: float = 10,
+) -> BSBLANConfig:
+    """Configure explicit synthetic profiles for transport-only tests."""
+    return BSBLANConfig(
+        host=host,
+        request_timeout=request_timeout,
+        schedule_mappings=ScheduleMappings(
+            hot_water=profile, heating_1=profile, heating_2=profile
+        ),
+    )
 
 
 @pytest.mark.parametrize("body", ["null", "17", '["payload"]', "[]"])
@@ -47,7 +62,7 @@ async def test_http_non_object_envelope_is_contextual(
     """Classify JSON non-objects after the real firmware-5 transport path."""
     kind, circuit, offset = group
     host, base = target
-    mapping = ScheduleReadMapping(
+    mapping = ScheduleMapping(
         **{day: str(base + offset + i) for i, day in enumerate(PROFILE.model_dump())}
     )
     params = ",".join(mapping.model_dump().values())
@@ -59,13 +74,13 @@ async def test_http_non_object_envelope_is_contextual(
 
     aresponses.add(host, "/JQ", "POST", handler)
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host=host), session=session)
+        client = BSBLAN(configured(host, mapping), session=session)
         client._firmware_version = "5.0.0"
         if kind == "heating":
             assert circuit is not None
-            request = client.get_heating_schedule(circuit=circuit, mapping=mapping)
+            request = client.heating_schedule(circuit=circuit)
         else:
-            request = client.get_hot_water_schedule(mapping=mapping)
+            request = client.hot_water_schedule()
         with pytest.raises(BSBLANMalformedResponseError) as exc:
             await request
         assert f"{kind} schedule circuit {circuit}" in str(exc.value)
@@ -130,9 +145,9 @@ async def test_http_errors_are_not_reclassified(
 
     aresponses.add("example.com", "/JQ", "POST", handler)
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        client = BSBLAN(configured(), session=session)
         with pytest.raises(error) as exc:
-            await client.get_heating_schedule(mapping=PROFILE)
+            await client.heating_schedule()
         assert exc.value.__cause__ is not None
     assert calls == [("POST", "/JQ", PARAMS)]
 
@@ -160,10 +175,10 @@ async def test_http_success_and_exact_query(aresponses: ResponsesMockServer) -> 
 
     aresponses.add("example.com", "/JQ", "POST", handler)
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
-        result = await client.get_heating_schedule(mapping=PROFILE)
-    assert result.days["monday"].status == "readable"
-    assert result.days["tuesday"].status == "unavailable"
+        client = BSBLAN(configured(), session=session)
+        result = await client.heating_schedule()
+    assert result.day("monday").status == "readable"
+    assert result.day("tuesday").status == "unavailable"
     assert calls == [("POST", "/JQ", PARAMS)]
 
 
@@ -181,11 +196,9 @@ async def test_http_timeout_uses_bounded_existing_retry(
     for _ in range(3):
         aresponses.add("example.com", "/JQ", "POST", handler)
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(
-            BSBLANConfig(host="example.com", request_timeout=0.01), session=session
-        )
+        client = BSBLAN(configured(request_timeout=0.01), session=session)
         with pytest.raises(BSBLANConnectionError) as exc:
-            await client.get_heating_schedule(mapping=PROFILE)
+            await client.heating_schedule()
         assert exc.value.__cause__ is not None
     assert calls == [("POST", "/JQ", PARAMS)] * 3
 
@@ -195,9 +208,9 @@ async def test_connection_error_uses_bounded_existing_retry() -> None:
     async with aiohttp.ClientSession() as session:
         request = Mock(side_effect=aiohttp.ClientConnectionError("synthetic"))
         session.request = request
-        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        client = BSBLAN(configured(), session=session)
         with pytest.raises(BSBLANConnectionError) as exc:
-            await client.get_heating_schedule(mapping=PROFILE)
+            await client.heating_schedule()
         assert isinstance(exc.value.__cause__, aiohttp.ClientConnectionError)
     assert request.call_count == 3
     assert all(call.args[0] == "POST" for call in request.call_args_list)
