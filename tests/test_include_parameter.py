@@ -447,20 +447,8 @@ async def test_static_values_with_include(monkeypatch: Any) -> None:
                 "param_id": "1645",
             },
         ),
-        (
-            "hot_water_schedule",
-            "schedule",
-            {
-                "param_cache": {
-                    "561": "dhw_time_program_monday",
-                    "562": "dhw_time_program_tuesday",
-                },
-                "include_param": "dhw_time_program_monday",
-                "param_id": "561",
-            },
-        ),
     ],
-    ids=["hot_water_state", "hot_water_config", "hot_water_schedule"],
+    ids=["hot_water_state", "hot_water_config"],
 )
 async def test_hot_water_method_with_include(
     monkeypatch: Any,
@@ -523,13 +511,8 @@ async def test_hot_water_method_with_include(
             "config",
             {"1645": "legionella_function_setpoint"},
         ),
-        (
-            "hot_water_schedule",
-            "schedule",
-            {"561": "dhw_time_program_monday"},
-        ),
     ],
-    ids=["hot_water_state", "hot_water_config", "hot_water_schedule"],
+    ids=["hot_water_state", "hot_water_config"],
 )
 async def test_hot_water_method_with_empty_include_list(
     monkeypatch: Any,
@@ -574,13 +557,8 @@ async def test_hot_water_method_with_empty_include_list(
             "config",
             {"1645": "legionella_function_setpoint"},
         ),
-        (
-            "hot_water_schedule",
-            "schedule",
-            {"561": "dhw_time_program_monday"},
-        ),
     ],
-    ids=["hot_water_state", "hot_water_config", "hot_water_schedule"],
+    ids=["hot_water_state", "hot_water_config"],
 )
 async def test_hot_water_method_with_invalid_params(
     monkeypatch: Any,

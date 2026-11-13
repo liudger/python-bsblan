@@ -18,7 +18,6 @@ from bsblan.models import (
     DaySchedule,
     DHWSchedule,
     HeatingSchedule,
-    HeatingTimeSwitchPrograms,
     ScheduleReadMapping,
     TimeSlot,
 )
@@ -201,9 +200,8 @@ async def test_bad_entities(mock_bsblan: BSBLAN, bad: Any) -> None:
 async def test_raw_heating_reader_unchanged(mock_bsblan: BSBLAN) -> None:
     """The legacy EntityInfo reader remains separate."""
     mock_bsblan._request = AsyncMock(return_value={"501": entity("06:00-08:00")})
-    raw = await mock_bsblan.heating_schedule(include=["monday"])
-    assert isinstance(raw, HeatingTimeSwitchPrograms)
-    assert raw.monday.value == "06:00-08:00"
+    raw = await mock_bsblan.read_parameters(["501"])
+    assert raw["501"].value == "06:00-08:00"
 
 
 @pytest.mark.parametrize("kind", ["hot_water", "heating"])

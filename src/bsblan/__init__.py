@@ -41,6 +41,7 @@ from .models import (
     StaticState,
     TimeSlot,
 )
+from .schedules import ScheduleMapping, ScheduleMappings
 
 __all__ = [
     "BSBLAN",
@@ -71,6 +72,8 @@ __all__ = [
     "HotWaterState",
     "Info",
     "ScheduleDay",
+    "ScheduleMapping",
+    "ScheduleMappings",
     "ScheduleReadMapping",
     "ScheduleSnapshot",
     "Sensor",
