@@ -16,7 +16,10 @@ has no configured mapping. It SHALL retain the group, circuit, and reason and
 SHALL NOT send a schedule request or fall back to fixed integer IDs.
 
 Invalid mapping construction SHALL fail validation before device I/O. A missing
-schedule mapping SHALL NOT prevent ordinary climate monitoring.
+schedule mapping SHALL NOT prevent ordinary climate monitoring. A change to the
+configured host/port/passkey SHALL fail closed at schedule request boundaries
+with reason `target_changed`, rather than transfer that mapping to a new endpoint.
+A change between day writes SHALL preserve progress in the partial-write error.
 
 ### Requirement: Known unsupported operations are explicit
 

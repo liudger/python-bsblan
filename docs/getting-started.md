@@ -306,6 +306,10 @@ Use separate `hot_water`, `heating_1`, and `heating_2` mappings. Persist their
 the library does not discover, persist, or select profiles. Reconfirm after
 changes to target, firmware/table, controller, bus, or destination. Create a new
 client to change mappings; existing clients retain their captured configuration.
+Changing host, port, or passkey after construction invalidates schedule operations
+with reason `target_changed`. A change between day writes stops the update and
+preserves partial progress. Do not mutate connection options during in-flight
+requests; this is not a concurrent reconfiguration API.
 
 ### Interpret observations
 

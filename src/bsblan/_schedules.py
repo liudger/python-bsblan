@@ -103,7 +103,7 @@ def _write_outcome(response: Any, param: str) -> Literal["rejected", "unknown"] 
 class ScheduleManager:
     """Use one caller-confirmed mapping for both schedule reads and writes."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         request: Callable[..., Awaitable[dict[str, Any]]],
@@ -111,6 +111,7 @@ class ScheduleManager:
         uses_pps_bus: Callable[[], bool],
         mappings: ScheduleMappings,
         bus_writable: Callable[[], bool],
+        target_key: Callable[[], tuple[str, int, str | None]],
     ) -> None:
         """Capture validated mappings while resolving current transport/metadata."""
         self._request = request
@@ -118,6 +119,8 @@ class ScheduleManager:
         self._uses_pps_bus = uses_pps_bus
         self._mappings = ScheduleMappings.model_validate(mappings)
         self._bus_writable = bus_writable
+        self._target_key = target_key
+        self._confirmed_target = target_key()
 
     def _mapping(
         self, kind: Literal["hot_water", "heating"], circuit: int | None
@@ -129,6 +132,8 @@ class ScheduleManager:
         if self._uses_pps_bus():
             msg = f"{kind} circuit {circuit}: PPS schedules unsupported"
             raise BSBLANUnsupportedFeatureError(msg)
+        if self._target_key() != self._confirmed_target:
+            raise BSBLANScheduleMappingError(kind, circuit, "target_changed")
         key = "hot_water" if kind == "hot_water" else f"heating_{circuit}"
         mapping = getattr(self._mappings, key)
         if mapping is None:
@@ -203,6 +208,7 @@ class ScheduleManager:
         for index, (name, param, value) in enumerate(commands):
             pending = tuple(command[0] for command in commands[index + 1 :])
             try:
+                self._mapping(kind, circuit)
                 response = await self._request(
                     base_path="/JS", data=self._set_payload(param, value)
                 )

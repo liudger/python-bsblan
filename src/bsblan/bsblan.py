@@ -150,6 +150,11 @@ class BSBLAN:
             uses_pps_bus=lambda: self._uses_pps_bus,
             mappings=self.config.schedule_mappings,
             bus_writable=lambda: self._is_bus_writable,
+            target_key=lambda: (
+                self.config.host,
+                self.config.port,
+                self.config.passkey,
+            ),
         )
         self._thermostat_writer = ThermostatWriter(
             uses_pps_bus=lambda: self._uses_pps_bus,

@@ -89,7 +89,10 @@ validation. `ScheduleMappings` is frozen and has optional `hot_water`,
 
 Capture a validated immutable configuration for each client. Reads and writes
 resolve the same mapping; neither accepts a per-call override or learns a
-mapping from a previous response. Reject bool/non-integer/unsupported circuits
+mapping from a previous response. Capture the host/port/passkey endpoint identity
+and reject schedule operations after it changes; recheck between sequential
+writes and preserve partial progress. Concurrent connection mutation during
+in-flight I/O is unsupported. Reject bool/non-integer/unsupported circuits
 and known PPS before schedule requests. Reject writes when cached metadata says
 bus writes are disabled, regardless of bus type.
 
