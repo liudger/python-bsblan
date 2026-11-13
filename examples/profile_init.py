@@ -150,9 +150,9 @@ async def profile_detailed(
 async def profile_hot_water_granular(config: BSBLANConfig) -> TimingStats:
     """Profile granular hot water parameter loading.
 
-    This shows the benefit of only loading specific parameter groups
-    (essential: 5 params, config: 16 params, schedule: 8 params)
-    instead of all 29 hot water parameters at once.
+    State and configuration use separate lazy validation groups. Schedules are
+    measured separately only when a caller-confirmed DHW mapping is configured;
+    their values are never served from a validation cache.
     """
     stats = TimingStats()
 
@@ -173,8 +173,9 @@ async def profile_hot_water_granular(config: BSBLANConfig) -> TimingStats:
         async with stats.measure("hot_water_config (16 config params)"):
             await client.hot_water_config()
 
-        async with stats.measure("hot_water_schedule (8 schedule params)"):
-            await client.hot_water_schedule()
+        if config.schedule_mappings.hot_water is not None:
+            async with stats.measure("hot_water_schedule (7 configured day IDs)"):
+                await client.hot_water_schedule()
 
         # Second calls should be instant (already validated)
         async with stats.measure("hot_water_state (cached - no validation)"):

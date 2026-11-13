@@ -26,10 +26,6 @@ Data models for BSB-LAN API responses.
 
 ::: bsblan.Sensor
 
-### HeatingTimeSwitchPrograms
-
-::: bsblan.HeatingTimeSwitchPrograms
-
 ## Hot water
 
 ### HotWaterState
@@ -40,27 +36,34 @@ Data models for BSB-LAN API responses.
 
 ::: bsblan.HotWaterConfig
 
-### HotWaterSchedule
-
-::: bsblan.HotWaterSchedule
-
 ### SetHotWaterParam
 
 ::: bsblan.SetHotWaterParam
 
 ## Schedules
 
-### HeatingSchedule
+Heating and DHW share immutable observations and a separate partial-update
+payload. See the [migration guide](../schedule-migration.md) for breaking changes.
 
-::: bsblan.HeatingSchedule
+### ScheduleMapping
 
-### DHWSchedule
+::: bsblan.ScheduleMapping
 
-::: bsblan.DHWSchedule
+### ScheduleMappings
 
-### DHWTimeSwitchPrograms
+::: bsblan.ScheduleMappings
 
-::: bsblan.DHWTimeSwitchPrograms
+### ScheduleSnapshot
+
+::: bsblan.ScheduleSnapshot
+
+### ScheduleDay
+
+::: bsblan.ScheduleDay
+
+### ScheduleUpdate
+
+::: bsblan.ScheduleUpdate
 
 ### DaySchedule
 

@@ -26,7 +26,7 @@ library repository. Prerequisite plan:
 - Treat API v3 as the supported baseline; do not reintroduce v1-only behavior.
 - Response/state models use pydantic.BaseModel.
 - Set-parameter payload models use @dataclass.
-- Parameter names use snake*case; preserve dhw*_ and legionella*function*_ names.
+- Parameter names use `snake_case`; preserve `dhw_*` and `legionella_function_*` names.
 - Send one /JS request per populated day, sequentially.
 - No automatic discovery, guessed IDs, firmware-only profile selection, or live
   device writes during development.

@@ -21,3 +21,15 @@ Custom exceptions raised by the library.
 ## BSBLANMalformedResponseError
 
 ::: bsblan.BSBLANMalformedResponseError
+
+## BSBLANScheduleMappingError
+
+::: bsblan.BSBLANScheduleMappingError
+
+## BSBLANScheduleWriteError
+
+::: bsblan.BSBLANScheduleWriteError
+
+A partial/uncertain write is not rolled back. Inspect acknowledged, failed and
+unattempted days, then perform explicit readback; see the
+[migration guide](../schedule-migration.md#acknowledgement-partial-writes-and-readback).
