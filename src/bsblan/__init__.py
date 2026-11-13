@@ -14,6 +14,7 @@ from .exceptions import (
     BSBLANError,
     BSBLANMalformedResponseError,
     BSBLANScheduleMappingError,
+    BSBLANScheduleWriteError,
     BSBLANUnsupportedFeatureError,
     BSBLANVersionError,
 )
@@ -41,7 +42,7 @@ from .models import (
     StaticState,
     TimeSlot,
 )
-from .schedules import ScheduleMapping, ScheduleMappings
+from .schedules import ScheduleMapping, ScheduleMappings, ScheduleUpdate
 
 __all__ = [
     "BSBLAN",
@@ -54,6 +55,7 @@ __all__ = [
     "BSBLANError",
     "BSBLANMalformedResponseError",
     "BSBLANScheduleMappingError",
+    "BSBLANScheduleWriteError",
     "BSBLANUnsupportedFeatureError",
     "BSBLANVersionError",
     "DHWSchedule",
@@ -76,6 +78,7 @@ __all__ = [
     "ScheduleMappings",
     "ScheduleReadMapping",
     "ScheduleSnapshot",
+    "ScheduleUpdate",
     "Sensor",
     "SetHotWaterParam",
     "State",

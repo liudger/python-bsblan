@@ -1,150 +1,74 @@
-"""Tests for set_heating_schedule method."""
-
-# pylint: disable=duplicate-code
-# pylint: disable=protected-access
-# file deepcode ignore W0212: this is a testfile
+"""Heating schedule commands use only the configured target and shared values."""
 
 from __future__ import annotations
 
-from datetime import time
-from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock
+import json
+from typing import TYPE_CHECKING, Any
 
+import aiohttp
 import pytest
 
-from bsblan.exceptions import BSBLANError
-from bsblan.models import DaySchedule, HeatingSchedule, TimeSlot
+from bsblan import BSBLAN, BSBLANConfig
+from bsblan.exceptions import BSBLANInvalidParameterError
+from bsblan.schedules import (
+    DaySchedule,
+    ScheduleMapping,
+    ScheduleMappings,
+    ScheduleUpdate,
+)
 
 if TYPE_CHECKING:
-    from bsblan import BSBLAN
+    from aresponses import ResponsesMockServer
 
 
-@pytest.mark.asyncio
-async def test_set_heating_schedule_circuit1_single_day(mock_bsblan: BSBLAN) -> None:
-    """Test setting heating schedule for circuit 1."""
-    schedule = HeatingSchedule(
-        monday=DaySchedule(
-            slots=[
-                TimeSlot(time(6, 0), time(8, 0)),
-                TimeSlot(time(17, 0), time(21, 0)),
-            ]
-        )
-    )
-
-    assert isinstance(mock_bsblan._request, AsyncMock)
-    await mock_bsblan.set_heating_schedule(schedule, circuit=1)
-
-    mock_bsblan._request.assert_awaited_with(
-        base_path="/JS",
-        data={
-            "Parameter": "501",
-            "Value": "06:00-08:00 17:00-21:00",
-            "Type": "1",
-        },
-    )
+@pytest.mark.parametrize("circuit", [True, 1.0, None, 0, 3])
+async def test_invalid_write_circuit_is_rejected(circuit) -> None:
+    """Invalid circuits fail locally even without any configured mapping."""
+    async with aiohttp.ClientSession() as session:
+        client = BSBLAN(BSBLANConfig(host="example.invalid"), session=session)
+        with pytest.raises(BSBLANInvalidParameterError):
+            await client.set_heating_schedule(ScheduleUpdate(), circuit=circuit)
 
 
-@pytest.mark.asyncio
-async def test_set_heating_schedule_circuit2_single_day(mock_bsblan: BSBLAN) -> None:
-    """Test setting heating schedule for circuit 2."""
-    schedule = HeatingSchedule(
-        monday=DaySchedule(
-            slots=[
-                TimeSlot(time(6, 0), time(8, 0)),
-            ]
-        )
-    )
-
-    assert isinstance(mock_bsblan._request, AsyncMock)
-    await mock_bsblan.set_heating_schedule(schedule, circuit=2)
-
-    mock_bsblan._request.assert_awaited_with(
-        base_path="/JS",
-        data={
-            "Parameter": "521",
-            "Value": "06:00-08:00",
-            "Type": "1",
-        },
-    )
-
-
-@pytest.mark.asyncio
-async def test_set_heating_schedule_multiple_days(mock_bsblan: BSBLAN) -> None:
-    """Test setting heating schedule for multiple days."""
-    schedule = HeatingSchedule(
-        monday=DaySchedule(slots=[TimeSlot(time(6, 0), time(8, 0))]),
-        friday=DaySchedule(slots=[TimeSlot(time(7, 0), time(9, 0))]),
-    )
-
-    assert isinstance(mock_bsblan._request, AsyncMock)
-    await mock_bsblan.set_heating_schedule(schedule, circuit=1)
-
-    assert mock_bsblan._request.await_count == 2
-
-
-@pytest.mark.asyncio
-async def test_set_heating_schedule_empty_raises_error(mock_bsblan: BSBLAN) -> None:
-    """Test that empty schedule raises BSBLANError."""
-    schedule = HeatingSchedule()
-
-    with pytest.raises(BSBLANError, match="No schedule provided"):
-        await mock_bsblan.set_heating_schedule(schedule, circuit=1)
-
-
-@pytest.mark.asyncio
-async def test_set_heating_schedule_parameter_ids_per_circuit(
-    mock_bsblan: BSBLAN,
+async def test_circuit_profiles_do_not_leak_into_other_circuits(
+    aresponses: ResponsesMockServer,
 ) -> None:
-    """Test that correct parameter IDs are used per day and circuit."""
-    expected_params = {
-        1: {
-            "monday": "501",
-            "tuesday": "502",
-            "wednesday": "503",
-            "thursday": "504",
-            "friday": "505",
-            "saturday": "506",
-            "sunday": "507",
-        },
-        2: {
-            "monday": "521",
-            "tuesday": "522",
-            "wednesday": "523",
-            "thursday": "524",
-            "friday": "525",
-            "saturday": "526",
-            "sunday": "527",
-        },
-    }
-
-    for circuit, day_map in expected_params.items():
-        for day_name, param_id in day_map.items():
-            assert isinstance(mock_bsblan._request, AsyncMock)
-            mock_bsblan._request.reset_mock()
-
-            schedule = HeatingSchedule(
-                **{day_name: DaySchedule(slots=[TimeSlot(time(6, 0), time(8, 0))])}
-            )
-            await mock_bsblan.set_heating_schedule(schedule, circuit=circuit)
-
-            call_args = mock_bsblan._request.call_args
-            assert call_args is not None
-            assert call_args.kwargs["data"]["Parameter"] == param_id
-
-
-@pytest.mark.asyncio
-async def test_set_heating_schedule_empty_day_schedule(mock_bsblan: BSBLAN) -> None:
-    """Test setting an empty day schedule (clears the schedule)."""
-    schedule = HeatingSchedule(monday=DaySchedule(slots=[]))
-
-    assert isinstance(mock_bsblan._request, AsyncMock)
-    await mock_bsblan.set_heating_schedule(schedule, circuit=1)
-
-    mock_bsblan._request.assert_awaited_with(
-        base_path="/JS",
-        data={
-            "Parameter": "501",
-            "Value": "",
-            "Type": "1",
-        },
+    """Two circuits with different literal profiles never share a weekday ID."""
+    one = ScheduleMapping(
+        monday="810",
+        tuesday="811",
+        wednesday="812",
+        thursday="813",
+        friday="814",
+        saturday="815",
+        sunday="816",
     )
+    two = ScheduleMapping(
+        monday="920",
+        tuesday="921",
+        wednesday="922",
+        thursday="923",
+        friday="924",
+        saturday="925",
+        sunday="926",
+    )
+    seen = []
+
+    async def handler(request: Any) -> Any:
+        payload = await request.json()
+        seen.append(payload["Parameter"])
+        return aresponses.Response(
+            text=json.dumps({payload["Parameter"]: {"status": 1}})
+        )
+
+    aresponses.add("example.com", "/JS", "POST", handler, repeat=2)
+    configured = BSBLANConfig(
+        host="example.com",
+        schedule_mappings=ScheduleMappings(heating_1=one, heating_2=two),
+    )
+    async with aiohttp.ClientSession() as session:
+        client = BSBLAN(configured, session=session)
+        update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
+        await client.set_heating_schedule(update, circuit=2)
+        await client.set_heating_schedule(update, circuit=1)
+    assert seen == ["920", "810"]

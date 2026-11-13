@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from .schedules import Weekday
+
 
 class BSBLANError(Exception):
     """Generic BSBLAN exception."""
@@ -96,3 +101,32 @@ class BSBLANScheduleMappingError(BSBLANError):
         self.circuit = circuit
         self.reason = reason
         super().__init__(f"{kind} circuit {circuit}: {reason}")
+
+
+class BSBLANScheduleWriteError(BSBLANError):
+    """A sequential write stopped; the failed day may have an uncertain outcome."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        kind: str,
+        circuit: int | None,
+        acknowledged_days: tuple[Weekday, ...],
+        failed_day: Weekday,
+        parameter_id: str,
+        unattempted_days: tuple[Weekday, ...],
+        outcome: Literal["rejected", "unknown"],
+    ) -> None:
+        """Keep partial progress separate from acknowledgement or readback proof."""
+        self.kind = kind
+        self.circuit = circuit
+        self.acknowledged_days = acknowledged_days
+        self.failed_day = failed_day
+        self.parameter_id = parameter_id
+        self.unattempted_days = unattempted_days
+        self.outcome = outcome
+        super().__init__(
+            f"{kind} schedule circuit {circuit}: {failed_day} parameter "
+            f"{parameter_id} outcome {outcome}; acknowledged {acknowledged_days}; "
+            f"unattempted {unattempted_days}"
+        )

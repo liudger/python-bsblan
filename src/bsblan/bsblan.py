@@ -38,9 +38,7 @@ from .models import (
     ApiVersion,
     Device,
     DeviceTime,
-    DHWSchedule,
     EntityInfo,
-    HeatingSchedule,
     HotWaterConfig,
     HotWaterState,
     Info,
@@ -51,7 +49,7 @@ from .models import (
     State,
     StaticState,
 )
-from .schedules import ScheduleMappings
+from .schedules import ScheduleMappings, ScheduleUpdate
 from .schedules import ScheduleSnapshot as UnifiedScheduleSnapshot
 from .utility import is_param_value_active
 
@@ -160,6 +158,7 @@ class BSBLAN:
             set_device_state=self._set_device_state,
             uses_pps_bus=lambda: self._uses_pps_bus,
             mappings=self.config.schedule_mappings,
+            bus_writable=lambda: self._is_bus_writable,
         )
         self._thermostat_writer = ThermostatWriter(
             uses_pps_bus=lambda: self._uses_pps_bus,
@@ -1192,7 +1191,8 @@ class BSBLAN:
 
     async def set_heating_schedule(
         self,
-        schedule: HeatingSchedule,
+        update: ScheduleUpdate,
+        *,
         circuit: int = 1,
     ) -> None:
         """Set heating time switch programs for a specific circuit.
@@ -1208,7 +1208,7 @@ class BSBLAN:
             BSBLANError: If no schedule is provided.
 
         """
-        await self._schedules.set_heating_schedule(schedule, circuit)
+        await self._schedules.write("heating", update, circuit)
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
@@ -1228,7 +1228,7 @@ class BSBLAN:
         """
         await self._hot_water.set_hot_water(params)
 
-    async def set_hot_water_schedule(self, schedule: DHWSchedule) -> None:
+    async def set_hot_water_schedule(self, update: ScheduleUpdate) -> None:
         """Set hot water time program schedules.
 
         This method allows setting weekly DHW schedules using a type-safe
@@ -1253,7 +1253,7 @@ class BSBLAN:
             BSBLANError: If no schedule is provided.
 
         """
-        await self._schedules.set_hot_water_schedule(schedule)
+        await self._schedules.write("hot_water", update)
 
     def _prepare_hot_water_state(
         self,

@@ -14,6 +14,7 @@ from .exceptions import (
     BSBLANInvalidParameterError,
     BSBLANMalformedResponseError,
     BSBLANScheduleMappingError,
+    BSBLANScheduleWriteError,
     BSBLANUnsupportedFeatureError,
 )
 from .models import (
@@ -27,7 +28,13 @@ from .models import (
     ScheduleSnapshot,
     TimeSlot,
 )
-from .schedules import WEEKDAYS, ScheduleMapping, ScheduleMappings, Weekday
+from .schedules import (
+    WEEKDAYS,
+    ScheduleMapping,
+    ScheduleMappings,
+    ScheduleUpdate,
+    Weekday,
+)
 from .schedules import DaySchedule as UnifiedDaySchedule
 from .schedules import ScheduleDay as ObservedDay
 from .schedules import ScheduleSnapshot as Observation
@@ -190,6 +197,15 @@ def _observed_day(
         raise BSBLANMalformedResponseError(msg) from err
 
 
+def _write_outcome(response: Any, param: str) -> Literal["rejected", "unknown"] | None:
+    """Only an exact integer status 1 for the requested ID is acknowledgement."""
+    if isinstance(response, dict) and isinstance(response.get(param), dict):
+        status = response[param].get("status")
+        if type(status) is int:
+            return None if status == 1 else "rejected"
+    return "unknown"
+
+
 class ScheduleManager:
     """Read and write heating and hot water time switch programs."""
 
@@ -206,6 +222,7 @@ class ScheduleManager:
         set_device_state: Callable[[dict[str, Any]], Awaitable[None]],
         uses_pps_bus: Callable[[], bool],
         mappings: ScheduleMappings,
+        bus_writable: Callable[[], bool],
     ) -> None:
         """Initialize the schedule manager.
 
@@ -226,6 +243,7 @@ class ScheduleManager:
         self._set_device_state = set_device_state
         self._uses_pps_bus = uses_pps_bus
         self._mappings = ScheduleMappings.model_validate(mappings)
+        self._bus_writable = bus_writable
 
     def _mapping(
         self, kind: Literal["hot_water", "heating"], circuit: int | None
@@ -279,6 +297,63 @@ class ScheduleManager:
                 for name, param in days.items()
             ),
         )
+
+    async def write(
+        self,
+        kind: Literal["hot_water", "heating"],
+        update: ScheduleUpdate,
+        circuit: int | None = None,
+    ) -> None:
+        """Prevalidate every day, then stop at the first uncertain/rejected write."""
+        mapping = self._mapping(kind, circuit)
+        if not isinstance(update, ScheduleUpdate):
+            msg = "A ScheduleUpdate is required"
+            raise BSBLANInvalidParameterError(msg)
+        try:
+            validated = ScheduleUpdate(
+                **{name: getattr(update, name) for name in WEEKDAYS}
+            )
+        except (ValueError, TypeError) as err:
+            raise BSBLANInvalidParameterError(str(err)) from err
+        commands = [
+            (name, getattr(mapping, name), day.to_bsblan_format())
+            for name in WEEKDAYS
+            if (day := getattr(validated, name)) is not None
+        ]
+        if not commands:
+            raise BSBLANInvalidParameterError(ErrorMsg.NO_SCHEDULE)
+        if not self._bus_writable():
+            msg = "Schedule writes are disabled on this bus"
+            raise BSBLANUnsupportedFeatureError(msg)
+        acknowledged: list[Weekday] = []
+        for index, (name, param, value) in enumerate(commands):
+            pending = tuple(command[0] for command in commands[index + 1 :])
+            try:
+                response = await self._request(
+                    base_path="/JS", data=self._set_payload(param, value)
+                )
+            except BSBLANError as err:
+                raise BSBLANScheduleWriteError(
+                    kind=kind,
+                    circuit=circuit,
+                    acknowledged_days=tuple(acknowledged),
+                    failed_day=name,
+                    parameter_id=param,
+                    unattempted_days=pending,
+                    outcome="unknown",
+                ) from err
+            outcome = _write_outcome(response, param)
+            if outcome is not None:
+                raise BSBLANScheduleWriteError(
+                    kind=kind,
+                    circuit=circuit,
+                    acknowledged_days=tuple(acknowledged),
+                    failed_day=name,
+                    parameter_id=param,
+                    unattempted_days=pending,
+                    outcome=outcome,
+                )
+            acknowledged.append(name)
 
     async def structured_schedule(
         self,
