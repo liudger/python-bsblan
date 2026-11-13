@@ -50,9 +50,11 @@ asyncio.run(main())
 
 For more examples, including hot water control, multi-circuit support, and
 authentication setup, see the [Getting Started][docs-getting-started] guide.
-The [structured schedule reads guide](docs/getting-started.md#structured-schedule-reads)
-also describes the control example's read-only schedule mode and its required
-device-confirmed mappings.
+The [structured schedules guide](docs/getting-started.md#structured-schedules)
+describes the shared read/write API and the separate read-only
+`examples/read_schedules.py` tool. Schedules require independently confirmed
+weekday mappings. See the [breaking API migration guide](docs/schedule-migration.md)
+before updating the Home Assistant integration.
 
 ## Compatibility
 
@@ -122,14 +124,14 @@ make setup
 A `Makefile` is provided for common development tasks. Run `make help` to
 see all available targets:
 
-| Command            | Description                          |
-|--------------------|--------------------------------------|
-| `make setup`       | Install dev dependencies & git hooks |
-| `make lint`        | Run all pre-commit hooks             |
-| `make test`        | Run tests                            |
-| `make coverage`    | Run tests with coverage report       |
-| `make docs`        | Build documentation                  |
-| `make docs-serve`  | Serve documentation locally          |
+| Command           | Description                          |
+| ----------------- | ------------------------------------ |
+| `make setup`      | Install dev dependencies & git hooks |
+| `make lint`       | Run all pre-commit hooks             |
+| `make test`       | Run tests                            |
+| `make coverage`   | Run tests with coverage report       |
+| `make docs`       | Build documentation                  |
+| `make docs-serve` | Serve documentation locally          |
 
 As this repository uses [prek][prek] (a faster, Rust-based drop-in replacement
 for pre-commit), all changes are linted and tested with each commit. You can
