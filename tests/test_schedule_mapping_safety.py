@@ -13,12 +13,9 @@ from pydantic import ValidationError
 from bsblan import BSBLAN, BSBLANConfig
 from bsblan.exceptions import BSBLANError, BSBLANMalformedResponseError
 from bsblan.models import (
-    DaySchedule,
     Device,
-    HeatingSchedule,
     ScheduleReadMapping,
     ScheduleSnapshot,
-    TimeSlot,
 )
 
 DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -267,8 +264,8 @@ async def test_isolation_and_mutable_observation(mock_bsblan) -> None:
     assert one.days["monday"].raw_value == "06:00-07:00"
 
 
-async def test_explicit_read_does_not_change_raw_and_writer_ids(mock_bsblan) -> None:
-    """Different read mapping must not alter existing raw or write requests."""
+async def test_explicit_read_does_not_change_raw_parameter_access(mock_bsblan) -> None:
+    """Generic diagnostic reads do not inherit weekday mapping assertions."""
     ids = PROFILES[3][2]
     request = AsyncMock(return_value={ids[0]: entity(), "501": entity()})
     mock_bsblan._request = request
@@ -277,14 +274,6 @@ async def test_explicit_read_does_not_change_raw_and_writer_ids(mock_bsblan) -> 
     request.reset_mock()
     await mock_bsblan.read_parameters(["501"])
     request.assert_awaited_once_with(params={"Parameter": "501"})
-    request.reset_mock()
-    await mock_bsblan.set_heating_schedule(
-        HeatingSchedule(monday=DaySchedule(slots=[TimeSlot(time(6), time(7))])),
-        circuit=1,
-    )
-    request.assert_awaited_once_with(
-        base_path="/JS", data={"Parameter": "501", "Value": "06:00-07:00", "Type": "1"}
-    )
 
 
 async def test_context_for_invalid_entity(mock_bsblan) -> None:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import UTC, time
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
@@ -16,8 +15,6 @@ from bsblan.exceptions import (
 )
 from bsblan.models import (
     DaySchedule,
-    DHWSchedule,
-    HeatingSchedule,
     ScheduleReadMapping,
     TimeSlot,
 )
@@ -202,38 +199,6 @@ async def test_raw_heating_reader_unchanged(mock_bsblan: BSBLAN) -> None:
     mock_bsblan._request = AsyncMock(return_value={"501": entity("06:00-08:00")})
     raw = await mock_bsblan.read_parameters(["501"])
     assert raw["501"].value == "06:00-08:00"
-
-
-@pytest.mark.parametrize("kind", ["hot_water", "heating"])
-@pytest.mark.parametrize("only_slot", [False, True])
-async def test_explicit_single_day_payload(
-    mock_bsblan: BSBLAN,
-    kind: str,
-    only_slot: bool,  # noqa: FBT001
-) -> None:
-    """The caller explicitly constructs one synthetic day write, never a week."""
-    first = "561" if kind == "hot_water" else "521"
-    text = "06:00-08:00" if only_slot else "06:00-08:00 12:00-13:00 17:00-21:00"
-    request = AsyncMock(return_value={first: entity(text)})
-    mock_bsblan._request = request
-    result = (
-        await mock_bsblan.get_hot_water_schedule(mapping=configured(561))
-        if kind == "hot_water"
-        else await mock_bsblan.get_heating_schedule(circuit=2, mapping=configured(521))
-    )
-    day = deepcopy(result.days["monday"].schedule)
-    assert day is not None
-    day.slots.pop(0 if only_slot else 1)
-    serialized = day.to_bsblan_format()
-    assert DaySchedule.from_bsblan_format(serialized) == day
-    request.reset_mock()
-    if kind == "hot_water":
-        await mock_bsblan.set_hot_water_schedule(DHWSchedule(monday=day))
-    else:
-        await mock_bsblan.set_heating_schedule(HeatingSchedule(monday=day), circuit=2)
-    request.assert_awaited_once_with(
-        base_path="/JS", data={"Parameter": first, "Value": serialized, "Type": "1"}
-    )
 
 
 async def test_invalid_circuit_and_invalid_response(mock_bsblan: BSBLAN) -> None:
