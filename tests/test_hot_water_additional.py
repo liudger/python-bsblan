@@ -218,7 +218,7 @@ async def test_hot_water_schedule(
         request_mock = AsyncMock(side_effect=mock_request)
         monkeypatch.setattr(bsblan, "_request", request_mock)
 
-        hot_water_schedule: HotWaterSchedule = await bsblan.hot_water_schedule()
+        hot_water_schedule: HotWaterSchedule = await bsblan._hot_water.schedule()
 
         # Assertions
         assert isinstance(hot_water_schedule, HotWaterSchedule)
@@ -256,7 +256,7 @@ async def test_hot_water_schedule_no_params_error(
             BSBLANUnsupportedFeatureError,
             match="No hot water schedule parameters available",
         ) as exc_info:
-            await bsblan.hot_water_schedule()
+            await bsblan._hot_water.schedule()
 
         # Permanent error must remain catchable as the generic BSBLANError.
         assert isinstance(exc_info.value, BSBLANError)

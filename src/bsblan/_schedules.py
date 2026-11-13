@@ -27,6 +27,10 @@ from .models import (
     ScheduleSnapshot,
     TimeSlot,
 )
+from .schedules import WEEKDAYS, ScheduleMapping, ScheduleMappings, Weekday
+from .schedules import DaySchedule as UnifiedDaySchedule
+from .schedules import ScheduleDay as ObservedDay
+from .schedules import ScheduleSnapshot as Observation
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -127,6 +131,65 @@ def _schedule_day(
         raise BSBLANMalformedResponseError(msg) from err
 
 
+def _parse_observation(name: Weekday, param: str, raw: Any) -> ObservedDay:
+    """Keep malformed metadata distinct from unsupported interval text."""
+    if (
+        not isinstance(raw, dict)
+        or "value" not in raw
+        or type(raw.get("error")) is not int
+    ):
+        msg = "Schedule entity requires a value and integer error"
+        raise ValueError(msg)
+    value = raw["value"]
+    if value is not None and not isinstance(value, str):
+        msg = "Schedule value must be text or null"
+        raise ValueError(msg)
+    metadata = raw.copy()
+    if raw["error"] and raw.get("dataType") != DataType.TIMEPROG:
+        metadata["value"] = None
+    common: dict[str, Any] = {
+        "weekday": name,
+        "parameter_id": param,
+        "raw_value": value,
+        "metadata": metadata,
+    }
+    if raw["error"]:
+        return ObservedDay(
+            **common,
+            status="unavailable",
+            reason_code="device_error",
+            error_code=raw["error"],
+        )
+    if value is None or value in {"", "---", "None"}:
+        return ObservedDay(**common, status="unavailable", reason_code="inactive")
+    if type(raw.get("dataType")) is not int or raw["dataType"] != DataType.TIMEPROG:
+        msg = "Unsupported or missing schedule data type"
+        raise ValueError(msg)
+    try:
+        schedule = UnifiedDaySchedule.from_bsblan_format(value)
+    except ValueError as err:
+        return ObservedDay(
+            **common,
+            status="unparsed",
+            reason_code="unsupported_format",
+            reason=str(err),
+        )
+    return ObservedDay(
+        **common, status="readable" if schedule.slots else "empty", schedule=schedule
+    )
+
+
+def _observed_day(
+    name: Weekday, param: str, raw: Any, kind: str, circuit: int | None
+) -> ObservedDay:
+    """Add target and weekday context to malformed entity failures."""
+    try:
+        return _parse_observation(name, param, raw)
+    except (ValueError, TypeError, AttributeError) as err:
+        msg = f"Invalid {kind} schedule circuit {circuit} {name} parameter {param}"
+        raise BSBLANMalformedResponseError(msg) from err
+
+
 class ScheduleManager:
     """Read and write heating and hot water time switch programs."""
 
@@ -142,6 +205,7 @@ class ScheduleManager:
         set_payload: Callable[[str, str], dict[str, Any]],
         set_device_state: Callable[[dict[str, Any]], Awaitable[None]],
         uses_pps_bus: Callable[[], bool],
+        mappings: ScheduleMappings,
     ) -> None:
         """Initialize the schedule manager.
 
@@ -161,6 +225,60 @@ class ScheduleManager:
         self._set_payload = set_payload
         self._set_device_state = set_device_state
         self._uses_pps_bus = uses_pps_bus
+        self._mappings = ScheduleMappings.model_validate(mappings)
+
+    def _mapping(
+        self, kind: Literal["hot_water", "heating"], circuit: int | None
+    ) -> ScheduleMapping:
+        """Resolve the same immutable target mapping for reads and writes."""
+        if kind == "heating" and (type(circuit) is not int or circuit not in (1, 2)):
+            msg = f"circuit {circuit}"
+            raise BSBLANInvalidParameterError(msg)
+        if self._uses_pps_bus():
+            msg = f"{kind} circuit {circuit}: PPS schedules unsupported"
+            raise BSBLANUnsupportedFeatureError(msg)
+        key = "hot_water" if kind == "hot_water" else f"heating_{circuit}"
+        mapping = getattr(self._mappings, key)
+        if mapping is None:
+            raise BSBLANScheduleMappingError(kind, circuit, "mapping_unknown")
+        return mapping
+
+    async def read(
+        self, kind: Literal["hot_water", "heating"], circuit: int | None = None
+    ) -> Observation:
+        """Fetch all configured day IDs without availability caching."""
+        mapping = self._mapping(kind, circuit)
+        days = {name: getattr(mapping, name) for name in WEEKDAYS}
+        context = (
+            f"Invalid {kind} schedule circuit {circuit} "
+            f"response for IDs {list(days.values())}"
+        )
+        try:
+            response = await self._request(
+                params={"Parameter": ",".join(days.values())}
+            )
+        except BSBLANMalformedResponseError as err:
+            err.message = f"{context}: {err}"
+            err.args = (err.message,)
+            raise
+        if not isinstance(response, dict):
+            raise BSBLANMalformedResponseError(context)
+        return Observation(
+            kind=kind,
+            circuit=circuit,
+            received_at=datetime.now(UTC),
+            days=tuple(
+                _observed_day(name, param, response[param], kind, circuit)
+                if param in response
+                else ObservedDay(
+                    weekday=name,
+                    parameter_id=param,
+                    status="unavailable",
+                    reason_code="missing",
+                )
+                for name, param in days.items()
+            ),
+        )
 
     async def structured_schedule(
         self,

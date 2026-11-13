@@ -275,7 +275,7 @@ async def test_explicit_read_does_not_change_raw_and_writer_ids(mock_bsblan) -> 
     await read(mock_bsblan, "heating", 1, mapping(ids))
     request.assert_awaited_once_with(params={"Parameter": ",".join(ids)})
     request.reset_mock()
-    await mock_bsblan.heating_schedule(include=["monday"], circuit=1)
+    await mock_bsblan.read_parameters(["501"])
     request.assert_awaited_once_with(params={"Parameter": "501"})
     request.reset_mock()
     await mock_bsblan.set_heating_schedule(

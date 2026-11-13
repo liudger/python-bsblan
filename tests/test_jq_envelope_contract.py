@@ -16,6 +16,7 @@ from bsblan.exceptions import (
     BSBLANConnectionError,
     BSBLANMalformedResponseError,
 )
+from bsblan.schedules import ScheduleMapping, ScheduleMappings
 
 if TYPE_CHECKING:
     from aresponses import ResponsesMockServer
@@ -53,7 +54,20 @@ async def test_legacy_rejects_malformed_then_recovers(
     for _ in range(3):
         aresponses.add("example.com", "/JQ", "POST", handler)
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        profile = ScheduleMapping(
+            monday="501",
+            tuesday="502",
+            wednesday="503",
+            thursday="504",
+            friday="505",
+            saturday="506",
+            sunday="507",
+        )
+        configured = BSBLANConfig(
+            host="example.com",
+            schedule_mappings=ScheduleMappings(heating_1=profile, hot_water=profile),
+        )
+        client = BSBLAN(configured, session=session)
         client._firmware_version = firmware
         client._supports_full_config = True
         await client._setup_api_validator()
@@ -66,7 +80,7 @@ async def test_legacy_rejects_malformed_then_recovers(
             if route == "parameters":
                 return await client.read_parameters(["501"])
             if route == "heating":
-                return await client.heating_schedule(include=["monday"])
+                return await client.heating_schedule()
             if route == "hot_water":
                 return await client.hot_water_schedule()
             return await client._ensure_section_validated("device")
@@ -82,16 +96,15 @@ async def test_legacy_rejects_malformed_then_recovers(
         assert len(calls) == 1
 
         result = await read()
-        assert len(calls) == (3 if route == "hot_water" else 2)
+        assert len(calls) == 2
         assert all(method == "POST" and path == "/JQ" for method, path, _ in calls)
         assert calls[0][2] == calls[1][2]
         if route == "parameters":
             assert result["501"].value == "06:00-07:00"
-        elif route == "heating":
-            assert result.monday.value == "06:00-07:00"
-        elif route == "hot_water":
-            assert result.dhw_time_program_monday.value == "06:00-07:00"
-            assert "schedule" in validator._validated_hot_water_groups
+        elif route in {"heating", "hot_water"}:
+            assert result.day("monday").raw_value == "06:00-07:00"
+            assert result.complete
+            assert not validator._validated_hot_water_groups
         else:
             assert client._api_data["device"] == original
             assert validator._api_validator.is_section_validated("device")

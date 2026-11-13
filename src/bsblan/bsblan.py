@@ -41,9 +41,7 @@ from .models import (
     DHWSchedule,
     EntityInfo,
     HeatingSchedule,
-    HeatingTimeSwitchPrograms,
     HotWaterConfig,
-    HotWaterSchedule,
     HotWaterState,
     Info,
     ScheduleReadMapping,
@@ -53,6 +51,8 @@ from .models import (
     State,
     StaticState,
 )
+from .schedules import ScheduleMappings
+from .schedules import ScheduleSnapshot as UnifiedScheduleSnapshot
 from .utility import is_param_value_active
 
 if TYPE_CHECKING:
@@ -87,6 +87,7 @@ class BSBLANConfig:
     passkey: str | None = None
     port: int = 80
     request_timeout: int = 10
+    schedule_mappings: ScheduleMappings = field(default_factory=ScheduleMappings)
 
 
 @dataclass
@@ -158,6 +159,7 @@ class BSBLAN:
             set_payload=self._set_payload,
             set_device_state=self._set_device_state,
             uses_pps_bus=lambda: self._uses_pps_bus,
+            mappings=self.config.schedule_mappings,
         )
         self._thermostat_writer = ThermostatWriter(
             uses_pps_bus=lambda: self._uses_pps_bus,
@@ -1130,9 +1132,7 @@ class BSBLAN:
         """
         return await self._hot_water.config(include)
 
-    async def hot_water_schedule(
-        self, include: list[str] | None = None
-    ) -> HotWaterSchedule:
+    async def hot_water_schedule(self) -> UnifiedScheduleSnapshot:
         """Get hot water time program schedules.
 
         This method returns time program settings that are typically
@@ -1158,7 +1158,7 @@ class BSBLAN:
             )
 
         """
-        return await self._hot_water.schedule(include)
+        return await self._schedules.read("hot_water")
 
     async def get_hot_water_schedule(
         self, *, mapping: ScheduleReadMapping | None = None
@@ -1174,11 +1174,7 @@ class BSBLAN:
             "heating", circuit, mapping=mapping
         )
 
-    async def heating_schedule(
-        self,
-        include: list[str] | None = None,
-        circuit: int = 1,
-    ) -> HeatingTimeSwitchPrograms:
+    async def heating_schedule(self, *, circuit: int = 1) -> UnifiedScheduleSnapshot:
         """Get heating time switch programs for a specific circuit.
 
         Args:
@@ -1192,7 +1188,7 @@ class BSBLAN:
             HeatingTimeSwitchPrograms: Heating schedule information.
 
         """
-        return await self._schedules.heating_schedule(include, circuit)
+        return await self._schedules.read("heating", circuit)
 
     async def set_heating_schedule(
         self,
