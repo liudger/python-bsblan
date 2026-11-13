@@ -32,6 +32,26 @@ aresponses, Ruff, ty, prek; no new dependencies.
 - Keep HA entity/action identities and merged setpoint/targeted-refresh behavior.
 - Never push, publish, or modify the shared HA dev branch during this plan.
 
+## Execution record
+
+Library Tasks 1–5 have been implemented on `refactor/unified-schedules` in the
+isolated `python-bsblan-unified-schedules` worktree. The task checklists below
+remain the original implementation instructions, not a second outstanding run.
+The original checkout and unrelated local work were not modified.
+
+Verification: 736 tests pass with 100% measured source/branch coverage; all
+applicable `prek` hooks, explicit Prettier checks, and strict MkDocs build pass.
+Existing aiohttp/asyncio deprecation warnings remain outside this change.
+
+The final review was a separate author self-review because no subagent tool is
+installed. It found and fixed endpoint retargeting: host/port/passkey changes now
+fail closed at schedule request boundaries, with partial progress retained if
+changed between day writes. Seven regression cases were observed RED then GREEN.
+
+The dependent HA migration has **not** been implemented or tested. No package
+release, push, merge, confirmed device profile, or live-device clear validation
+has occurred. The integration migration remains a release gate.
+
 ## Review Focus
 
 - A missing or unparsed day must never become a clear command; test in Tasks 1/3.

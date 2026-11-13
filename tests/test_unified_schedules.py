@@ -518,6 +518,59 @@ async def test_write_missing_mapping_cannot_use_legacy_defaults() -> None:
             )
 
 
+@pytest.mark.parametrize("operation", ["read", "write"])
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("host", "other.invalid"), ("port", 8081), ("passkey", "new-passkey")],
+)
+async def test_schedule_mapping_cannot_follow_a_changed_endpoint(
+    operation: str, field: str, value
+) -> None:
+    """Mutable connection options must not transfer a confirmed mapping."""
+    async with aiohttp.ClientSession() as session:
+        client = BSBLAN(config(), session=session)
+        client._request = AsyncMock(
+            return_value={} if operation == "read" else {"700": {"status": 1}}
+        )
+        setattr(client.config, field, value)
+        request = (
+            client.heating_schedule()
+            if operation == "read"
+            else client.set_heating_schedule(
+                ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
+            )
+        )
+        with pytest.raises(BSBLANScheduleMappingError, match="target_changed"):
+            await request
+        client._request.assert_not_awaited()
+
+
+async def test_target_change_between_writes_retains_partial_progress() -> None:
+    """Reconfiguration during a week cannot send later days to another endpoint."""
+    async with aiohttp.ClientSession() as session:
+        client = BSBLAN(config(), session=session)
+        seen = []
+
+        async def handler(**kwargs: Any) -> Any:
+            param = kwargs["data"]["Parameter"]
+            seen.append(param)
+            client.config.host = "other.invalid"
+            return {param: {"status": 1}}
+
+        client._request = handler
+        day = DaySchedule.from_bsblan_format("06:00-08:00")
+        with pytest.raises(BSBLANScheduleWriteError) as exc:
+            await client.set_heating_schedule(
+                ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
+            )
+    assert seen == ["700"]
+    assert exc.value.acknowledged_days == ("monday",)
+    assert exc.value.failed_day == "tuesday"
+    assert exc.value.unattempted_days == ("wednesday",)
+    assert isinstance(exc.value.__cause__, BSBLANScheduleMappingError)
+    assert exc.value.__cause__.reason == "target_changed"
+
+
 async def test_write_cancellation_stops_without_wrapping() -> None:
     """Cancellation stays cancellation, not a rejected or retryable week."""
     async with aiohttp.ClientSession() as session:

@@ -1,11 +1,12 @@
 # pylint: disable=W0621
 """Asynchronous Python client for BSBLan.
 
-This example demonstrates the optimized hot water functionality:
-- HotWaterState: Essential parameters for frequent polling (5 fields)
-- HotWaterConfig: Configuration parameters checked less frequently (16 fields)
+This example demonstrates separate hot water polling groups:
+- HotWaterState: Essential parameters for frequent polling.
+- HotWaterConfig: Configuration parameters checked less frequently.
 
-This three-tier approach reduces API calls by 79% for regular monitoring.
+This example changes device settings. For read-only schedule inspection, use
+read_schedules.py with independently confirmed weekday mappings.
 """
 
 from __future__ import annotations

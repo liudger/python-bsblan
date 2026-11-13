@@ -55,7 +55,11 @@ seven successful TIMEPROG responses. Persist it per HA config entry/group and
 reconfirm after changing target, controller, active table, bus, firmware, or
 destination. The library captures mappings at client construction; recreate the
 client to change them. Retargeting an existing client/config is not a supported
-way to transfer a confirmed mapping to another device.
+way to transfer a confirmed mapping to another device. Host, port, or passkey
+changes are rejected at schedule request boundaries with reason `target_changed`.
+If this happens between day writes, the partial-write error retains progress and
+chains the mapping error as its cause. Do not mutate connection configuration
+while I/O is in flight; this is not a concurrent reconfiguration API.
 
 ## Observation and command semantics
 
