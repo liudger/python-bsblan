@@ -300,6 +300,24 @@ IDs: firmware may use floating-point numbers and format response keys differentl
 Use only independently confirmed IDs with exact request/response key agreement;
 no maximum device ID is established here.
 
+To try the structured readers with the repository's control example, supply
+one or both independently confirmed mappings as JSON. For example, after
+setting `BSBLAN_HOST` and any required credentials:
+
+```bash
+uv run python examples/control.py --structured-schedules \
+  --hot-water-mapping "$CONFIRMED_HOT_WATER_MAPPING" \
+  --heating-mapping "$CONFIRMED_HEATING_MAPPING" --circuit 1
+```
+
+Each JSON object must contain the seven lowercase weekday names and their
+confirmed string IDs, as in the `ScheduleReadMapping` above. Use a separate
+mapping for each target and group; select circuit 1 or 2 for the heating
+mapping. Omit a mapping to skip that group. The example prints each day's
+status, raw value, error details and parsed slots. This mode only reads; it
+does not convert the results to writes. Without `--structured-schedules`,
+the existing control example also changes device settings.
+
 ```python
 from copy import deepcopy
 
