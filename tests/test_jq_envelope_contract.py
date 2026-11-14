@@ -227,8 +227,9 @@ async def test_decode_cause_preserves_original_response_and_location(
         json.loads(body)
     aresponses.add("example.com", "/JQ", "POST", aresponses.Response(text=body))
     async with aiohttp.ClientSession() as session:
+        client = BSBLAN(configured(), session=session)
         with pytest.raises(BSBLANMalformedResponseError) as exc:
-            await BSBLAN(configured(), session=session).heating_schedule()
+            await client.heating_schedule()
     cause = exc.value.__cause__
     assert isinstance(cause, json.JSONDecodeError)
     restored = pickle.loads(pickle.dumps(cause))  # noqa: S301
@@ -254,7 +255,8 @@ async def test_non_jq_decode_cause_is_unchanged(
     body = '{"synthetic":"value",'
     aresponses.add("example.com", "/JV", "POST", aresponses.Response(text=body))
     async with aiohttp.ClientSession() as session:
+        client = BSBLAN(configured(), session=session)
         with pytest.raises(BSBLANMalformedResponseError) as exc:
-            await BSBLAN(configured(), session=session)._request(base_path="/JV")
+            await client._request(base_path="/JV")
     assert isinstance(exc.value.__cause__, json.JSONDecodeError)
     assert exc.value.__cause__.doc == body
