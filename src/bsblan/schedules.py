@@ -100,7 +100,9 @@ class DaySchedule:
         for token in tokens:
             if token == _DISABLED_SLOT:
                 continue
-            match = re.fullmatch(r"([0-9]{2}):([0-9]{2})-([0-9]{2}):([0-9]{2})", token)
+            match = re.fullmatch(
+                r"(\d{2}):(\d{2})-(\d{2}):(\d{2})", token, flags=re.ASCII
+            )
             if match is None:
                 msg = "Unsupported schedule interval format"
                 raise ValueError(msg)
@@ -161,7 +163,7 @@ class ScheduleMapping(BaseModel):
     @classmethod
     def validate_id(cls, value: str) -> str:
         """Keep the exact canonical ID spelling used by /JQ and /JS."""
-        if not re.fullmatch(r"[1-9][0-9]*(?:\.[1-9])?", value):
+        if not re.fullmatch(r"[1-9]\d*(?:\.[1-9])?", value, flags=re.ASCII):
             msg = "Invalid schedule parameter ID"
             raise ValueError(msg)
         return value

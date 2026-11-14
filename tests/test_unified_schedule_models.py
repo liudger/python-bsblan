@@ -31,6 +31,29 @@ def test_parse_active_and_disabled_slots() -> None:
     assert DaySchedule.from_bsblan_format("##:##-##:##").slots == ()
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "\u0660\u0666:\u0660\u0660-\u0660\u0668:\u0660\u0660",
+        "\uff10\uff16:\uff10\uff10-\uff10\uff18:\uff10\uff10",
+        "06:\u0660\u0660-08:00",
+    ],
+)
+def test_schedule_wire_digits_are_ascii_only(text: str) -> None:
+    """Regex cleanup must not accept Unicode-only representations on the wire."""
+    with pytest.raises(ValueError, match="format"):
+        DaySchedule.from_bsblan_format(text)
+
+
+@pytest.mark.parametrize("identifier", ["7\u0660\u0660", "7\uff10\uff10", "700.\u0661"])
+def test_parameter_identifiers_reject_unicode_digits(identifier: str) -> None:
+    """Canonical request/response ID spelling stays ASCII, not locale-dependent."""
+    values = mapping_values()
+    values["monday"] = identifier
+    with pytest.raises(ValidationError):
+        ScheduleMapping(**values)
+
+
 def test_three_slots_roundtrip_preserves_order() -> None:
     """The codec retains physical interval boundaries, not sorted guesses."""
     text = "17:00-21:00 06:00-08:00 12:00-13:00"
