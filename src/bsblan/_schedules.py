@@ -1,149 +1,238 @@
-"""Heating and hot water schedule domain logic for BSB-LAN."""
+"""Configured heating and hot-water schedule reads and sequential writes."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any, Literal
 
-from .constants import ErrorMsg, HeatingScheduleParams, HotWaterParams
-from .exceptions import BSBLANError, BSBLANUnsupportedFeatureError
-from .models import HeatingTimeSwitchPrograms
+from .constants import ErrorMsg
+from .exceptions import (
+    BSBLANError,
+    BSBLANInvalidParameterError,
+    BSBLANMalformedResponseError,
+    BSBLANScheduleMappingError,
+    BSBLANScheduleWriteError,
+    BSBLANUnsupportedFeatureError,
+)
+from .models import DataType
+from .schedules import (
+    WEEKDAYS,
+    DaySchedule,
+    ScheduleDay,
+    ScheduleMapping,
+    ScheduleMappings,
+    ScheduleSnapshot,
+    ScheduleUpdate,
+    Weekday,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from .models import DaySchedule, DHWSchedule, HeatingSchedule
+
+def _parse_observation(name: Weekday, param: str, raw: Any) -> ScheduleDay:
+    """Keep malformed metadata distinct from unsupported interval text."""
+    if (
+        not isinstance(raw, dict)
+        or "value" not in raw
+        or type(raw.get("error")) is not int
+    ):
+        msg = "Schedule entity requires a value and integer error"
+        raise ValueError(msg)
+    value = raw["value"]
+    if value is not None and not isinstance(value, str):
+        msg = "Schedule value must be text or null"
+        raise ValueError(msg)
+    metadata = raw.copy()
+    if raw["error"] and raw.get("dataType") != DataType.TIMEPROG:
+        metadata["value"] = None
+    common: dict[str, Any] = {
+        "weekday": name,
+        "parameter_id": param,
+        "raw_value": value,
+        "metadata": metadata,
+    }
+    if raw["error"]:
+        return ScheduleDay(
+            **common,
+            status="unavailable",
+            reason_code="device_error",
+            error_code=raw["error"],
+        )
+    if value is None or value in {"", "---", "None"}:
+        return ScheduleDay(**common, status="unavailable", reason_code="inactive")
+    if type(raw.get("dataType")) is not int or raw["dataType"] != DataType.TIMEPROG:
+        msg = "Unsupported or missing schedule data type"
+        raise ValueError(msg)
+    try:
+        schedule = DaySchedule.from_bsblan_format(value)
+    except ValueError as err:
+        return ScheduleDay(
+            **common,
+            status="unparsed",
+            reason_code="unsupported_format",
+            reason=str(err),
+        )
+    return ScheduleDay(
+        **common,
+        status="readable" if schedule.slots else "empty",
+        schedule=schedule,
+    )
+
+
+def _observed_day(
+    name: Weekday, param: str, raw: Any, kind: str, circuit: int | None
+) -> ScheduleDay:
+    """Add target and weekday context to malformed entity failures."""
+    try:
+        return _parse_observation(name, param, raw)
+    except (ValueError, TypeError, AttributeError) as err:
+        msg = f"Invalid {kind} schedule circuit {circuit} {name} parameter {param}"
+        raise BSBLANMalformedResponseError(msg) from err
+
+
+def _write_outcome(response: Any, param: str) -> Literal["rejected", "unknown"] | None:
+    """Only an exact integer status 1 for the requested ID is acknowledgement."""
+    if isinstance(response, dict) and isinstance(response.get(param), dict):
+        status = response[param].get("status")
+        if type(status) is int:
+            return None if status == 1 else "rejected"
+    return "unknown"
 
 
 class ScheduleManager:
-    """Read and write heating and hot water time switch programs."""
+    """Use one caller-confirmed mapping for both schedule reads and writes."""
 
-    def __init__(  # noqa: PLR0913  # pylint: disable=too-many-arguments
+    def __init__(  # noqa: PLR0913
         self,
         *,
         request: Callable[..., Awaitable[dict[str, Any]]],
-        extract_params_summary: Callable[[dict[Any, Any]], dict[Any, Any]],
-        apply_include_filter: Callable[
-            [dict[str, str], list[str] | None], dict[str, str]
-        ],
-        validate_circuit: Callable[[int], None],
         set_payload: Callable[[str, str], dict[str, Any]],
-        set_device_state: Callable[[dict[str, Any]], Awaitable[None]],
+        uses_pps_bus: Callable[[], bool],
+        mappings: ScheduleMappings,
+        bus_writable: Callable[[], bool],
+        target_key: Callable[[], tuple[str, int, str | None]],
     ) -> None:
-        """Initialize the schedule manager.
-
-        Args:
-            request: Callable performing a client request.
-            extract_params_summary: Builds the request parameter summary.
-            apply_include_filter: Filters params by requested names.
-            validate_circuit: Validates a heating circuit number.
-            set_payload: Builds a set-parameter payload.
-            set_device_state: Sends a set-parameter request to the device.
-
-        """
+        """Capture validated mappings while resolving current transport/metadata."""
         self._request = request
-        self._extract_params_summary = extract_params_summary
-        self._apply_include_filter = apply_include_filter
-        self._validate_circuit = validate_circuit
         self._set_payload = set_payload
-        self._set_device_state = set_device_state
+        self._uses_pps_bus = uses_pps_bus
+        self._mappings = ScheduleMappings.model_validate(mappings)
+        self._bus_writable = bus_writable
+        self._target_key = target_key
+        self._confirmed_target = target_key()
 
-    async def heating_schedule(
-        self,
-        include: list[str] | None = None,
-        circuit: int = 1,
-    ) -> HeatingTimeSwitchPrograms:
-        """Get heating time switch programs for a specific circuit.
+    def _mapping(
+        self, kind: Literal["hot_water", "heating"], circuit: int | None
+    ) -> ScheduleMapping:
+        """Resolve the same immutable target mapping for reads and writes."""
+        if kind == "heating":
+            if type(circuit) is not int or circuit not in (1, 2):
+                msg = f"circuit {circuit}"
+                raise BSBLANInvalidParameterError(msg)
+            mapping = self._mappings.heating.get(circuit)
+        else:
+            mapping = self._mappings.hot_water
+        if self._uses_pps_bus():
+            msg = f"{kind} circuit {circuit}: PPS schedules unsupported"
+            raise BSBLANUnsupportedFeatureError(msg)
+        if self._target_key() != self._confirmed_target:
+            raise BSBLANScheduleMappingError(kind, circuit, "target_changed")
+        if mapping is None:
+            raise BSBLANScheduleMappingError(kind, circuit, "mapping_unknown")
+        return mapping
 
-        Args:
-            include: Optional list of day names to fetch.
-            circuit: The heating circuit number (1 or 2). Defaults to 1.
-
-        Returns:
-            HeatingTimeSwitchPrograms: Heating schedule information.
-
-        Raises:
-            BSBLANUnsupportedFeatureError: If the device exposes no heating
-                schedule parameters (a permanent condition).
-
-        """
-        self._validate_circuit(circuit)
-        time_program_params = HeatingScheduleParams.TIME_PROGRAMS[circuit]
-
-        filtered_params = self._apply_include_filter(time_program_params, include)
-
-        params = self._extract_params_summary(filtered_params)
-        data = await self._request(params={"Parameter": params["string_par"]})
-        mapped_data = {
-            name: data[param_id]
-            for param_id, name in filtered_params.items()
-            if param_id in data
-        }
-
-        if not mapped_data:
-            raise BSBLANUnsupportedFeatureError(ErrorMsg.NO_HEATING_SCHEDULE_PARAMS)
-
-        return HeatingTimeSwitchPrograms.model_validate(mapped_data)
-
-    async def set_heating_schedule(
-        self,
-        schedule: HeatingSchedule,
-        circuit: int = 1,
-    ) -> None:
-        """Set heating time switch programs for a specific circuit.
-
-        Args:
-            schedule: HeatingSchedule object containing the weekly schedule.
-            circuit: The heating circuit number (1 or 2). Defaults to 1.
-
-        Raises:
-            BSBLANError: If no schedule is provided.
-
-        """
-        self._validate_circuit(circuit)
-        await self._write_day_schedules(
-            schedule,
-            HeatingScheduleParams.TIME_PROGRAMS[circuit],
+    async def read(
+        self, kind: Literal["hot_water", "heating"], circuit: int | None = None
+    ) -> ScheduleSnapshot:
+        """Fetch all configured day IDs without availability caching."""
+        mapping = self._mapping(kind, circuit)
+        days = {name: getattr(mapping, name) for name in WEEKDAYS}
+        context = (
+            f"Invalid {kind} schedule circuit {circuit} "
+            f"response for IDs {list(days.values())}"
+        )
+        try:
+            response = await self._request(
+                params={"Parameter": ",".join(days.values())}
+            )
+        except BSBLANMalformedResponseError as err:
+            err.message = f"{context}: {err}"
+            err.args = (err.message,)
+            raise
+        if not isinstance(response, dict):
+            raise BSBLANMalformedResponseError(context)
+        return ScheduleSnapshot(
+            kind=kind,
+            circuit=circuit,
+            received_at=datetime.now(UTC),
+            days=tuple(
+                _observed_day(name, param, response[param], kind, circuit)
+                if param in response
+                else ScheduleDay(
+                    weekday=name,
+                    parameter_id=param,
+                    status="unavailable",
+                    reason_code="missing",
+                )
+                for name, param in days.items()
+            ),
         )
 
-    async def set_hot_water_schedule(self, schedule: DHWSchedule) -> None:
-        """Set hot water time program schedules.
-
-        Args:
-            schedule: DHWSchedule object containing the weekly schedule.
-
-        Raises:
-            BSBLANError: If no schedule is provided.
-
-        """
-        await self._write_day_schedules(schedule, HotWaterParams.TIME_PROGRAMS)
-
-    async def _write_day_schedules(
+    async def write(
         self,
-        schedule: HeatingSchedule | DHWSchedule,
-        time_programs: dict[str, str],
+        kind: Literal["hot_water", "heating"],
+        update: ScheduleUpdate,
+        circuit: int | None = None,
     ) -> None:
-        """Write populated day schedules using one request per day.
-
-        Args:
-            schedule: Weekly schedule object with per-day DaySchedule attrs.
-            time_programs: Mapping of parameter IDs to day names.
-
-        Raises:
-            BSBLANError: If no schedule is provided.
-
-        """
-        if not schedule.has_any_schedule():
-            raise BSBLANError(ErrorMsg.NO_SCHEDULE)
-
-        # Invert the param mapping to get day_name -> param_id
-        # Exclude standard_values as it's not a day of the week
-        day_param_map = {
-            v: k for k, v in time_programs.items() if v != "standard_values"
-        }
-
-        for day_name, param_id in day_param_map.items():
-            day_schedule: DaySchedule | None = getattr(schedule, day_name)
-            if day_schedule is not None:
-                await self._set_device_state(
-                    self._set_payload(param_id, day_schedule.to_bsblan_format()),
+        """Prevalidate every day, then stop at the first uncertain/rejected write."""
+        mapping = self._mapping(kind, circuit)
+        if not isinstance(update, ScheduleUpdate):
+            msg = "A ScheduleUpdate is required"
+            raise BSBLANInvalidParameterError(msg)
+        try:
+            validated = ScheduleUpdate(
+                **{name: getattr(update, name) for name in WEEKDAYS}
+            )
+        except (ValueError, TypeError) as err:
+            raise BSBLANInvalidParameterError(str(err)) from err
+        commands = [
+            (name, getattr(mapping, name), day.to_bsblan_format())
+            for name in WEEKDAYS
+            if (day := getattr(validated, name)) is not None
+        ]
+        if not commands:
+            raise BSBLANInvalidParameterError(ErrorMsg.NO_SCHEDULE)
+        if not self._bus_writable():
+            msg = "Schedule writes are disabled on this bus"
+            raise BSBLANUnsupportedFeatureError(msg)
+        acknowledged: list[Weekday] = []
+        for index, (name, param, value) in enumerate(commands):
+            pending = tuple(command[0] for command in commands[index + 1 :])
+            try:
+                self._mapping(kind, circuit)
+                response = await self._request(
+                    base_path="/JS", data=self._set_payload(param, value)
                 )
+            except BSBLANError as err:
+                raise BSBLANScheduleWriteError(
+                    kind=kind,
+                    circuit=circuit,
+                    acknowledged_days=tuple(acknowledged),
+                    failed_day=name,
+                    parameter_id=param,
+                    unattempted_days=pending,
+                    outcome="unknown",
+                ) from err
+            outcome = _write_outcome(response, param)
+            if outcome is not None:
+                raise BSBLANScheduleWriteError(
+                    kind=kind,
+                    circuit=circuit,
+                    acknowledged_days=tuple(acknowledged),
+                    failed_day=name,
+                    parameter_id=param,
+                    unattempted_days=pending,
+                    outcome=outcome,
+                )
+            acknowledged.append(name)

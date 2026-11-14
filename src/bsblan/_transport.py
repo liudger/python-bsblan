@@ -11,7 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import backoff
@@ -107,13 +107,14 @@ class BSBLANTransport:
             params: The query parameters to include.
 
         Returns:
-            dict[str, Any]: The JSON response from the BSBLAN device.
+            dict[str, Any]: The JSON object for /JQ. Other endpoints retain
+                their existing response behavior.
 
         Raises:
             BSBLANError: If the session is missing.
             BSBLANAuthError: If authentication fails (401/403, not retried).
             BSBLANMalformedResponseError: If the response body cannot be
-                decoded or parsed as JSON (a transient condition).
+                decoded, parsed as JSON, or is not an object for /JQ.
 
         """
         session = self._session_getter()
@@ -146,7 +147,7 @@ class BSBLANTransport:
             raise BSBLANMalformedResponseError(msg) from e
 
     @staticmethod
-    async def _read_json(response: aiohttp.ClientResponse) -> dict[str, Any]:
+    async def _read_json(response: aiohttp.ClientResponse) -> Any:
         """Decode a BSB-LAN JSON response tolerant of non-UTF-8 encodings.
 
         Some BSB-LAN firmwares serve custom parameter descriptions using
@@ -159,7 +160,7 @@ class BSBLANTransport:
             response: The active aiohttp response to read.
 
         Returns:
-            dict[str, Any]: The parsed JSON payload.
+            Any: The parsed JSON value.
 
         Raises:
             ValueError: If the body is not valid JSON.
@@ -170,11 +171,9 @@ class BSBLANTransport:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
             text = raw.decode("latin-1")
-        return cast("dict[str, Any]", json.loads(text))
+        return json.loads(text)
 
-    def _process_response(
-        self, response_data: dict[str, Any], base_path: str
-    ) -> dict[str, Any]:
+    def _process_response(self, response_data: Any, base_path: str) -> Any:
         """Process response data based on firmware version.
 
         BSB-LAN 5.0+ includes an additional 'payload' field in /JQ responses
@@ -192,12 +191,15 @@ class BSBLANTransport:
         if base_path != "/JQ":
             return response_data
 
+        if not isinstance(response_data, dict):
+            msg = "Invalid /JQ response: expected an object"
+            raise BSBLANMalformedResponseError(msg)
+
         # Check if we have a firmware version to determine processing
         firmware_version = self._firmware_getter()
         if not firmware_version:
             return response_data
 
-        # For BSB-LAN 5.0+, remove 'payload' field if present (debugging only)
         version = pkg_version.parse(firmware_version)
         if (
             version >= pkg_version.parse(PAYLOAD_FIELD_MIN_VERSION)

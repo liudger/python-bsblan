@@ -1,151 +1,81 @@
-"""Tests for heating_schedule method."""
+"""Raw schedule diagnostics remain possible without a weekday mapping."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock
+import json
+from typing import TYPE_CHECKING
 
+import aiohttp
 import pytest
 
-from bsblan.exceptions import BSBLANError, BSBLANUnsupportedFeatureError
-from bsblan.models import HeatingTimeSwitchPrograms
+from bsblan import BSBLAN, BSBLANConfig
+from bsblan.exceptions import BSBLANScheduleMappingError
 
 if TYPE_CHECKING:
-    from bsblan import BSBLAN
+    from aresponses import ResponsesMockServer
 
 
-def _build_schedule_fixture(param_ids: list[str]) -> dict[str, dict[str, Any]]:
-    """Build fixture data for schedule parameter IDs."""
-    fixture: dict[str, dict[str, Any]] = {}
-    for param_id in param_ids:
-        if param_id in {"516", "536"}:
-            fixture[param_id] = {
-                "name": "Standard values",
-                "value": "0",
-                "unit": "",
-                "desc": "No",
-                "dataType": 1,
-            }
-        else:
-            fixture[param_id] = {
-                "name": f"Time switch {param_id}",
-                "value": "06:00-22:00 ##:##-##:## ##:##-##:##",
-                "unit": "",
-                "desc": "",
-                "dataType": 9,
-            }
-    return fixture
-
-
-@pytest.mark.asyncio
-async def test_heating_schedule_circuit1(mock_bsblan: BSBLAN) -> None:
-    """Test reading heating schedule for circuit 1."""
-    fixture_data = _build_schedule_fixture(
-        ["501", "502", "503", "504", "505", "506", "507", "516"]
+@pytest.mark.parametrize("param", ["501", "521", "561"])
+async def test_raw_schedule_parameter_diagnostics(
+    aresponses: ResponsesMockServer, param: str
+) -> None:
+    """Generic raw reads retain text/metadata without asserting weekday roles."""
+    text = "06:00-24:00 ##:##-##:## ##:##-##:##"
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            text=json.dumps(
+                {
+                    param: {
+                        "name": "x",
+                        "value": text,
+                        "unit": "",
+                        "desc": "",
+                        "dataType": 9,
+                        "error": 0,
+                    },
+                }
+            )
+        ),
     )
-
-    def mock_request(**kwargs: Any) -> dict[str, Any]:
-        param_string = kwargs.get("params", {}).get("Parameter", "")
-        requested_param_ids = param_string.split(",") if param_string else []
-        return {
-            param_id: fixture_data[param_id]
-            for param_id in requested_param_ids
-            if param_id in fixture_data
-        }
-
-    request_mock = AsyncMock(side_effect=mock_request)
-    mock_bsblan._request = request_mock  # type: ignore[method-assign]
-
-    result = await mock_bsblan.heating_schedule(circuit=1)
-
-    assert isinstance(result, HeatingTimeSwitchPrograms)
-    assert result.monday is not None
-    assert result.monday.value == "06:00-22:00 ##:##-##:## ##:##-##:##"
-    assert result.standard_values is not None
-    assert result.standard_values.value == 0
+    async with aiohttp.ClientSession() as session:
+        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        raw = await client.read_parameters([param])
+    assert raw[param].value == text
+    assert raw[param].data_type == 9
 
 
-@pytest.mark.asyncio
-async def test_heating_schedule_circuit2(mock_bsblan: BSBLAN) -> None:
-    """Test reading heating schedule for circuit 2."""
-    fixture_data = _build_schedule_fixture(
-        ["521", "522", "523", "524", "525", "526", "527", "536"]
+async def test_schedule_mapping_is_not_required_for_climate_state(
+    aresponses: ResponsesMockServer,
+) -> None:
+    """Failing a schedule read must not poison unrelated climate availability."""
+    aresponses.add(
+        "example.com",
+        "/JQ",
+        "POST",
+        aresponses.Response(
+            text=json.dumps(
+                {
+                    "710": {
+                        "name": "x",
+                        "value": "21",
+                        "unit": "°C",
+                        "desc": "",
+                        "dataType": 0,
+                        "error": 0,
+                    },
+                }
+            )
+        ),
+        repeat=2,
     )
-
-    def mock_request(**kwargs: Any) -> dict[str, Any]:
-        param_string = kwargs.get("params", {}).get("Parameter", "")
-        requested_param_ids = param_string.split(",") if param_string else []
-        return {
-            param_id: fixture_data[param_id]
-            for param_id in requested_param_ids
-            if param_id in fixture_data
-        }
-
-    request_mock = AsyncMock(side_effect=mock_request)
-    mock_bsblan._request = request_mock  # type: ignore[method-assign]
-
-    result = await mock_bsblan.heating_schedule(circuit=2)
-
-    assert isinstance(result, HeatingTimeSwitchPrograms)
-    assert result.monday is not None
-    assert result.standard_values is not None
-
-
-@pytest.mark.asyncio
-async def test_heating_schedule_include_filter(mock_bsblan: BSBLAN) -> None:
-    """Test include filter for heating schedule."""
-    fixture_data = _build_schedule_fixture(["521", "536"])
-
-    def mock_request(**kwargs: Any) -> dict[str, Any]:
-        param_string = kwargs.get("params", {}).get("Parameter", "")
-        requested_param_ids = param_string.split(",") if param_string else []
-        return {
-            param_id: fixture_data[param_id]
-            for param_id in requested_param_ids
-            if param_id in fixture_data
-        }
-
-    request_mock = AsyncMock(side_effect=mock_request)
-    mock_bsblan._request = request_mock  # type: ignore[method-assign]
-
-    result = await mock_bsblan.heating_schedule(
-        include=["monday", "standard_values"],
-        circuit=2,
-    )
-
-    assert result.monday is not None
-    assert result.standard_values is not None
-    assert result.tuesday is None
-
-    call_args = request_mock.call_args
-    assert call_args is not None
-    assert call_args.kwargs["params"]["Parameter"] == "521,536"
-
-
-@pytest.mark.asyncio
-async def test_heating_schedule_empty_include_raises(mock_bsblan: BSBLAN) -> None:
-    """Test empty include list raises error."""
-    with pytest.raises(BSBLANError, match="Empty include list"):
-        await mock_bsblan.heating_schedule(include=[], circuit=1)
-
-
-@pytest.mark.asyncio
-async def test_heating_schedule_invalid_include_raises(mock_bsblan: BSBLAN) -> None:
-    """Test invalid include parameter raises error."""
-    with pytest.raises(BSBLANError, match="None of the requested parameters"):
-        await mock_bsblan.heating_schedule(include=["invalid_day"], circuit=1)
-
-
-@pytest.mark.asyncio
-async def test_heating_schedule_no_params_raises(mock_bsblan: BSBLAN) -> None:
-    """Test no schedule params in response raises unsupported-feature error."""
-    mock_bsblan._request = AsyncMock(return_value={})  # type: ignore[method-assign]
-
-    with pytest.raises(
-        BSBLANUnsupportedFeatureError,
-        match="No heating schedule parameters available",
-    ) as exc_info:
-        await mock_bsblan.heating_schedule(circuit=1)
-
-    # Permanent error must remain catchable as the generic BSBLANError.
-    assert isinstance(exc_info.value, BSBLANError)
+    async with aiohttp.ClientSession() as session:
+        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        client._supports_full_config = True
+        await client._setup_api_validator()
+        with pytest.raises(BSBLANScheduleMappingError):
+            await client.heating_schedule()
+        state = await client.state(include=["target_temperature"])
+    assert state.target_temperature.value == 21

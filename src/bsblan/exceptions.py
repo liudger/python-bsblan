@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from .schedules import Weekday
+
 
 class BSBLANError(Exception):
     """Generic BSBLAN exception."""
@@ -80,17 +85,48 @@ class BSBLANAuthError(BSBLANError):
 
 
 class BSBLANUnsupportedFeatureError(BSBLANError):
-    """Raised when the device does not support a requested feature.
-
-    This signals a permanent condition: the device does not expose the
-    requested parameters (for example a heating or hot water schedule), so
-    retrying the same request will never succeed.
-    """
+    """A feature is unavailable in the current context; permanence is not implied."""
 
 
 class BSBLANMalformedResponseError(BSBLANError):
-    """Raised when a device response cannot be decoded or parsed.
+    """A response cannot be decoded or parsed; its retryability is unknown."""
 
-    This signals a transient condition: the response body could not be decoded
-    or parsed as valid JSON, so a retry may succeed.
-    """
+
+class BSBLANScheduleMappingError(BSBLANError):
+    """A configured mapping is missing or invalid for a schedule operation."""
+
+    def __init__(self, kind: str, circuit: int | None, reason: str) -> None:
+        """Retain the schedule group, circuit, and local failure reason."""
+        self.kind = kind
+        self.circuit = circuit
+        self.reason = reason
+        super().__init__(f"{kind} circuit {circuit}: {reason}")
+
+
+class BSBLANScheduleWriteError(BSBLANError):
+    """A sequential write stopped; the failed day may have an uncertain outcome."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        kind: str,
+        circuit: int | None,
+        acknowledged_days: tuple[Weekday, ...],
+        failed_day: Weekday,
+        parameter_id: str,
+        unattempted_days: tuple[Weekday, ...],
+        outcome: Literal["rejected", "unknown"],
+    ) -> None:
+        """Keep partial progress separate from acknowledgement or readback proof."""
+        self.kind = kind
+        self.circuit = circuit
+        self.acknowledged_days = acknowledged_days
+        self.failed_day = failed_day
+        self.parameter_id = parameter_id
+        self.unattempted_days = unattempted_days
+        self.outcome = outcome
+        super().__init__(
+            f"{kind} schedule circuit {circuit}: {failed_day} parameter "
+            f"{parameter_id} outcome {outcome}; acknowledged {acknowledged_days}; "
+            f"unattempted {unattempted_days}"
+        )

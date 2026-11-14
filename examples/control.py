@@ -1,16 +1,17 @@
 # pylint: disable=W0621
 """Asynchronous Python client for BSBLan.
 
-This example demonstrates the optimized hot water functionality:
-- HotWaterState: Essential parameters for frequent polling (5 fields)
-- HotWaterConfig: Configuration parameters checked less frequently (16 fields)
-- HotWaterSchedule: Time program schedules checked occasionally (8 fields)
+This example demonstrates separate hot water polling groups:
+- HotWaterState: Essential parameters for frequent polling.
+- HotWaterConfig: Configuration parameters checked less frequently.
 
-This three-tier approach reduces API calls by 79% for regular monitoring.
+This example changes device settings. For read-only schedule inspection, use
+read_schedules.py with independently confirmed weekday mappings.
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 from datetime import datetime
 from typing import Any
@@ -22,16 +23,13 @@ from bsblan import (
     DeviceTime,
     HeatingCircuitStatus,
     HotWaterConfig,
-    HotWaterSchedule,
     HotWaterState,
     Info,
     Sensor,
-    SetHotWaterParam,
     State,
     StaticState,
     get_hvac_action_category,
 )
-from bsblan.models import DHWTimeSwitchPrograms
 from discovery import get_bsblan_host, get_config_from_env
 
 
@@ -296,35 +294,6 @@ def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
     print_attributes("Hot Water Configuration", attributes)
 
 
-def print_hot_water_schedule(hot_water_schedule: HotWaterSchedule) -> None:
-    """Print hot water schedule information.
-
-    Args:
-        hot_water_schedule (HotWaterSchedule): The hot water schedule information
-            from the BSBLan device (time programs).
-
-    """
-    days = (
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-    )
-    attributes = {
-        day.capitalize(): get_attribute(
-            getattr(hot_water_schedule, f"dhw_time_program_{day}")
-        )
-        for day in days
-    }
-    attributes["Standard Values"] = get_attribute(
-        hot_water_schedule.dhw_time_program_standard_values
-    )
-    print_attributes("Hot Water Schedule", attributes)
-
-
 async def main() -> None:
     """Show example on controlling your BSBLan device."""
     # Get host from environment variable or mDNS discovery
@@ -391,21 +360,6 @@ async def main() -> None:
         except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
             print(f"Hot water configuration not available: {e}")
 
-        # Get hot water schedule (time programs)
-        try:
-            hot_water_schedule: HotWaterSchedule = await bsblan.hot_water_schedule()
-            print_hot_water_schedule(hot_water_schedule)
-        except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
-            print(f"Hot water schedule not available: {e}")
-
-        # Example: Set DHW time program for Monday
-        print("\nSetting DHW time program for Monday to 13:00-14:00")
-
-        dhw_programs = DHWTimeSwitchPrograms(
-            monday="13:00-14:00 ##:##-##:## ##:##-##:##"
-        )
-        await bsblan.set_hot_water(SetHotWaterParam(dhw_time_programs=dhw_programs))
-
         # Example: Set device time
         if bsblan.supports_time_sync:
             print("\nSetting device time to current system time")
@@ -417,4 +371,5 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    argparse.ArgumentParser(description=__doc__).parse_args()
     asyncio.run(main())

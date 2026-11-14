@@ -38,12 +38,8 @@ from .models import (
     ApiVersion,
     Device,
     DeviceTime,
-    DHWSchedule,
     EntityInfo,
-    HeatingSchedule,
-    HeatingTimeSwitchPrograms,
     HotWaterConfig,
-    HotWaterSchedule,
     HotWaterState,
     Info,
     Sensor,
@@ -51,6 +47,7 @@ from .models import (
     State,
     StaticState,
 )
+from .schedules import ScheduleMappings, ScheduleSnapshot, ScheduleUpdate
 from .utility import is_param_value_active
 
 if TYPE_CHECKING:
@@ -85,6 +82,7 @@ class BSBLANConfig:
     passkey: str | None = None
     port: int = 80
     request_timeout: int = 10
+    schedule_mappings: ScheduleMappings = field(default_factory=ScheduleMappings)
 
 
 @dataclass
@@ -148,13 +146,15 @@ class BSBLAN:
         )
         self._schedules = ScheduleManager(
             request=lambda **kw: self._request(**kw),  # noqa: PLW0108
-            extract_params_summary=(
-                lambda d: self._extract_params_summary(d)  # noqa: PLW0108
-            ),
-            apply_include_filter=self._apply_include_filter,
-            validate_circuit=self._validate_circuit,
             set_payload=self._set_payload,
-            set_device_state=self._set_device_state,
+            uses_pps_bus=lambda: self._uses_pps_bus,
+            mappings=self.config.schedule_mappings,
+            bus_writable=lambda: self._is_bus_writable,
+            target_key=lambda: (
+                self.config.host,
+                self.config.port,
+                self.config.passkey,
+            ),
         )
         self._thermostat_writer = ThermostatWriter(
             uses_pps_bus=lambda: self._uses_pps_bus,
@@ -382,7 +382,7 @@ class BSBLAN:
 
         This enables more granular lazy loading for hot water - instead of
         validating all 29 hot water parameters at once, we only validate
-        the specific group needed (essential: 6, config: 16, schedule: 8).
+        the state/configuration group needed. Schedules use their own mapping.
 
         Uses a per-group lock to prevent concurrent validation of the same
         group, which could cause duplicate network requests.
@@ -1127,75 +1127,37 @@ class BSBLAN:
         """
         return await self._hot_water.config(include)
 
-    async def hot_water_schedule(
-        self, include: list[str] | None = None
-    ) -> HotWaterSchedule:
-        """Get hot water time program schedules.
+    async def hot_water_schedule(self) -> ScheduleSnapshot:
+        """Read seven fresh DHW observations using the client-configured mapping.
 
-        This method returns time program settings that are typically
-        configured once and rarely changed.
-
-        Uses granular lazy loading - only validates the 8 schedule params.
-
-        Args:
-            include: Optional list of parameter names to fetch. If None,
-                fetches all schedule parameters. Valid names include:
-                dhw_time_program_monday, dhw_time_program_tuesday,
-                dhw_time_program_wednesday, dhw_time_program_thursday,
-                dhw_time_program_friday, dhw_time_program_saturday,
-                dhw_time_program_sunday, dhw_time_program_standard_values.
-
-        Returns:
-            HotWaterSchedule: Hot water schedule information.
-
-        Example:
-            # Fetch only Monday's schedule
-            schedule = await client.hot_water_schedule(
-                include=["dhw_time_program_monday"]
-            )
-
+        Missing/inactive values and unsupported intervals remain explicit day
+        outcomes. Without a confirmed mapping, fail locally before schedule I/O.
+        No factory reset or default schedule parameter is requested.
         """
-        return await self._hot_water.schedule(include)
+        return await self._schedules.read("hot_water")
 
-    async def heating_schedule(
-        self,
-        include: list[str] | None = None,
-        circuit: int = 1,
-    ) -> HeatingTimeSwitchPrograms:
-        """Get heating time switch programs for a specific circuit.
+    async def heating_schedule(self, *, circuit: int = 1) -> ScheduleSnapshot:
+        """Read seven fresh observations for configured heating circuit 1 or 2.
 
-        Args:
-            include: Optional list of day names to fetch. If None,
-                fetches all schedule parameters. Valid names include:
-                monday, tuesday, wednesday, thursday,
-                friday, saturday, sunday, standard_values.
-            circuit: The heating circuit number (1 or 2). Defaults to 1.
-
-        Returns:
-            HeatingTimeSwitchPrograms: Heating schedule information.
-
+        A returned snapshot may be incomplete; use its day outcomes and
+        retry_required property rather than treating object presence as success.
         """
-        return await self._schedules.heating_schedule(include, circuit)
+        return await self._schedules.read("heating", circuit)
 
     async def set_heating_schedule(
         self,
-        schedule: HeatingSchedule,
+        update: ScheduleUpdate,
+        *,
         circuit: int = 1,
     ) -> None:
-        """Set heating time switch programs for a specific circuit.
+        """Write populated days using the same mapping as heating_schedule().
 
-        This method allows setting weekly heating schedules using a type-safe
-        interface with TimeSlot and DaySchedule objects.
-
-        Args:
-            schedule: HeatingSchedule object containing the weekly schedule.
-            circuit: The heating circuit number (1 or 2). Defaults to 1.
-
-        Raises:
-            BSBLANError: If no schedule is provided.
-
+        Validate the complete update before the first write. Each populated day
+        requires a separate acknowledgement; failures report partial progress.
+        Clear operations are rejected until their wire encoding is verified.
+        The caller owns readback, publication, and handling partial failures.
         """
-        await self._schedules.set_heating_schedule(schedule, circuit)
+        await self._schedules.write("heating", update, circuit)
 
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
@@ -1215,32 +1177,14 @@ class BSBLAN:
         """
         await self._hot_water.set_hot_water(params)
 
-    async def set_hot_water_schedule(self, schedule: DHWSchedule) -> None:
-        """Set hot water time program schedules.
+    async def set_hot_water_schedule(self, update: ScheduleUpdate) -> None:
+        """Write populated DHW days using the client-configured schedule mapping.
 
-        This method allows setting weekly DHW schedules using a type-safe
-        interface with TimeSlot and DaySchedule objects.
-
-        Example:
-            schedule = DHWSchedule(
-                monday=DaySchedule(slots=[
-                    TimeSlot(time(6, 0), time(8, 0)),
-                    TimeSlot(time(17, 0), time(21, 0)),
-                ]),
-                tuesday=DaySchedule(slots=[
-                    TimeSlot(time(6, 0), time(8, 0)),
-                ])
-            )
-            await client.set_hot_water_schedule(schedule)
-
-        Args:
-            schedule: DHWSchedule object containing the weekly schedule.
-
-        Raises:
-            BSBLANError: If no schedule is provided.
-
+        None leaves a day unchanged. Unsupported clear intent fails before any
+        writes. Acknowledgements are not readback proof; the caller owns refresh
+        even when BSBLANScheduleWriteError reports a partial or uncertain result.
         """
-        await self._schedules.set_hot_water_schedule(schedule)
+        await self._schedules.write("hot_water", update)
 
     def _prepare_hot_water_state(
         self,
