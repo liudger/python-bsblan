@@ -259,6 +259,87 @@ def test_heating_collection_supports_normal_configuration_copying() -> None:
             copied.heating[1] = ScheduleMapping(**mapping_values())
 
 
+def test_response_revalidates_invalidated_dataclass_intervals() -> None:
+    """Existing dataclass instances cannot bypass interval invariants."""
+    schedule = DaySchedule.from_bsblan_format("06:00-08:00")
+    object.__setattr__(schedule.slots[0], "end", time(5))
+    with pytest.raises(ValidationError):
+        ScheduleDay(
+            weekday="monday", parameter_id="700", status="readable", schedule=schedule
+        )
+
+
+def test_snapshot_revalidates_unchecked_day_instances() -> None:
+    """Copied day instances must revalidate their nested dataclass values."""
+    valid = DaySchedule.from_bsblan_format("06:00-08:00")
+    original = snapshot(status="readable", schedule=valid)
+    invalid = DaySchedule.from_bsblan_format("06:00-08:00")
+    object.__setattr__(invalid.slots[0], "end", time(5))
+    unchecked = original.day("monday").model_copy(update={"schedule": invalid})
+    days = (unchecked, *original.days[1:])
+    with pytest.raises(ValidationError):
+        ScheduleSnapshot(
+            kind="heating", circuit=1, received_at=original.received_at, days=days
+        )
+
+
+def test_model_validation_rechecks_unchecked_snapshot_instances() -> None:
+    """Pydantic model_validate must reject unchecked field types cleanly."""
+    original = snapshot()
+    unchecked = original.model_copy(update={"received_at": "not a timestamp"})
+    with pytest.raises(ValidationError):
+        ScheduleSnapshot.model_validate(unchecked)
+
+
+@pytest.mark.parametrize("field", ["value", "name", "readonly"])
+def test_response_revalidates_unchecked_mutable_metadata(field: str) -> None:
+    """Copied metadata models cannot hide mutable values inside a frozen day."""
+    schedule = DaySchedule.from_bsblan_format("06:00-08:00")
+    raw = {"name": "x", "value": "06:00-08:00", "unit": "", "desc": "", "dataType": 9}
+    original = snapshot(status="readable", metadata=raw, schedule=schedule)
+    metadata = original.day("monday").metadata.model_copy(update={field: []})
+    with pytest.raises(ValidationError):
+        ScheduleDay(
+            weekday="monday",
+            parameter_id="700",
+            status="readable",
+            schedule=schedule,
+            metadata=metadata,
+        )
+
+
+def test_response_rejects_non_object_metadata_cleanly() -> None:
+    """Malformed metadata produces validation errors, not converter crashes."""
+    schedule = DaySchedule.from_bsblan_format("06:00-08:00")
+    with pytest.raises(ValidationError):
+        ScheduleDay(
+            weekday="monday",
+            parameter_id="700",
+            status="readable",
+            schedule=schedule,
+            metadata=17,
+        )
+
+
+def test_revalidated_snapshots_keep_valid_copy_and_json_behavior() -> None:
+    """Repeated validation preserves valid observations and immutable metadata."""
+    schedule = DaySchedule.from_bsblan_format("06:00-08:00")
+    raw = {"name": "x", "value": "06:00-08:00", "unit": "", "desc": "", "dataType": 9}
+    original = snapshot(
+        status="readable", raw_value="06:00-08:00", metadata=raw, schedule=schedule
+    )
+    validated = ScheduleSnapshot.model_validate(original.model_copy(deep=True))
+    restored = ScheduleSnapshot.model_validate_json(
+        original.model_dump_json(round_trip=True)
+    )
+    for result in (validated, restored):
+        assert result.day("monday").raw_value == "06:00-08:00"
+        assert result.day("monday").schedule.slots[0].start == time(6)
+        assert result.day("monday").metadata.value == "06:00-08:00"
+        assert result.complete
+        assert not result.retry_required
+
+
 def snapshot(**first_day: Any) -> ScheduleSnapshot:
     """Build seven observations, with caller-controlled first-day status."""
     days = [
