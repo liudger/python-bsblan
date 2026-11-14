@@ -211,10 +211,11 @@ async def test_read_malformed_entities_are_contextual(
         "example.com", "/JQ", "POST", aresponses.Response(text=json.dumps({"700": bad}))
     )
     async with aiohttp.ClientSession() as session:
+        client = BSBLAN(config(), session=session)
         with pytest.raises(
             BSBLANMalformedResponseError, match=r"heating.*1.*monday.*700"
         ) as exc:
-            await BSBLAN(config(), session=session).heating_schedule()
+            await client.heating_schedule()
     assert exc.value.__cause__ is not None
 
 
@@ -225,10 +226,11 @@ async def test_read_malformed_envelopes_keep_context(
     """The real transport boundary preserves decoding context and cause."""
     aresponses.add("example.com", "/JQ", "POST", aresponses.Response(text=body))
     async with aiohttp.ClientSession() as session:
+        client = BSBLAN(config(), session=session)
         with pytest.raises(
             BSBLANMalformedResponseError, match=r"heating.*1.*700"
         ) as exc:
-            await BSBLAN(config(), session=session).heating_schedule()
+            await client.heating_schedule()
     if body == "{bad":
         assert isinstance(exc.value.__cause__, json.JSONDecodeError)
         assert exc.value.__cause__.doc == body
@@ -238,8 +240,9 @@ async def test_read_malformed_envelopes_keep_context(
 async def test_read_invalid_circuit_fails_before_io(circuit) -> None:
     """Even bool and numeric lookalikes cannot silently select a circuit."""
     async with aiohttp.ClientSession() as session:
+        client = BSBLAN(config(), session=session)
         with pytest.raises(BSBLANInvalidParameterError):
-            await BSBLAN(config(), session=session).heating_schedule(circuit=circuit)
+            await client.heating_schedule(circuit=circuit)
 
 
 async def test_read_without_mapping_fails_before_io() -> None:
@@ -257,12 +260,10 @@ async def test_read_config_revalidates_unchecked_mapping() -> None:
     invalid = ScheduleMappings.model_construct(
         heating={1: ScheduleMapping.model_construct(**values)}
     )
+    invalid_config = BSBLANConfig(host="example.invalid", schedule_mappings=invalid)
     async with aiohttp.ClientSession() as session:
         with pytest.raises(ValidationError):
-            BSBLAN(
-                BSBLANConfig(host="example.invalid", schedule_mappings=invalid),
-                session=session,
-            )
+            BSBLAN(invalid_config, session=session)
 
 
 async def test_read_config_is_captured_per_client(
@@ -400,10 +401,10 @@ async def test_write_checks_exact_integer_acknowledgement(
     aresponses.add("example.com", "/JS", "POST", handler)
     async with aiohttp.ClientSession() as session:
         day = DaySchedule.from_bsblan_format("06:00-08:00")
+        update = ScheduleUpdate(monday=day, tuesday=day)
+        client = BSBLAN(config(), session=session)
         with pytest.raises(BSBLANScheduleWriteError) as exc:
-            await BSBLAN(config(), session=session).set_heating_schedule(
-                ScheduleUpdate(monday=day, tuesday=day)
-            )
+            await client.set_heating_schedule(update)
     assert exc.value.acknowledged_days == ()
     assert exc.value.failed_day == "monday"
     assert exc.value.parameter_id == "700"
@@ -430,10 +431,10 @@ async def test_write_partial_rejection_preserves_progress(
     aresponses.add("example.com", "/JS", "POST", handler, repeat=2)
     async with aiohttp.ClientSession() as session:
         day = DaySchedule.from_bsblan_format("06:00-08:00")
+        update = ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
+        client = BSBLAN(config(), session=session)
         with pytest.raises(BSBLANScheduleWriteError) as exc:
-            await BSBLAN(config(), session=session).set_heating_schedule(
-                ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
-            )
+            await client.set_heating_schedule(update)
     assert seen == ["700", "700.1"]
     assert exc.value.kind == "heating"
     assert exc.value.circuit == 1
@@ -450,10 +451,9 @@ async def test_write_lost_response_reports_uncertain_failed_day() -> None:
         error = BSBLANConnectionError("synthetic timeout")
         client._request = AsyncMock(side_effect=[{"700": {"status": 1}}, error])
         day = DaySchedule.from_bsblan_format("06:00-08:00")
+        update = ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
         with pytest.raises(BSBLANScheduleWriteError) as exc:
-            await client.set_heating_schedule(
-                ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
-            )
+            await client.set_heating_schedule(update)
     assert exc.value.__cause__ is error
     assert exc.value.outcome == "unknown"
     assert exc.value.acknowledged_days == ("monday",)
@@ -500,13 +500,9 @@ async def test_write_rejects_known_read_only_bus(kind: str, bus: str) -> None:
         )
         client._device = Device.model_construct(bus=bus, buswritable=0)
         client._request = AsyncMock()
+        update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
         with pytest.raises(BSBLANUnsupportedFeatureError):
-            await write(
-                client,
-                kind,
-                1,
-                ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00")),
-            )
+            await write(client, kind, 1, update)
         client._request.assert_not_awaited()
 
 
@@ -514,10 +510,9 @@ async def test_write_missing_mapping_cannot_use_legacy_defaults() -> None:
     """A writer never falls back to the fixed integer schedule tables."""
     async with aiohttp.ClientSession() as session:
         client = BSBLAN(BSBLANConfig(host="example.invalid"), session=session)
+        update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
         with pytest.raises(BSBLANScheduleMappingError):
-            await client.set_hot_water_schedule(
-                ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
-            )
+            await client.set_hot_water_schedule(update)
 
 
 @pytest.mark.parametrize("operation", ["read", "write"])
@@ -561,10 +556,9 @@ async def test_target_change_between_writes_retains_partial_progress() -> None:
 
         client._request = handler
         day = DaySchedule.from_bsblan_format("06:00-08:00")
+        update = ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
         with pytest.raises(BSBLANScheduleWriteError) as exc:
-            await client.set_heating_schedule(
-                ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
-            )
+            await client.set_heating_schedule(update)
     assert seen == ["700"]
     assert exc.value.acknowledged_days == ("monday",)
     assert exc.value.failed_day == "tuesday"
@@ -622,7 +616,6 @@ async def test_write_cancellation_stops_without_wrapping() -> None:
     async with aiohttp.ClientSession() as session:
         client = BSBLAN(config(), session=session)
         client._request = AsyncMock(side_effect=asyncio.CancelledError)
+        update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
         with pytest.raises(asyncio.CancelledError):
-            await client.set_heating_schedule(
-                ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
-            )
+            await client.set_heating_schedule(update)
