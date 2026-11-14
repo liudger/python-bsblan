@@ -39,7 +39,7 @@ isolated `python-bsblan-unified-schedules` worktree. The task checklists below
 remain the original implementation instructions, not a second outstanding run.
 The original checkout and unrelated local work were not modified.
 
-Verification: 736 tests pass with 100% measured source/branch coverage; all
+Initial refactor verification: 736 tests passed with 100% measured source/branch coverage; all
 applicable `prek` hooks, explicit Prettier checks, and strict MkDocs build pass.
 Existing aiohttp/asyncio deprecation warnings remain outside this change.
 
@@ -115,7 +115,7 @@ existing API still runs until the facade migration.
 - Produces `DaySchedule.from_bsblan_format(value: str) -> DaySchedule` and
   `DaySchedule.to_bsblan_format() -> str` (raises for an empty/unsupported write).
 - Produces frozen pydantic `ScheduleMapping` (seven canonical unique IDs),
-  `ScheduleMappings(hot_water=None, heating_1=None, heating_2=None)`,
+  `ScheduleMappings(hot_water=None, heating={})` (circuit-keyed follow-up),
   `ScheduleDay`, and `ScheduleSnapshot` as specified.
 - Produces `ScheduleSnapshot.day(weekday: Weekday) -> ScheduleDay`, computed
   `complete: bool`, and computed `retry_required: bool`.

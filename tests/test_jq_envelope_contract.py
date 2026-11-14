@@ -37,7 +37,7 @@ def configured() -> BSBLANConfig:
     return BSBLANConfig(
         host="example.com",
         schedule_mappings=ScheduleMappings(
-            hot_water=PROFILE, heating_1=PROFILE, heating_2=PROFILE
+            hot_water=PROFILE, heating={1: PROFILE, 2: PROFILE}
         ),
     )
 

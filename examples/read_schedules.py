@@ -33,7 +33,9 @@ def parse_mappings(argv: list[str] | None = None) -> ScheduleMappings:
         parser.error("At least one confirmed schedule mapping is required.")
     return ScheduleMappings(
         hot_water=args.hot_water_mapping,
-        **{f"heating_{args.circuit}": args.heating_mapping},
+        heating={args.circuit: args.heating_mapping}
+        if args.heating_mapping is not None
+        else {},
     )
 
 
@@ -53,10 +55,9 @@ async def main(mappings: ScheduleMappings) -> None:
         if mappings.hot_water is not None:
             snapshot = await client.hot_water_schedule()
             print(snapshot.model_dump_json(indent=2))
-        for circuit in (1, 2):
-            if getattr(mappings, f"heating_{circuit}") is not None:
-                snapshot = await client.heating_schedule(circuit=circuit)
-                print(snapshot.model_dump_json(indent=2))
+        for circuit in mappings.heating:
+            snapshot = await client.heating_schedule(circuit=circuit)
+            print(snapshot.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":

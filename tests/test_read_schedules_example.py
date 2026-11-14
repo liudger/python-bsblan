@@ -64,14 +64,16 @@ def test_control_rejects_schedule_circuit_flag_before_writes() -> None:
     assert "Setting temperature" not in result.stdout
 
 
+@pytest.mark.parametrize("circuit", [1, 2])
 @pytest.mark.parametrize(
-    "groups", [("hot_water",), ("heating_2",), ("hot_water", "heating_2")]
+    "groups", [("hot_water",), ("heating",), ("hot_water", "heating")]
 )
 async def test_cli_main_only_reads_configured_groups(
     aresponses: ResponsesMockServer,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     groups: tuple[str, ...],
+    circuit: int,
 ) -> None:
     """Run the actual example and client; observe every HTTP endpoint it uses."""
     monkeypatch.syspath_prepend(str(EXAMPLES))
@@ -110,10 +112,10 @@ async def test_cli_main_only_reads_configured_groups(
     for path in ("/JI", "/JV"):
         aresponses.add("example.com", path, "POST", handler)
     aresponses.add("example.com", "/JQ", "POST", handler, repeat=len(groups))
-    args = ["--circuit", "2"]
+    args = ["--circuit", str(circuit)]
     if "hot_water" in groups:
         args.extend(["--hot-water-mapping", PROFILE.model_dump_json()])
-    if "heating_2" in groups:
+    if "heating" in groups:
         args.extend(["--heating-mapping", PROFILE.model_dump_json()])
     await example.main(example.parse_mappings(args))
     output = capsys.readouterr().out
@@ -122,7 +124,8 @@ async def test_cli_main_only_reads_configured_groups(
     assert '"retry_required": true' in output
     assert calls == [("/JI", None), ("/JV", None)] + [("/JQ", QUERY)] * len(groups)
     assert output.count('"kind": "hot_water"') == ("hot_water" in groups)
-    assert output.count('"kind": "heating"') == ("heating_2" in groups)
+    assert output.count('"kind": "heating"') == ("heating" in groups)
+    assert output.count(f'"circuit": {circuit}') == ("heating" in groups)
 
 
 @pytest.mark.parametrize("configured", [False, True])

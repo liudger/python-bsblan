@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from datetime import datetime, time
-from typing import Final, Literal
+from typing import Any, Final, Literal
 
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     computed_field,
+    field_serializer,
     field_validator,
     model_validator,
 )
@@ -172,16 +175,77 @@ class ScheduleMapping(BaseModel):
         return self
 
 
+@dataclass(frozen=True, eq=False)
+class _CircuitMappings(Mapping[int, ScheduleMapping]):
+    """A tuple-backed read-only mapping that supports normal deep copying."""
+
+    _entries: tuple[tuple[int, ScheduleMapping], ...]
+
+    def __getitem__(self, key: int) -> ScheduleMapping:
+        """Look up a profile without exposing a mutable backing dictionary."""
+        for circuit, profile in self._entries:
+            if circuit == key:
+                return profile
+        raise KeyError(key)
+
+    def __iter__(self) -> Iterator[int]:
+        """Iterate configured circuit identifiers in canonical order."""
+        return (circuit for circuit, _ in self._entries)
+
+    def __len__(self) -> int:
+        """Return the number of configured circuits."""
+        return len(self._entries)
+
+
 class ScheduleMappings(BaseModel):
     """Immutable per-client mappings; absent groups have no implicit profile."""
 
     model_config = ConfigDict(
-        frozen=True, extra="forbid", revalidate_instances="always"
+        frozen=True,
+        extra="forbid",
+        revalidate_instances="always",
+        validate_default=True,
     )
 
     hot_water: ScheduleMapping | None = None
-    heating_1: ScheduleMapping | None = None
-    heating_2: ScheduleMapping | None = None
+    heating: Mapping[int, ScheduleMapping] = Field(default_factory=dict)
+
+    @field_validator("heating", mode="before")
+    @classmethod
+    def validate_circuits(cls, value: Any) -> dict[int, Any]:
+        """Normalize canonical JSON IDs without accepting coercion or collisions."""
+        if not isinstance(value, Mapping):
+            msg = "Heating profiles must be a circuit-keyed mapping"
+            raise ValueError(msg)  # noqa: TRY004 - pydantic validation error
+        normalized: dict[int, Any] = {}
+        for key, profile in value.items():
+            if type(key) is int and key in (1, 2):
+                circuit = key
+            elif type(key) is str and key in ("1", "2"):
+                circuit = int(key)
+            else:
+                msg = "Heating circuit keys must be 1 or 2"
+                raise ValueError(msg)
+            if circuit in normalized:
+                msg = "Duplicate heating circuit after key normalization"
+                raise ValueError(msg)
+            normalized[circuit] = profile
+        return normalized
+
+    @field_validator("heating", mode="after")
+    @classmethod
+    def freeze_heating(
+        cls, value: Mapping[int, ScheduleMapping]
+    ) -> Mapping[int, ScheduleMapping]:
+        """Capture a read-only copy, including the empty default collection."""
+        return _CircuitMappings(tuple(sorted(value.items())))
+
+    @field_serializer("heating")
+    def serialize_heating(
+        self, value: Mapping[int, ScheduleMapping]
+    ) -> dict[int, ScheduleMapping]:
+        """Serialize read-only internals as a normal JSON-compatible mapping."""
+        return dict(value)
 
 
 class _ScheduleMetadata(EntityInfo[str]):

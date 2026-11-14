@@ -59,10 +59,12 @@ def entity(
 
 def config(kind: str = "heating", circuit: int | None = 1) -> BSBLANConfig:
     """Bind exactly one synthetic group to this target."""
-    key = "hot_water" if kind == "hot_water" else f"heating_{circuit}"
-    return BSBLANConfig(
-        host="example.com", schedule_mappings=ScheduleMappings(**{key: mapping()})
+    groups = (
+        ScheduleMappings(hot_water=mapping())
+        if kind == "hot_water"
+        else ScheduleMappings(heating={circuit: mapping()})
     )
+    return BSBLANConfig(host="example.com", schedule_mappings=groups)
 
 
 async def read(client: BSBLAN, kind: str, circuit: int | None) -> ScheduleSnapshot:
@@ -253,7 +255,7 @@ async def test_read_config_revalidates_unchecked_mapping() -> None:
     values = mapping().model_dump()
     values["monday"] = "700!4"
     invalid = ScheduleMappings.model_construct(
-        heating_1=ScheduleMapping.model_construct(**values)
+        heating={1: ScheduleMapping.model_construct(**values)}
     )
     async with aiohttp.ClientSession() as session:
         with pytest.raises(ValidationError):

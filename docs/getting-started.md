@@ -289,7 +289,7 @@ confirmed_mapping = ScheduleMapping(
 )
 config = BSBLANConfig(
     host="YOUR_BSBLAN_IP",
-    schedule_mappings=ScheduleMappings(heating_1=confirmed_mapping),
+    schedule_mappings=ScheduleMappings(heating={1: confirmed_mapping}),
 )
 
 async with BSBLAN(config) as client:
@@ -301,8 +301,16 @@ async with BSBLAN(config) as client:
     print(snapshot.model_dump(mode="json"))
 ```
 
-Use separate `hot_water`, `heating_1`, and `heating_2` mappings. Persist their
-`model_dump()` output with the target identity in the consumer's configuration;
+Use `hot_water` for DHW and `heating` keyed by circuit number, for example
+`heating={1: confirmed_mapping_1, 2: confirmed_mapping_2}`. Configuration associates
+profiles with circuits; the `circuit` argument selects that same identifier for
+an operation. No numbered configuration fields or second selector are needed.
+
+The heating collection is read-only and defensively copied. Python integer keys
+`1`/`2` and canonical JSON keys `"1"`/`"2"` are accepted and normalized to integers;
+bool/float, unsupported, noncanonical, and conflicting keys are rejected.
+JSON roundtrips and normal configuration deep copies retain immutable profiles.
+Persist `model_dump()` output with the target identity in the consumer's configuration;
 the library does not discover, persist, or select profiles. Reconfirm after
 changes to target, firmware/table, controller, bus, or destination. Create a new
 client to change mappings; existing clients retain their captured configuration.

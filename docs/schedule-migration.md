@@ -7,22 +7,22 @@ profile is implied by these instructions.
 
 ## API replacements
 
-| Previous API                                                            | Replacement                                                                                              |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `get_heating_schedule(mapping=..., circuit=...)`                        | Configure `BSBLANConfig.schedule_mappings.heating_1` / `heating_2`, then `heating_schedule(circuit=...)` |
-| `get_hot_water_schedule(mapping=...)`                                   | Configure `BSBLANConfig.schedule_mappings.hot_water`, then `hot_water_schedule()`                        |
-| Raw `heating_schedule(include=...)` / `hot_water_schedule(include=...)` | Both return seven-day `ScheduleSnapshot` observations; no include argument                               |
-| `ScheduleReadMapping`                                                   | `ScheduleMapping`, shared by reads and writes                                                            |
-| Per-call read mappings / fixed writer IDs                               | `ScheduleMappings` captured once per client                                                              |
-| `HotWaterSchedule` / `HeatingTimeSwitchPrograms`                        | `ScheduleSnapshot`                                                                                       |
-| `HeatingSchedule` / `DHWSchedule` / `WeeklySchedule`                    | `ScheduleUpdate`                                                                                         |
-| `DHWTimeSwitchPrograms` / `SetHotWaterParam.dhw_time_programs`          | Removed; use the configured schedule setter with `ScheduleUpdate`                                        |
-| `snapshot.days["monday"]`                                               | `snapshot.day("monday")`; `days` is a canonical immutable tuple                                          |
-| Mutable day slot lists / edit-in-place copies                           | Frozen `TimeSlot` / `DaySchedule`; construct replacement values                                          |
-| Per-day `retry_hint` and mutable `complete` flag                        | Derived `snapshot.retry_required` and `snapshot.complete`, plus day status/error context                 |
-| Schedule-only classes imported from `bsblan.models`                     | Import shared types from `bsblan` or `bsblan.schedules`                                                  |
-| `TimeSlot.from_bsblan_format()` / `to_bsblan_format()`                  | Parse/serialize the complete `DaySchedule` using the single codec                                        |
-| Raw/factory-reset schedule fields and implicit group tables             | Generic `read_parameters()` for diagnostics; factory reset is not a weekday update                       |
+| Previous API                                                            | Replacement                                                                                       |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `get_heating_schedule(mapping=..., circuit=...)`                        | Configure `BSBLANConfig.schedule_mappings.heating[circuit]`, then `heating_schedule(circuit=...)` |
+| `get_hot_water_schedule(mapping=...)`                                   | Configure `BSBLANConfig.schedule_mappings.hot_water`, then `hot_water_schedule()`                 |
+| Raw `heating_schedule(include=...)` / `hot_water_schedule(include=...)` | Both return seven-day `ScheduleSnapshot` observations; no include argument                        |
+| `ScheduleReadMapping`                                                   | `ScheduleMapping`, shared by reads and writes                                                     |
+| Per-call read mappings / fixed writer IDs                               | `ScheduleMappings` captured once per client                                                       |
+| `HotWaterSchedule` / `HeatingTimeSwitchPrograms`                        | `ScheduleSnapshot`                                                                                |
+| `HeatingSchedule` / `DHWSchedule` / `WeeklySchedule`                    | `ScheduleUpdate`                                                                                  |
+| `DHWTimeSwitchPrograms` / `SetHotWaterParam.dhw_time_programs`          | Removed; use the configured schedule setter with `ScheduleUpdate`                                 |
+| `snapshot.days["monday"]`                                               | `snapshot.day("monday")`; `days` is a canonical immutable tuple                                   |
+| Mutable day slot lists / edit-in-place copies                           | Frozen `TimeSlot` / `DaySchedule`; construct replacement values                                   |
+| Per-day `retry_hint` and mutable `complete` flag                        | Derived `snapshot.retry_required` and `snapshot.complete`, plus day status/error context          |
+| Schedule-only classes imported from `bsblan.models`                     | Import shared types from `bsblan` or `bsblan.schedules`                                           |
+| `TimeSlot.from_bsblan_format()` / `to_bsblan_format()`                  | Parse/serialize the complete `DaySchedule` using the single codec                                 |
+| Raw/factory-reset schedule fields and implicit group tables             | Generic `read_parameters()` for diagnostics; factory reset is not a weekday update                |
 
 The `source`, `mapping_source`, and `day_assignment` snapshot fields are removed:
 values are device-response observations and weekday assignment is always a
@@ -39,11 +39,19 @@ from bsblan import BSBLANConfig, ScheduleMappings
 config = BSBLANConfig(
     host="YOUR_BSBLAN_IP",
     schedule_mappings=ScheduleMappings(
-        heating_1=confirmed_heating_1_mapping,
+        heating={1: confirmed_heating_mapping},
         hot_water=confirmed_hot_water_mapping,
     ),
 )
 ```
+
+Heating profiles are stored in a collection keyed by circuit number, e.g.
+`heating={1: confirmed_mapping_1, 2: confirmed_mapping_2}`. Operations use the same
+identifier: `heating_schedule(circuit=2)` selects the profile under key `2`.
+The earlier draft's individually numbered fields are removed, not retained as
+aliases. Canonical JSON keys `"1"`/`"2"` normalize to integers; ambiguous or
+unsupported keys are rejected. The collection remains immutable and supports
+JSON serialization and ordinary configuration deep copies.
 
 Unconfigured groups raise `BSBLANScheduleMappingError` before schedule I/O. They
 do not fall back to the old integer IDs, trigger availability discovery, or
