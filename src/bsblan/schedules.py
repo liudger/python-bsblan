@@ -251,13 +251,30 @@ class ScheduleMappings(BaseModel):
 class _ScheduleMetadata(EntityInfo[str]):
     """An immutable copy of the scalar metadata attached to an observation."""
 
-    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, revalidate_instances="always"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_text_metadata(cls, data: Any) -> dict[str, Any]:
+        """Reject mutable/non-text values before inherited value conversion."""
+        if not isinstance(data, dict):
+            msg = "Schedule metadata must be an object"
+            raise ValueError(msg)  # noqa: TRY004 - pydantic validation error
+        value = data.get("value")
+        if value is not None and not isinstance(value, str):
+            msg = "Schedule metadata value must be text or null"
+            raise ValueError(msg)
+        return data.copy()
 
 
 class ScheduleDay(BaseModel):
     """One observed day; unavailable and unsupported text are never clear intent."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(
+        frozen=True, extra="forbid", revalidate_instances="always"
+    )
 
     weekday: Weekday
     parameter_id: str
@@ -289,7 +306,9 @@ class ScheduleDay(BaseModel):
 class ScheduleSnapshot(BaseModel):
     """A fresh immutable observation, not an atomic week or write verification."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(
+        frozen=True, extra="forbid", revalidate_instances="always"
+    )
 
     kind: Literal["hot_water", "heating"]
     circuit: int | None
