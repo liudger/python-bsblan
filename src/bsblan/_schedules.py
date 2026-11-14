@@ -179,6 +179,12 @@ class ScheduleManager:
             ),
         )
 
+    def _ensure_writable(self) -> None:
+        """Reject requests as soon as cached metadata prohibits bus writes."""
+        if not self._bus_writable():
+            msg = "Schedule writes are disabled on this bus"
+            raise BSBLANUnsupportedFeatureError(msg)
+
     async def write(
         self,
         kind: Literal["hot_water", "heating"],
@@ -203,14 +209,13 @@ class ScheduleManager:
         ]
         if not commands:
             raise BSBLANInvalidParameterError(ErrorMsg.NO_SCHEDULE)
-        if not self._bus_writable():
-            msg = "Schedule writes are disabled on this bus"
-            raise BSBLANUnsupportedFeatureError(msg)
+        self._ensure_writable()
         acknowledged: list[Weekday] = []
         for index, (name, param, value) in enumerate(commands):
             pending = tuple(command[0] for command in commands[index + 1 :])
             try:
                 self._mapping(kind, circuit)
+                self._ensure_writable()
                 response = await self._request(
                     base_path="/JS", data=self._set_payload(param, value)
                 )

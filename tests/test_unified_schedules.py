@@ -573,6 +573,50 @@ async def test_target_change_between_writes_retains_partial_progress() -> None:
     assert exc.value.__cause__.reason == "target_changed"
 
 
+@pytest.mark.parametrize("kind", ["heating", "hot_water"])
+@pytest.mark.parametrize("bus", ["BSB", "LPB"])
+async def test_writability_refresh_stops_remaining_day_requests(
+    kind: str, bus: str
+) -> None:
+    """A public metadata refresh must stop writes as soon as the bus is read-only."""
+    client = BSBLAN(config(kind, None if kind == "hot_water" else 1))
+    gateway_writable = True
+    dispatched = []
+
+    async def request(**kwargs: Any) -> Any:
+        nonlocal gateway_writable
+        if kwargs["base_path"] == "/JI":
+            return {
+                "name": "x",
+                "version": "5.0.0",
+                "MAC": "00:00:00:00:00:00",
+                "uptime": 0,
+                "bus": bus,
+                "buswritable": int(gateway_writable),
+            }
+        param = kwargs["data"]["Parameter"]
+        dispatched.append((param, client.device_info.is_bus_writable))
+        if len(dispatched) == 1:
+            gateway_writable = False
+            await client.device()
+            return {param: {"status": 1}}
+        return {param: {"status": 0}}
+
+    client._request = request
+    await client.device()
+    day = DaySchedule.from_bsblan_format("06:00-08:00")
+    update = ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
+    with pytest.raises(BSBLANScheduleWriteError) as exc:
+        await write(client, kind, 1, update)
+    assert dispatched == [("700", True)]
+    assert exc.value.acknowledged_days == ("monday",)
+    assert exc.value.failed_day == "tuesday"
+    assert exc.value.parameter_id == "700.1"
+    assert exc.value.unattempted_days == ("wednesday",)
+    assert exc.value.outcome == "unknown"
+    assert isinstance(exc.value.__cause__, BSBLANUnsupportedFeatureError)
+
+
 async def test_write_cancellation_stops_without_wrapping() -> None:
     """Cancellation stays cancellation, not a rejected or retryable week."""
     async with aiohttp.ClientSession() as session:
