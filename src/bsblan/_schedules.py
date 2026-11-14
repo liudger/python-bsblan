@@ -126,16 +126,18 @@ class ScheduleManager:
         self, kind: Literal["hot_water", "heating"], circuit: int | None
     ) -> ScheduleMapping:
         """Resolve the same immutable target mapping for reads and writes."""
-        if kind == "heating" and (type(circuit) is not int or circuit not in (1, 2)):
-            msg = f"circuit {circuit}"
-            raise BSBLANInvalidParameterError(msg)
+        if kind == "heating":
+            if type(circuit) is not int or circuit not in (1, 2):
+                msg = f"circuit {circuit}"
+                raise BSBLANInvalidParameterError(msg)
+            mapping = self._mappings.heating.get(circuit)
+        else:
+            mapping = self._mappings.hot_water
         if self._uses_pps_bus():
             msg = f"{kind} circuit {circuit}: PPS schedules unsupported"
             raise BSBLANUnsupportedFeatureError(msg)
         if self._target_key() != self._confirmed_target:
             raise BSBLANScheduleMappingError(kind, circuit, "target_changed")
-        key = "hot_water" if kind == "hot_water" else f"heating_{circuit}"
-        mapping = getattr(self._mappings, key)
         if mapping is None:
             raise BSBLANScheduleMappingError(kind, circuit, "mapping_unknown")
         return mapping

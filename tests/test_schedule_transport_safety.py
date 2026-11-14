@@ -42,7 +42,7 @@ def configured(
         host=host,
         request_timeout=request_timeout,
         schedule_mappings=ScheduleMappings(
-            hot_water=profile, heating_1=profile, heating_2=profile
+            hot_water=profile, heating={1: profile, 2: profile}
         ),
     )
 

@@ -84,8 +84,12 @@ schedule and is not included in this API.
 
 `ScheduleMapping` is a frozen pydantic model containing exactly seven weekday
 string IDs. Retain the existing conservative canonical-ID syntax and uniqueness
-validation. `ScheduleMappings` is frozen and has optional `hot_water`,
-`heating_1`, and `heating_2` fields; no mappings are supplied by default.
+validation. `ScheduleMappings` is frozen and has an optional `hot_water` profile
+and a read-only `heating` collection keyed by circuit identifiers 1 and 2. No
+profiles are supplied by default. This is the approved circuit-keyed follow-up;
+see `2026-11-14-circuit-keyed-mappings-design.md` for key validation, immutability,
+and serialization requirements. Configuration and operations use the same
+circuit identifier, not separately numbered field names.
 
 Capture a validated immutable configuration for each client. Reads and writes
 resolve the same mapping; neither accepts a per-call override or learns a

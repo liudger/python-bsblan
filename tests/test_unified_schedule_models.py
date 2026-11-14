@@ -1,5 +1,6 @@
 """Schedule values are explicit, immutable, and never guess a clear encoding."""
 
+from copy import deepcopy
 from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime, time
 from typing import Any
@@ -165,15 +166,97 @@ def test_mapping_requires_seven_distinct_weekdays(mutation: str) -> None:
 def test_mapping_configuration_is_immutable_and_copied() -> None:
     """Reusing input dictionaries cannot retarget an existing client's group."""
     values = mapping_values()
-    configured = ScheduleMappings(heating_1=ScheduleMapping(**values))
+    profiles = {1: ScheduleMapping(**values)}
+    configured = ScheduleMappings(heating=profiles)
     values["monday"] = "900"
-    assert configured.heating_1.monday == "700"
+    profiles.clear()
+    assert configured.heating[1].monday == "700"
     assert configured.hot_water is None
-    assert configured.heating_2 is None
+    assert 2 not in configured.heating
     with pytest.raises(ValidationError):
-        configured.heating_1.monday = "900"
+        configured.heating[1].monday = "900"
+    with pytest.raises(TypeError, match="assignment"):
+        configured.heating[1] = ScheduleMapping(**mapping_values())
     with pytest.raises(ValidationError):
-        configured.heating_1 = None
+        configured.heating = {}
+
+
+def test_default_heating_collection_is_immutable() -> None:
+    """An unconfigured default cannot be mutated to bypass profile validation."""
+    configured = ScheduleMappings()
+    assert dict(configured.heating) == {}
+    with pytest.raises(TypeError, match="assignment"):
+        configured.heating[1] = ScheduleMapping(**mapping_values())
+
+
+@pytest.mark.parametrize("key", [1, 2, "1", "2"])
+def test_heating_circuit_keys_normalize_canonical_identifiers(key) -> None:
+    """Python and JSON configuration identify the same supported circuit."""
+    configured = ScheduleMappings(heating={key: mapping_values()})
+    assert tuple(configured.heating) == (int(key),)
+    assert configured.heating[int(key)].monday == "700"
+
+
+@pytest.mark.parametrize("key", [True, False, 1.0, 2.0, 0, 3, "01", "1.0", " 1", "x"])
+def test_heating_rejects_ambiguous_or_unsupported_circuit_keys(key) -> None:
+    """Coercion must not turn bool/float/noncanonical IDs into a circuit."""
+    with pytest.raises(ValidationError):
+        ScheduleMappings(heating={key: mapping_values()})
+
+
+@pytest.mark.parametrize("value", [None, [], "1", [(1, mapping_values())]])
+def test_heating_requires_a_mapping_collection(value) -> None:
+    """An invalid collection cannot be interpreted as configured circuits."""
+    with pytest.raises(ValidationError):
+        ScheduleMappings(heating=value)
+
+
+@pytest.mark.parametrize("value", [None, {}, "profile"])
+def test_heating_rejects_invalid_profile_values(value) -> None:
+    """Present circuit entries require a complete validated weekday mapping."""
+    with pytest.raises(ValidationError):
+        ScheduleMappings(heating={1: value})
+
+
+def test_heating_rejects_collisions_after_key_normalization() -> None:
+    """Python 1 and JSON '1' must not silently overwrite a configured profile."""
+    with pytest.raises(ValidationError):
+        ScheduleMappings(heating={1: mapping_values(), "1": mapping_values()})
+
+
+def test_numbered_heating_fields_are_not_an_alternate_configuration() -> None:
+    """Only the keyed collection can configure circuit profiles."""
+    with pytest.raises(ValidationError):
+        ScheduleMappings.model_validate({"heating_1": mapping_values()})
+
+
+def test_heating_collection_serializes_and_roundtrips_without_aliases() -> None:
+    """Immutable internals remain JSON-configurable without losing exact IDs."""
+    configured = ScheduleMappings(heating={2: mapping_values(), 1: mapping_values()})
+    assert tuple(configured.heating) == (1, 2)
+    serialized = configured.model_dump()
+    serialized["heating"][1]["monday"] = "900"
+    assert configured.heating[1].monday == "700"
+    encoded = configured.model_dump(mode="json")
+    assert set(encoded["heating"]) == {"1", "2"}
+    assert encoded["heating"]["1"]["tuesday"] == "700.1"
+    restored = ScheduleMappings.model_validate_json(configured.model_dump_json())
+    assert tuple(restored.heating) == (1, 2)
+    assert restored.heating[2].tuesday == "700.1"
+    with pytest.raises(TypeError, match="assignment"):
+        restored.heating[2] = ScheduleMapping(**mapping_values())
+
+
+def test_heating_collection_supports_normal_configuration_copying() -> None:
+    """A read-only field must not break pydantic or standard deep-copy utilities."""
+    configured = ScheduleMappings(heating={1: mapping_values()})
+    copies = (deepcopy(configured), configured.model_copy(deep=True))
+    for copied in copies:
+        assert copied is not configured
+        assert copied.heating[1].tuesday == "700.1"
+        assert dict(copied.heating) == dict(configured.heating)
+        with pytest.raises(TypeError, match="assignment"):
+            copied.heating[1] = ScheduleMapping(**mapping_values())
 
 
 def snapshot(**first_day: Any) -> ScheduleSnapshot:

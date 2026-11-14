@@ -18,7 +18,9 @@ show_bases: false
 ## Shared schedule API
 
 Read and write methods share the immutable mappings in
-`BSBLANConfig.schedule_mappings`. Missing groups have no implicit profile.
+`BSBLANConfig.schedule_mappings`. Heating profiles are configured under
+`heating={1: profile_1, 2: profile_2}` and selected by the same `circuit` identifier
+used by the read/write methods. Missing groups have no implicit profile.
 See [structured schedules](../getting-started.md#structured-schedules) and the
 [breaking API migration guide](../schedule-migration.md).
 
