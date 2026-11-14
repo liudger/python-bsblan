@@ -185,7 +185,7 @@ async def test_http_success_and_exact_query(aresponses: ResponsesMockServer) -> 
 async def test_http_timeout_uses_bounded_existing_retry(
     aresponses: ResponsesMockServer,
 ) -> None:
-    """Transport timeout uses exactly the existing three attempts."""
+    """Timeouts count client attempts, not guaranteed delivery to the server."""
     calls: list[tuple[str, str, str | None]] = []
 
     async def handler(request: Any) -> Any:
@@ -196,11 +196,22 @@ async def test_http_timeout_uses_bounded_existing_retry(
     for _ in range(3):
         aresponses.add("example.com", "/JQ", "POST", handler)
     async with aiohttp.ClientSession() as session:
+        request_spy = Mock(wraps=session.request)
+        session.request = request_spy
         client = BSBLAN(configured(request_timeout=0.01), session=session)
         with pytest.raises(BSBLANConnectionError) as exc:
             await client.heating_schedule()
-        assert exc.value.__cause__ is not None
-    assert calls == [("POST", "/JQ", PARAMS)] * 3
+        assert isinstance(exc.value.__cause__, TimeoutError)
+    assert request_spy.call_count == 3
+    assert all(
+        call.args[0] == "POST" and call.args[1].path == "/JQ"
+        for call in request_spy.call_args_list
+    )
+    assert all(
+        call.kwargs["params"] == {"Parameter": PARAMS}
+        for call in request_spy.call_args_list
+    )
+    assert all(call == ("POST", "/JQ", PARAMS) for call in calls)
 
 
 async def test_connection_error_uses_bounded_existing_retry() -> None:
