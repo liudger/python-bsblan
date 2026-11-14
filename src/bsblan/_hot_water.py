@@ -5,10 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from .constants import ErrorMsg, HotWaterParams
-from .exceptions import BSBLANError, BSBLANUnsupportedFeatureError
+from .exceptions import BSBLANError
 from .models import (
     HotWaterConfig,
-    HotWaterSchedule,
     HotWaterState,
 )
 
@@ -18,13 +17,11 @@ if TYPE_CHECKING:
     from .models import SetHotWaterParam
 
 # TypeVar for hot water data models
-HotWaterDataT = TypeVar(
-    "HotWaterDataT", HotWaterState, HotWaterConfig, HotWaterSchedule
-)
+HotWaterDataT = TypeVar("HotWaterDataT", HotWaterState, HotWaterConfig)
 
 
 class HotWaterManager:
-    """Read and write hot water state, configuration, and schedules."""
+    """Read and write hot water state and configuration."""
 
     def __init__(  # noqa: PLR0913  # pylint: disable=too-many-arguments
         self,
@@ -87,10 +84,7 @@ class HotWaterManager:
             The populated model instance.
 
         Raises:
-            BSBLANUnsupportedFeatureError: If the schedule group exposes no
-                parameters (a permanent condition).
-            BSBLANError: If no parameters are available for a non-schedule
-                group.
+            BSBLANError: If no parameters are available for the group.
 
         """
         # Granular lazy load: validate only this param group on first access
@@ -108,8 +102,6 @@ class HotWaterManager:
         filtered_params = self._apply_include_filter(filtered_params, include)
 
         if not filtered_params:
-            if group_name == "schedule":
-                raise BSBLANUnsupportedFeatureError(error_msg)
             raise BSBLANError(error_msg)
 
         data = await self._request_named_params(filtered_params)
@@ -151,24 +143,6 @@ class HotWaterManager:
             include=include,
         )
 
-    async def schedule(self, include: list[str] | None = None) -> HotWaterSchedule:
-        """Get hot water time program schedules.
-
-        Args:
-            include: Optional list of parameter names to fetch.
-
-        Returns:
-            HotWaterSchedule: Hot water schedule information.
-
-        """
-        return await self.fetch_data(
-            param_filter=HotWaterParams.SCHEDULE,
-            model_class=HotWaterSchedule,
-            error_msg="No hot water schedule parameters available",
-            group_name="schedule",
-            include=include,
-        )
-
     async def set_hot_water(self, params: SetHotWaterParam) -> None:
         """Change the state of the hot water system through BSB-Lan.
 
@@ -181,25 +155,6 @@ class HotWaterManager:
             BSBLANError: If multiple parameters are set or no parameter is set.
 
         """
-        # Validate only one parameter is being set
-        time_program_params: list[str] = []
-        if params.dhw_time_programs:
-            programs = params.dhw_time_programs
-            time_program_params.extend(
-                prog
-                for prog in [
-                    programs.monday,
-                    programs.tuesday,
-                    programs.wednesday,
-                    programs.thursday,
-                    programs.friday,
-                    programs.saturday,
-                    programs.sunday,
-                    programs.standard_values,
-                ]
-                if prog
-            )
-
         self._validate_single_parameter(
             params.nominal_setpoint,
             params.reduced_setpoint,
@@ -213,7 +168,6 @@ class HotWaterManager:
             params.legionella_function_time,
             params.legionella_function_dwelling_time,
             params.operating_mode_changeover,
-            *time_program_params,
             error_msg=ErrorMsg.MULTI_PARAMETER,
         )
 
@@ -240,13 +194,6 @@ class HotWaterManager:
             value = getattr(params, attr_name)
             if value is not None:
                 state.update(self._set_payload(param_id, str(value)))
-
-        # Process time programs if provided using constants
-        if params.dhw_time_programs:
-            for param_id, attr_name in HotWaterParams.TIME_PROGRAMS.items():
-                value = getattr(params.dhw_time_programs, attr_name)
-                if value is not None:
-                    state.update(self._set_payload(param_id, value))
 
         if not state:
             raise BSBLANError(ErrorMsg.NO_STATE)

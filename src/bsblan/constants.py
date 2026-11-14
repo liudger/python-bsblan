@@ -685,23 +685,6 @@ class HotWaterParams:
         }
     }
 
-    # Schedule parameters (time programs)
-    SCHEDULE: Final[set[str]] = {
-        param_id
-        for param_id, name in BASE_HOT_WATER_PARAMS.items()
-        if name
-        in {
-            "dhw_time_program_monday",
-            "dhw_time_program_tuesday",
-            "dhw_time_program_wednesday",
-            "dhw_time_program_thursday",
-            "dhw_time_program_friday",
-            "dhw_time_program_saturday",
-            "dhw_time_program_sunday",
-            "dhw_time_program_standard_values",
-        }
-    }
-
     # Settable parameters mapping (param_id -> attribute name)
     SETTABLE: Final[dict[str, str]] = {
         "1610": "nominal_setpoint",
@@ -716,43 +699,4 @@ class HotWaterParams:
         "1644": "legionella_function_time",
         "1646": "legionella_function_dwelling_time",
         "1680": "operating_mode_changeover",
-    }
-
-    # DHW time program parameter mappings
-    TIME_PROGRAMS: Final[dict[str, str]] = {
-        "561": "monday",
-        "562": "tuesday",
-        "563": "wednesday",
-        "564": "thursday",
-        "565": "friday",
-        "566": "saturday",
-        "567": "sunday",
-        "576": "standard_values",
-    }
-
-
-class HeatingScheduleParams:
-    """Heating schedule parameter mappings per circuit."""
-
-    TIME_PROGRAMS: Final[dict[int, dict[str, str]]] = {
-        1: {
-            "501": "monday",
-            "502": "tuesday",
-            "503": "wednesday",
-            "504": "thursday",
-            "505": "friday",
-            "506": "saturday",
-            "507": "sunday",
-            "516": "standard_values",
-        },
-        2: {
-            "521": "monday",
-            "522": "tuesday",
-            "523": "wednesday",
-            "524": "thursday",
-            "525": "friday",
-            "526": "saturday",
-            "527": "sunday",
-            "536": "standard_values",
-        },
     }
