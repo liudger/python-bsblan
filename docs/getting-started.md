@@ -22,8 +22,8 @@ config = BSBLANConfig(
 ```
 
 !!! warning "Security"
-    Never hard-code credentials in your source code. Use environment variables
-    or a secrets manager instead.
+Never hard-code credentials in your source code. Use environment variables
+or a secrets manager instead.
 
     ```python
     import os
@@ -211,7 +211,7 @@ PPS devices currently have these limitations:
 - Only circuit `1` is supported.
 - `time()` and `set_time()` are not supported for PPS devices.
 - `thermostat(hvac_mode=2)` is not supported on PPS devices. Valid PPS modes
-    are `0` (off), `1` (auto), and `3` (heat/manual).
+  are `0` (off), `1` (auto), and `3` (heat/manual).
 - Hot water and schedule helpers are intended for BSB/LPB devices.
 
 Check `supports_time_sync` before showing or calling time synchronization in
@@ -243,6 +243,151 @@ async with BSBLAN(config) as client:
     # Set hot water temperature
     await client.set_hot_water(SetHotWaterParam(nominal_setpoint=55.0))
 ```
+
+## Structured schedules
+
+`hot_water_schedule()` and `heating_schedule(circuit=1)` return the same immutable
+`ScheduleSnapshot` type. Their setters accept a shared `ScheduleUpdate`. Reads
+and writes use **one caller-confirmed mapping per target and group**, configured
+once when creating the client. No default profile or per-call override is used.
+
+Without a mapping, that group raises `BSBLANScheduleMappingError` before schedule
+I/O; ordinary climate monitoring remains available. Known PPS schedules are
+rejected locally with `BSBLANUnsupportedFeatureError`. Initialization can still
+make its normal device and JSON-API version requests before a schedule call.
+
+### Confirm and configure the mapping
+
+Independently confirm the target/bus, exact active firmware/controller table,
+and each weekday's parameter ID for the installation. A matching active
+configuration/table together with a controller display or documentation can
+provide this evidence; a source table alone does not prove it is active.
+Successful responses, matching names/types, or equal firmware versions do not
+establish day assignments. Unknown bus metadata is not evidence of BSB/LPB.
+Leave schedules unconfigured if these facts cannot be confirmed.
+
+Each ID is a unique canonical positive string, optionally followed by one
+nonzero decimal digit (for example `502.1`). This conservative syntax is not a
+firmware-wide support claim or an established maximum ID. Firmware may use
+floating-point parsing or format response keys differently; confirm exact
+request/response key agreement as well.
+
+The following variables are placeholders for independently confirmed strings,
+not universal parameter IDs:
+
+```python
+from bsblan import BSBLAN, BSBLANConfig, ScheduleMapping, ScheduleMappings
+
+confirmed_mapping = ScheduleMapping(
+    monday=confirmed_monday_id,
+    tuesday=confirmed_tuesday_id,
+    wednesday=confirmed_wednesday_id,
+    thursday=confirmed_thursday_id,
+    friday=confirmed_friday_id,
+    saturday=confirmed_saturday_id,
+    sunday=confirmed_sunday_id,
+)
+config = BSBLANConfig(
+    host="YOUR_BSBLAN_IP",
+    schedule_mappings=ScheduleMappings(heating={1: confirmed_mapping}),
+)
+
+async with BSBLAN(config) as client:
+    snapshot = await client.heating_schedule(circuit=1)
+    monday = snapshot.day("monday")
+    if monday.schedule is not None:
+        for slot in monday.schedule.slots:
+            print(slot.start, slot.end)
+    print(snapshot.model_dump(mode="json"))
+```
+
+Use `hot_water` for DHW and `heating` keyed by circuit number, for example
+`heating={1: confirmed_mapping_1, 2: confirmed_mapping_2}`. Configuration associates
+profiles with circuits; the `circuit` argument selects that same identifier for
+an operation. No numbered configuration fields or second selector are needed.
+
+The heating collection is read-only and defensively copied. Python integer keys
+`1`/`2` and canonical JSON keys `"1"`/`"2"` are accepted and normalized to integers;
+bool/float, unsupported, noncanonical, and conflicting keys are rejected.
+JSON roundtrips and normal configuration deep copies retain immutable profiles.
+Persist `model_dump()` output with the target identity in the consumer's configuration;
+the library does not discover, persist, or select profiles. Reconfirm after
+changes to target, firmware/table, controller, bus, or destination. Create a new
+client to change mappings; existing clients retain their captured configuration.
+Changing host, port, or passkey after construction invalidates schedule operations
+with reason `target_changed`. A change between day writes stops the update and
+preserves partial progress. Do not mutate connection options during in-flight
+requests; this is not a concurrent reconfiguration API.
+
+### Interpret observations
+
+Every read requests all seven days and maps by exact ID. `snapshot.days` is a
+Monday-to-Sunday tuple; use `snapshot.day("monday")` for lookup. Each day retains
+its parameter ID, raw value, immutable metadata, status, and error/reason context.
+
+- `readable`: parsed active intervals.
+- `empty`: all reported physical slots are disabled (`##:##-##:##`).
+- `unavailable`: missing ID, null/inactive value, or device error; no writable day.
+- `unparsed`: text outside the supported representation; raw text is retained,
+  other days survive, and there is no writable day.
+
+`complete` is derived from all days being readable/empty. `retry_required` advises
+another read for missing/inactive values and device errors other than code 7;
+unparsed text alone does not require endless retries. These are facts/advice,
+not promises of permanent support or eventual recovery. No negative capability
+is cached. Malformed JSON/envelopes/metadata still raise contextual
+`BSBLANMalformedResponseError`; auth/connection failures stay typed exceptions.
+
+The codec accepts up to three minute-precision, non-overlapping intervals. It
+conservatively declines 24:00, overnight/equal intervals and other unsupported
+formats; this does not prove the controller's program invalid. The UTC receipt
+timestamp is not controller time, an atomic-week guarantee, or write verification.
+Raw formatting and disabled-slot positions are not reproduced by serialization.
+
+### Write an explicit partial update
+
+```python
+from bsblan import DaySchedule, ScheduleUpdate
+
+update = ScheduleUpdate(
+    tuesday=DaySchedule.from_bsblan_format("06:00-08:00 17:00-21:00"),
+)
+# This changes the device: invoke explicitly on a correctly configured client.
+await client.set_heating_schedule(update, circuit=1)
+```
+
+`None` leaves a day unchanged. The entire update is validated before any write;
+then each populated day gets one sequential `/JS` request using the same mapping
+as reads. Only integer status 1 under that parameter's key counts as
+acknowledgement—not readback. On rejection or uncertainty,
+`BSBLANScheduleWriteError` reports acknowledged days, the failed day/ID,
+unattempted days, and the original transport cause when present. There is no
+rollback. An uncertain failed day may have changed; the consumer owns refresh
+and state publication, including after partial failures.
+
+**Clearing is not yet verified:** an empty `DaySchedule()` expresses clear intent
+but is rejected locally before _any_ update writes. The library does not assume
+an empty string clears the controller. Known read-only bus metadata also blocks
+writes. Do not turn unavailable/unparsed observations into clear commands.
+
+### Read-only command-line example
+
+After setting `BSBLAN_HOST` and any required credentials:
+
+```bash
+uv run python examples/read_schedules.py \
+  --hot-water-mapping "$CONFIRMED_HOT_WATER_MAPPING" \
+  --heating-mapping "$CONFIRMED_HEATING_MAPPING" --circuit 1
+```
+
+Each JSON object has the seven lowercase weekday names and confirmed string
+IDs. Omit a mapping to skip that group. This separate example prints JSON
+observations and has no write mode. `examples/control.py` still changes device
+settings and is not a schedule inspection tool.
+
+See the [breaking API migration guide](schedule-migration.md) before updating an
+integration. Generic `read_parameters()` remains available for raw diagnostics
+without asserting weekday roles.
 
 ## Multi-circuit support
 

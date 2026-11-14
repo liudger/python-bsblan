@@ -4,6 +4,8 @@ The main entry point for interacting with BSB-LAN devices.
 
 ## BSBLAN
 
+<!-- prettier-ignore-start -->
+
 ::: bsblan.BSBLAN
     options:
       show_bases: false
@@ -34,3 +36,18 @@ The main entry point for interacting with BSB-LAN devices.
 ::: bsblan.BSBLANConfig
     options:
       show_bases: false
+
+<!-- prettier-ignore-end -->
+
+## Shared schedule API
+
+Read and write methods share the immutable mappings in
+`BSBLANConfig.schedule_mappings`. Heating profiles are configured under
+`heating={1: profile_1, 2: profile_2}` and selected by the same `circuit` identifier
+used by the read/write methods. Missing groups have no implicit profile.
+See [structured schedules](../getting-started.md#structured-schedules) and the
+[breaking API migration guide](../schedule-migration.md).
+
+The [shared models](models.md#schedules) describe mappings, snapshots, intervals,
+and partial updates. [Schedule exceptions](exceptions.md) expose absent mappings
+and acknowledged/uncertain partial-write progress.
