@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from datetime import time
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
@@ -540,6 +541,99 @@ async def test_schedule_mapping_cannot_follow_a_changed_endpoint(
         with pytest.raises(BSBLANScheduleMappingError, match="target_changed"):
             await request
         client._request.assert_not_awaited()
+
+
+@pytest.mark.parametrize("kind", ["heating", "hot_water"])
+@pytest.mark.parametrize("operation", ["read", "write"])
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("host", "other.invalid"), ("port", 8081), ("passkey", "new-passkey")],
+)
+async def test_guard_tracks_transport_config_after_public_config_replacement(
+    kind: str, operation: str, field: str, value
+) -> None:
+    """The guard must follow the actual transport config, not its public copy."""
+    original = config(kind, None if kind == "hot_water" else 1)
+    client = BSBLAN(original)
+    client.config = replace(original)
+    setattr(original, field, value)
+    dispatched = []
+
+    async def request(**kwargs: Any) -> Any:
+        url = client._transport._build_url(kwargs.get("base_path", "/JQ"))
+        dispatched.append(str(url))
+        return {"700": {"status": 1}} if operation == "write" else {}
+
+    client._request = request
+    update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
+    pending = (
+        read(client, kind, 1) if operation == "read" else write(client, kind, 1, update)
+    )
+    with pytest.raises(BSBLANScheduleMappingError, match="target_changed"):
+        await pending
+    assert dispatched == []
+
+
+@pytest.mark.parametrize("kind", ["heating", "hot_water"])
+@pytest.mark.parametrize("operation", ["read", "write"])
+async def test_replacing_public_config_does_not_retarget_transport(
+    aresponses: ResponsesMockServer, kind: str, operation: str
+) -> None:
+    """A different public config must not falsely block the unchanged transport."""
+    seen = []
+
+    async def handler(request: Any) -> Any:
+        seen.append((request.host, request.path))
+        body = {"700": {"status": 1}} if operation == "write" else {}
+        return aresponses.Response(text=json.dumps(body))
+
+    path = "/JQ" if operation == "read" else "/JS"
+    aresponses.add("example.com", path, "POST", handler)
+    async with aiohttp.ClientSession() as session:
+        original = config(kind, None if kind == "hot_water" else 1)
+        client = BSBLAN(original, session=session)
+        client.config = replace(
+            original, host="other.invalid", port=8081, passkey="new-passkey"
+        )
+        update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
+        if operation == "read":
+            await read(client, kind, 1)
+        else:
+            await write(client, kind, 1, update)
+    assert seen == [("example.com", path)]
+
+
+@pytest.mark.parametrize("kind", ["heating", "hot_water"])
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("host", "other.invalid"), ("port", 8081), ("passkey", "new-passkey")],
+)
+async def test_original_target_change_between_writes_stops_after_config_replacement(
+    kind: str, field: str, value
+) -> None:
+    """A copied public config cannot hide a real retarget between day writes."""
+    original = config(kind, None if kind == "hot_water" else 1)
+    client = BSBLAN(original)
+    client.config = replace(original)
+    dispatched = []
+
+    async def request(**kwargs: Any) -> Any:
+        dispatched.append(kwargs["data"]["Parameter"])
+        setattr(original, field, value)
+        return {dispatched[-1]: {"status": 1}}
+
+    client._request = request
+    day = DaySchedule.from_bsblan_format("06:00-08:00")
+    update = ScheduleUpdate(monday=day, tuesday=day, wednesday=day)
+    with pytest.raises(BSBLANScheduleWriteError) as exc:
+        await write(client, kind, 1, update)
+    assert dispatched == ["700"]
+    assert exc.value.acknowledged_days == ("monday",)
+    assert exc.value.failed_day == "tuesday"
+    assert exc.value.parameter_id == "700.1"
+    assert exc.value.unattempted_days == ("wednesday",)
+    assert isinstance(exc.value.__cause__, BSBLANScheduleMappingError)
+    assert exc.value.__cause__.reason == "target_changed"
 
 
 async def test_target_change_between_writes_retains_partial_progress() -> None:
