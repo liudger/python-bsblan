@@ -110,8 +110,9 @@ class BSBLAN:
 
     def __post_init__(self) -> None:
         """Wire up internal collaborators after dataclass construction."""
+        transport_config = self.config
         self._transport = BSBLANTransport(
-            self.config,
+            transport_config,
             lambda: self.session,
             lambda: self._firmware_version,
         )
@@ -148,12 +149,13 @@ class BSBLAN:
             request=lambda **kw: self._request(**kw),  # noqa: PLW0108
             set_payload=self._set_payload,
             uses_pps_bus=lambda: self._uses_pps_bus,
-            mappings=self.config.schedule_mappings,
+            mappings=transport_config.schedule_mappings,
             bus_writable=lambda: self._is_bus_writable,
+            # Follow the same object as transport, even if client.config is replaced.
             target_key=lambda: (
-                self.config.host,
-                self.config.port,
-                self.config.passkey,
+                transport_config.host,
+                transport_config.port,
+                transport_config.passkey,
             ),
         )
         self._thermostat_writer = ThermostatWriter(
