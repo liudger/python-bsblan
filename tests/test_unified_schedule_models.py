@@ -145,9 +145,11 @@ def test_empty_day_is_intent_not_an_assumed_wire_encoding() -> None:
     """Clear intent is representable but requires device-verified encoding."""
     update = ScheduleUpdate(tuesday=DaySchedule())
     assert update.monday is None
-    assert update.tuesday.slots == ()
+    tuesday = update.tuesday
+    assert tuesday is not None
+    assert tuesday.slots == ()
     with pytest.raises(BSBLANUnsupportedFeatureError, match="clear"):
-        update.tuesday.to_bsblan_format()
+        tuesday.to_bsblan_format()
 
 
 def test_update_rejects_non_day_payload() -> None:
@@ -330,7 +332,9 @@ def test_response_revalidates_unchecked_mutable_metadata(field: str) -> None:
     schedule = DaySchedule.from_bsblan_format("06:00-08:00")
     raw = {"name": "x", "value": "06:00-08:00", "unit": "", "desc": "", "dataType": 9}
     original = snapshot(status="readable", metadata=raw, schedule=schedule)
-    metadata = original.day("monday").metadata.model_copy(update={field: []})
+    original_metadata = original.day("monday").metadata
+    assert original_metadata is not None
+    metadata = original_metadata.model_copy(update={field: []})
     with pytest.raises(ValidationError):
         ScheduleDay(
             weekday="monday",
@@ -366,9 +370,12 @@ def test_revalidated_snapshots_keep_valid_copy_and_json_behavior() -> None:
         original.model_dump_json(round_trip=True)
     )
     for result in (validated, restored):
-        assert result.day("monday").raw_value == "06:00-08:00"
-        assert result.day("monday").schedule.slots[0].start == time(6)
-        assert result.day("monday").metadata.value == "06:00-08:00"
+        monday = result.day("monday")
+        assert monday.raw_value == "06:00-08:00"
+        assert monday.schedule is not None
+        assert monday.schedule.slots[0].start == time(6)
+        assert monday.metadata is not None
+        assert monday.metadata.value == "06:00-08:00"
         assert result.complete
         assert not result.retry_required
 
@@ -431,6 +438,8 @@ def test_snapshot_has_no_mutable_nested_observations() -> None:
     raw["name"] = "changed"
     day = result.day("monday")
     metadata = day.metadata
+    assert metadata is not None
+    assert day.schedule is not None
     slot = day.schedule.slots[0]
     replacement_start = time(5)
     assert metadata.name == "x"

@@ -94,6 +94,7 @@ async def test_legacy_rejects_malformed_then_recovers(
             await read()
         assert "secret-response" not in str(exc.value)
         assert client._api_data["device"] == original
+        assert validator._api_validator is not None
         assert not validator._api_validator.is_section_validated("device")
         assert not validator._validated_hot_water_groups
         assert not validator._validated_hot_water_parameters
@@ -110,6 +111,7 @@ async def test_legacy_rejects_malformed_then_recovers(
             assert not validator._validated_hot_water_groups
         else:
             assert client._api_data["device"] == original
+            assert validator._api_validator is not None
             assert validator._api_validator.is_section_validated("device")
 
 
@@ -183,6 +185,7 @@ async def test_existing_partial_device_validation_survives_malformed(
         await client._setup_api_validator()
         assert client._api_data is not None
         validator = client._validator._api_validator
+        assert validator is not None
         first_id = next(iter(client._api_data["device"]))
         validator.validated_parameters["device"] = {first_id}
         original = dict(client._api_data["device"])
