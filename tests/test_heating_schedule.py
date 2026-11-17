@@ -78,4 +78,5 @@ async def test_schedule_mapping_is_not_required_for_climate_state(
         with pytest.raises(BSBLANScheduleMappingError):
             await client.heating_schedule()
         state = await client.state(include=["target_temperature"])
+    assert state.target_temperature is not None
     assert state.target_temperature.value == 21

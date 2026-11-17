@@ -341,7 +341,9 @@ async def test_ensure_section_validated_double_check_after_lock() -> None:
             nonlocal validation_count
             validation_count += 1
             # Mark section as validated
-            bsblan._validator._api_validator.validated_sections.add(section)
+            api_validator = bsblan._validator._api_validator
+            assert api_validator is not None
+            api_validator.validated_sections.add(section)
             return {}
 
         bsblan._validator._validate_api_section = mock_validate  # type: ignore[method-assign]
@@ -378,7 +380,9 @@ async def test_ensure_section_validated_concurrent_double_check() -> None:
             validation_started.set()
             # Simulate slow validation
             await asyncio.sleep(0.1)
-            bsblan._validator._api_validator.validated_sections.add(section)
+            api_validator = bsblan._validator._api_validator
+            assert api_validator is not None
+            api_validator.validated_sections.add(section)
             return {}
 
         bsblan._validator._validate_api_section = slow_validate  # type: ignore[method-assign]
@@ -545,7 +549,9 @@ async def test_ensure_section_validated_heating_extracts_temp_unit() -> None:
         async def mock_validate(
             section: str, _include: list[str] | None = None
         ) -> dict[str, Any]:
-            bsblan._validator._api_validator.validated_sections.add(section)
+            api_validator = bsblan._validator._api_validator
+            assert api_validator is not None
+            api_validator.validated_sections.add(section)
             if section == "heating":
                 return {"710": {"value": "20.0", "unit": "°F"}}
             return {}

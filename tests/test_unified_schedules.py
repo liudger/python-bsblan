@@ -101,8 +101,12 @@ async def test_read_exact_mapping_and_fresh_values(
         second = await read(client, kind, circuit)
     assert first.kind == kind
     assert first.circuit == circuit
-    assert first.day("monday").schedule.slots[0].start == time(6)
-    assert second.day("monday").schedule.slots[0].start == time(9)
+    first_monday = first.day("monday").schedule
+    second_monday = second.day("monday").schedule
+    assert first_monday is not None
+    assert second_monday is not None
+    assert first_monday.slots[0].start == time(6)
+    assert second_monday.slots[0].start == time(9)
     assert first.day("tuesday").status == "empty"
     assert first.day("wednesday").reason_code == "missing"
     assert not first.complete
@@ -683,7 +687,9 @@ async def test_writability_refresh_stops_remaining_day_requests(
                 "buswritable": int(gateway_writable),
             }
         param = kwargs["data"]["Parameter"]
-        dispatched.append((param, client.device_info.is_bus_writable))
+        device = client.device_info
+        assert device is not None
+        dispatched.append((param, device.is_bus_writable))
         if len(dispatched) == 1:
             gateway_writable = False
             await client.device()

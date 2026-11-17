@@ -77,6 +77,7 @@ async def test_literal_profiles_preserve_day_roles(
     for i, day in enumerate(result.days):
         assert day.weekday == DAYS[i]
         assert day.parameter_id == ids[i]
+        assert day.schedule is not None
         assert day.schedule.slots[0].start == time(i + 6)
 
 

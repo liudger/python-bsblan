@@ -92,8 +92,10 @@ async def test_corrupted_or_clear_dhw_update_cannot_partially_write(
     )
     day = DaySchedule.from_bsblan_format("06:00-08:00")
     update = ScheduleUpdate(monday=day, sunday=DaySchedule() if clear else day)
+    sunday = update.sunday
+    assert sunday is not None
     if not clear:
-        object.__setattr__(update.sunday.slots[0], "end", time(5))
+        object.__setattr__(sunday.slots[0], "end", time(5))
     async with aiohttp.ClientSession() as session:
         configured = BSBLANConfig(
             host="example.com", schedule_mappings=ScheduleMappings(hot_water=profile)
