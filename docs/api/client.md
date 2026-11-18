@@ -69,6 +69,9 @@ Readers/setters use the same resolution lazily and raise
 fetch fresh values using cached mappings; automatic writes always refresh identity
 and compatibility first. Connection failures and observed metadata changes discard
 automatic trust; explicit refresh/invalidation handles known remote changes.
+Schedule setters validate and encode the entire update before discovery I/O.
+Fresh layout/value permission denials are both retained, and target/proof guards
+run before every actual schedule request attempt, including transport retries.
 
 `probe_schedule_candidate("issue_1668_dhw")` performs an explicit read-only probe
 of the issue's seven decimal DHW IDs. Its immutable `ScheduleCandidateProbe`
