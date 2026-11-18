@@ -187,7 +187,7 @@ class ScheduleProfileResolver:
         self._guard()
         device = await self._device()
         self._guard()
-        if device.bus not in {"BSB", "LPB"} or device.busdest is None:
+        if device.bus not in {"BSB", "LPB"} or type(device.busdest) is not int:
             return None, "bus_unknown_or_unsupported"
         response = await self._checked_request({"Parameter": "6224,6225,6226"})
         values, reason = _controller_values(response)

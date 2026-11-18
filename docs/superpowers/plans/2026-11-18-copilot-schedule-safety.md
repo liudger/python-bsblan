@@ -57,3 +57,20 @@ board writes or example coverage target were used for this review follow-up.
 
 - [ ] Commit/push the fixes to the existing PR, reply to each finding with evidence, resolve addressed threads and update the PR body.
 - [ ] Verify the new revision's GitHub/Sonar checks and record results.
+
+### Follow-up: reject coerced device destinations
+
+Copilot comment 4614132658 identified `/JI` boolean/float destinations coercing to
+integer zero before profile matching. Make `Device.busdest` strictly integer,
+reject malformed metadata at the public `device()` boundary with the library's
+malformed-response error, invalidate automatic trust on failed refresh, and retain
+the last validated device rather than publishing an invalid identity. Keep
+missing/null destinations optional/unknown, and defensively type-check resolver
+callbacks as well. Public HTTP regressions cover discovery/read/write; cache
+refresh regressions ensure an old successful mapping cannot mask invalid metadata.
+No live-device access is needed for this follow-up.
+
+Follow-up local validation: 1156 tests passed with 100% measured library coverage;
+all-files hooks, Ruff/ty, strict docs build and whitespace checks passed. Public
+HTTP regressions stop at `/JI` for boolean, floating-point and string destinations;
+missing/null destinations remain unknown. No board writes were performed.

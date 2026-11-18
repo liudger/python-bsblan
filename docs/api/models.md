@@ -110,6 +110,9 @@ active `/JC` layout without a caller `schedule_table` assertion.
 
 ::: bsblan.Device
 
+`busdest` is optional but strictly integer when present: no coercion of booleans,
+floats or numeric strings into a profile identity. Missing/null stays unknown.
+
 `is_bus_writable` reflects the gateway default indicator. On BSB/LPB it is not an
 absolute veto on individual active-table parameters; see
 [parameter permissions](../schedule-profiles.md#parameter-permissions-versus-gateway-defaults).

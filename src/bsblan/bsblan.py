@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 import aiohttp
 from aiohttp.hdrs import METH_POST
+from pydantic import ValidationError
 
 from ._hot_water import HotWaterManager
 from ._parameters import ParameterReader
@@ -33,6 +34,7 @@ from .exceptions import (
     BSBLANConnectionError,
     BSBLANError,
     BSBLANInvalidParameterError,
+    BSBLANMalformedResponseError,
     BSBLANUnsupportedFeatureError,
 )
 from .models import (
@@ -890,8 +892,14 @@ class BSBLAN:
 
         """
         device_info = await self._request(base_path="/JI")
-        self._device = Device.model_validate(device_info)
-        return self._device
+        try:
+            device = Device.model_validate(device_info)
+        except ValidationError as err:
+            self.invalidate_schedule_profiles()
+            msg = "Invalid /JI device metadata"
+            raise BSBLANMalformedResponseError(msg) from err
+        self._device = device
+        return device
 
     async def info(self, include: list[str] | None = None) -> Info:
         """Get information about the current heating system config.

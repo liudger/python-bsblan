@@ -392,7 +392,7 @@ class Device(BaseModel):
     bus: str | None = None
     buswritable: int | bool | None = None
     busaddr: int | None = None
-    busdest: int | None = None
+    busdest: int | None = Field(default=None, strict=True)
     busdevices: list[Any] | None = None
 
     @property
