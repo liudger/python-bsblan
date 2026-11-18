@@ -25,8 +25,17 @@ profile is implied by these instructions.
 | Raw/factory-reset schedule fields and implicit group tables             | Generic `read_parameters()` for diagnostics; factory reset is not a weekday update                |
 
 The `source`, `mapping_source`, and `day_assignment` snapshot fields are removed:
-values are device-response observations and weekday assignment is always a
-caller-configured assertion. There is no discovery or verified-profile variant.
+values remain device-response observations. Weekday assignment comes from an
+explicit caller-configured mapping or an independently evidenced profile, never
+from interpreting response names or values. `discover_schedules()` separately
+reports mapping source, profile ID and repair/retry advice; snapshots retain the
+same shared shape. See [evidence-backed profiles](schedule-profiles.md).
+
+The built-in registry now includes the narrowly scoped RVS21 integer-weekday
+profile, with source-backed roles and read-only active-layout validation. Supported
+installations need no manual weekday mapping or table assertion. Other verified
+deployments can supply `schedule_profiles` with declared `table_parameters`, or
+assert a verified `schedule_table`; overrides below still take precedence per group.
 
 ## Configure once, use the same mapping for reads and writes
 
@@ -53,10 +62,32 @@ aliases. Canonical JSON keys `"1"`/`"2"` normalize to integers; ambiguous or
 unsupported keys are rejected. The collection remains immutable and supports
 JSON serialization and ordinary configuration deep copies.
 
-Unconfigured groups raise `BSBLANScheduleMappingError` before schedule I/O. They
-do not fall back to the old integer IDs, trigger availability discovery, or
-prevent non-schedule climate monitoring. Invalid mapping construction fails
-validation locally. Known PPS schedules remain unsupported.
+Groups without a manual override attempt automatic resolution only against the
+configured profile registry. Unknown profiles/layouts raise
+`BSBLANScheduleMappingError`; `schedule_profiles=()` explicitly disables automatic
+discovery and preserves a local no-I/O failure for unmapped groups. They never
+fall back to guessed
+integer IDs or prevent non-schedule climate monitoring. Invalid mapping
+construction fails validation locally. Known PPS schedules remain unsupported.
+
+Automatic groups require exact installation identity and read-only compatibility
+probes. Missing/inactive data and transient device errors must be retried, not
+reported as wrong mappings: `discover_schedules()` returns `retry` status, while
+readers/setters raise `BSBLANScheduleProbeError`. Connection/authentication/
+malformed-response exceptions retain their existing classification. There is no
+permanent negative cache or eager schedule discovery at startup.
+
+Successful automatic mappings are reused in memory, never schedule values.
+`discover_schedules(refresh=True)` refreshes trust explicitly;
+`invalidate_schedule_profiles()` clears it synchronously without I/O. Reads use
+fresh values with validated mappings; automatic writes retain fresh identity and
+compatibility preflight. HA controls deferred discovery timing and polling
+coordination. See [cache and timing guidance](schedule-profiles.md).
+
+The explicit `probe_schedule_candidate("issue_1668_dhw")` diagnoses the reported
+DHW IDs `561,561.1,561.2,561.3,561.4,561.5,561.6`. Compatibility alone never enables
+a group or populates the automatic cache. Active-table confirmation and separate
+manual configuration are still required; no failure triggers a blind fallback.
 
 Do not infer a mapping from firmware version, descriptions, sequential IDs, or
 seven successful TIMEPROG responses. Persist it per HA config entry/group and
