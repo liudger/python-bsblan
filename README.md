@@ -53,7 +53,15 @@ authentication setup, see the [Getting Started][docs-getting-started] guide.
 The [structured schedules guide](docs/getting-started.md#structured-schedules)
 describes the shared read/write API and the separate read-only
 `examples/read_schedules.py` tool. Schedules require independently confirmed
-weekday mappings. See the [breaking API migration guide](docs/schedule-migration.md)
+weekday mappings, supplied as manual overrides or evidence-backed profiles with
+read-only compatibility probes. `discover_schedules()` exposes per-group
+availability and repair/retry advice. Validated mappings are reused for fresh
+reads, and HA can defer discovery until startup traffic settles. An explicit
+`probe_schedule_candidate("issue_1668_dhw")` diagnoses the reported decimal DHW
+IDs without enabling schedules. A source-backed RVS21 profile now provides
+automatic HC1/DHW selection for the exact verified controller/build/layout;
+unknown installations remain disabled rather than guessing weekday IDs. See [schedule profiles](docs/schedule-profiles.md) and the
+[breaking API migration guide](docs/schedule-migration.md)
 before updating the Home Assistant integration.
 
 ## Compatibility
@@ -146,6 +154,16 @@ To run just the Python tests:
 ```bash
 uv run pytest
 ```
+
+### Reversible control example
+
+`uv run python examples/control.py` is read-only by default. With explicit
+`--write`, it saves, temporarily changes, verifies and restores the thermostat
+setpoint, HVAC mode and optionally one schedule day selected through a verified
+automatic profile or confirmed manual mapping. Local time sync is
+intentionally retained after successful demos. Restoration is best effort; do not
+run alongside other writers. See the [control example guide](docs/getting-started.md#reversible-control-example)
+for flags, confirmed schedule mappings and recovery limitations.
 
 ## Authors & contributors
 

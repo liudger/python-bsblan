@@ -26,6 +26,14 @@ Custom exceptions raised by the library.
 
 ::: bsblan.BSBLANScheduleMappingError
 
+## BSBLANScheduleProbeError
+
+::: bsblan.BSBLANScheduleProbeError
+
+An automatic compatibility probe was inconclusive. Retry discovery rather than
+opening a wrong-mapping repair. Connection, authentication and malformed-response
+errors continue to propagate as their existing exception types.
+
 ## BSBLANScheduleWriteError
 
 ::: bsblan.BSBLANScheduleWriteError

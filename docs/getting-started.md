@@ -248,15 +248,40 @@ async with BSBLAN(config) as client:
 
 `hot_water_schedule()` and `heating_schedule(circuit=1)` return the same immutable
 `ScheduleSnapshot` type. Their setters accept a shared `ScheduleUpdate`. Reads
-and writes use **one caller-confirmed mapping per target and group**, configured
-once when creating the client. No default profile or per-call override is used.
+and writes use **one independently confirmed mapping per target and group**:
+either an explicit manual override or an evidence-backed profile selected and
+probed by the library. There is no per-call mapping override.
 
-Without a mapping, that group raises `BSBLANScheduleMappingError` before schedule
-I/O; ordinary climate monitoring remains available. Known PPS schedules are
-rejected locally with `BSBLANUnsupportedFeatureError`. Initialization can still
-make its normal device and JSON-API version requests before a schedule call.
+Use `await client.discover_schedules()` for independent HC1, HC2 and DHW
+availability, repair/manual-override reasons and retry advice. Successful mappings
+are reused for reads, but schedule values are always fresh. Automatic writes
+perform fresh identity/compatibility preflight. Use `refresh=True` for fresh
+discovery, or `client.invalidate_schedule_profiles()` to clear trust without I/O.
+Connection failures propagate for retries, not wrong-mapping repairs;
+incomplete device probes return
+`retry` availability or raise `BSBLANScheduleProbeError` from readers/setters.
 
-### Confirm and configure the mapping
+**The verified RVS21 profile enables HC1/DHW automatically** for the exact
+`RVS21.831F/127` family 211/variant 127 BSB destination 0 installation running
+`5.0.82-20251124154226`, after read-only active-layout and value checks. Other
+installations remain disabled until a supported profile or explicit override is
+available. Additional deployments can supply evidence-backed `schedule_profiles`
+with declared `table_parameters`, or assert a verified `schedule_table`.
+Firmware alone is not sufficient. See
+[evidence-backed profiles](schedule-profiles.md) for setup, limitations and HA
+consumer guidance. HA can defer discovery until at least 15 seconds after initial
+reads and coordinate it with polling; the library adds no startup timer. The
+explicit `probe_schedule_candidate("issue_1668_dhw")` diagnoses the reported
+`561,561.1`–`561.6` IDs read-only without enabling them. Explicit
+`schedule_mappings` take precedence per group.
+
+Without an override or compatible profile, that group raises
+`BSBLANScheduleMappingError`; with no profiles configured this remains a local
+failure before schedule I/O. Ordinary climate monitoring remains available.
+Known PPS schedules are rejected locally with `BSBLANUnsupportedFeatureError`.
+Initialization still makes only its normal device and JSON-API version requests.
+
+### Confirm and configure a manual mapping
 
 Independently confirm the target/bus, exact active firmware/controller table,
 and each weekday's parameter ID for the installation. A matching active
@@ -311,7 +336,7 @@ The heating collection is read-only and defensively copied. Python integer keys
 bool/float, unsupported, noncanonical, and conflicting keys are rejected.
 JSON roundtrips and normal configuration deep copies retain immutable profiles.
 Persist `model_dump()` output with the target identity in the consumer's configuration;
-the library does not discover, persist, or select profiles. Reconfirm after
+the library does not persist overrides or discovered availability. Reconfirm after
 changes to target, firmware/table, controller, bus, or destination. Create a new
 client to change mappings; existing clients retain their captured configuration.
 Changing host, port, or passkey after construction invalidates schedule operations
@@ -367,8 +392,11 @@ and state publication, including after partial failures.
 
 **Clearing is not yet verified:** an empty `DaySchedule()` expresses clear intent
 but is rejected locally before _any_ update writes. The library does not assume
-an empty string clears the controller. Known read-only bus metadata also blocks
-writes. Do not turn unavailable/unparsed observations into clear commands.
+an empty string clears the controller. Explicit read-only/write-only parameter
+permissions block schedule writes. On BSB/LPB, `/JI` `buswritable=0` describes
+gateway defaults, not every active-table parameter: writes require explicit
+read/write permission for each populated day, using fresh `/JC` metadata when
+needed. Do not turn unavailable/unparsed observations into clear commands.
 
 ### Read-only command-line example
 
@@ -382,12 +410,97 @@ uv run python examples/read_schedules.py \
 
 Each JSON object has the seven lowercase weekday names and confirmed string
 IDs. Omit a mapping to skip that group. This separate example prints JSON
-observations and has no write mode. `examples/control.py` still changes device
-settings and is not a schedule inspection tool.
+observations and has no write mode. `examples/control.py` is also read-only by
+default, but offers explicit reversible-control demonstrations with `--write`.
 
 See the [breaking API migration guide](schedule-migration.md) before updating an
 integration. Generic `read_parameters()` remains available for raw diagnostics
 without asserting weekday roles.
+
+## Reversible control example
+
+Inspect device information, thermostat/sensor data and hot-water polling groups
+without changing settings:
+
+```bash
+uv run python examples/control.py --circuit 1
+```
+
+To temporarily exercise the thermostat setpoint and HVAC mode, explicitly opt in:
+
+```bash
+uv run python examples/control.py --write --circuit 1 \
+  --temperature 18 --hvac-mode 3
+```
+
+Temperatures use the controller's **native unit**, not an assumed Celsius unit.
+Mode values are normalized library modes: `0=off`, `1=auto`, `2=eco`, `3=heat`;
+PPS does not support eco. All thermostat and heating schedule operations use the
+selected circuit, including reads and restoration.
+
+To also exercise one independently confirmed heating schedule day:
+
+```bash
+uv run python examples/control.py --write --circuit 1 \
+  --temperature 18 --hvac-mode 3 \
+  --heating-mapping "$CONFIRMED_HEATING_MAPPING" \
+  --weekday tuesday --schedule "07:00-09:00 17:00-20:00"
+```
+
+For supported installations, omit the mapping to exercise automatic profile
+selection instead:
+
+```bash
+uv run examples/control.py --write --weekday tuesday --schedule "07:00-09:00"
+```
+
+This selects heating by default; add `--schedule-group hot-water` for automatic
+DHW selection. For read-only automatic inspection use
+`uv run examples/control.py --schedule-group heating`. No manual mappings or table
+assertions are inserted by the example. An unknown profile/layout stops the write
+demo before any control writes.
+
+For explicit DHW overrides, replace `--heating-mapping` with
+`--hot-water-mapping` and the confirmed JSON. Only one group/day is modified per
+run. Monday is the default weekday. A supplied mapping without `--write` only
+reads that schedule; a schedule write needs an explicit nonempty `--schedule`.
+Without a mapping, selected automatic group, or schedule target, the example does
+not touch schedules. Manual mappings take precedence; contradictory group choices
+are rejected locally. To exercise only the schedule, set `--temperature` and
+`--hvac-mode` to their saved original values so those unchanged controls are skipped.
+
+Before **any** write, the example saves and preflights the original setpoint, mode
+and selected schedule day. Unavailable, unparsed, empty or explicitly read-only
+original days block the entire write demo, because they cannot be safely restored.
+Known heating bounds are checked for both original and temporary temperatures.
+Other days are left untouched. Parameter permission codes are **`readwrite=0` for
+read/write, `1` for read-only, `2` for write-only**. The latter two cannot be used
+for a read/restore demo. Missing flags are not affirmative permission. A BSB/LPB
+`buswritable=0` default indicator does not veto explicit parameter-level
+read/write permissions; PPS retains its gateway-wide write protection.
+
+Each setting is handled independently:
+
+```text
+read/save -> temporary write -> readback -> restore in finally -> readback
+```
+
+Unchanged targets are skipped. A failed or uncertain temporary write still
+triggers a restoration attempt. Failed restoration is prominently reported with
+the original value; if both the demo and restoration fail, both errors are
+preserved. Restoration uses supported parsed intervals, not exact physical-slot
+padding/formatting from the original response.
+
+**Time synchronization is intentionally permanent:** after reversible demos
+succeed, `--write` also sets the device clock to the current local system time on
+supported buses. Gateway and system must share the intended timezone. A read-only
+run never sets the clock; PPS time synchronization is skipped.
+
+**This is best-effort recovery, not an atomic transaction.** Do not run while HA,
+automations or other users are writing settings. Connection loss, repeated
+interrupts or process termination can prevent restoration. Temporary changes can
+operate real equipment; restoring settings cannot undo those physical effects.
+Review the readback and any recovery warnings before leaving the device.
 
 ## Multi-circuit support
 
