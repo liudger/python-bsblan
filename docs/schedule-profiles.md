@@ -63,6 +63,13 @@ An automatic profile matches all these facts exactly:
 | `variant`          | Raw parameter `6226`, error-free PLAIN_NUMBER (0), integer         |
 | `table`            | Source-backed layout match, or explicit `schedule_table` assertion |
 
+The raw `/JI` `busdest` must be an integer: booleans, floating-point values and
+numeric strings are rejected before device-model coercion can turn them into a
+supported destination. Malformed device metadata raises
+`BSBLANMalformedResponseError` and invalidates automatic mapping trust without
+publishing the invalid identity. Missing/null destinations remain unspecified,
+not destination zero, and cannot activate a profile.
+
 **The API does not expose a cryptographic identity/checksum of the full active
 table.** Firmware alone is not a substitute. Profiles may declare immutable
 `table_parameters`: (parameter ID, expected name) pairs covering every mapped ID

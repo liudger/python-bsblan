@@ -170,6 +170,8 @@ async def test_empty_registry_never_performs_network_discovery() -> None:
         {"version": "other"},
         {"bus": "LPB"},
         {"busdest": 1},
+        {"busdest": False},
+        {"busdest": 0.0},
         {"bus": None},
         {"busdest": None},
     ],
