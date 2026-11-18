@@ -145,7 +145,7 @@ class ScheduleUpdate:
 
 
 class ScheduleMapping(BaseModel):
-    """Caller-confirmed weekday IDs for one device target and schedule group."""
+    """Independently confirmed weekday IDs for one target and schedule group."""
 
     model_config = ConfigDict(
         frozen=True, extra="forbid", strict=True, revalidate_instances="always"
@@ -200,7 +200,7 @@ class _CircuitMappings(Mapping[int, ScheduleMapping]):
 
 
 class ScheduleMappings(BaseModel):
-    """Immutable per-client mappings; absent groups have no implicit profile."""
+    """Immutable weekday mappings; absent groups contain no mapping assertion."""
 
     model_config = ConfigDict(
         frozen=True,

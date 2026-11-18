@@ -72,7 +72,9 @@ async def test_schedule_mapping_is_not_required_for_climate_state(
         repeat=2,
     )
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host="example.com"), session=session)
+        client = BSBLAN(
+            BSBLANConfig(host="example.com", schedule_profiles=()), session=session
+        )
         client._supports_full_config = True
         await client._setup_api_validator()
         with pytest.raises(BSBLANScheduleMappingError):

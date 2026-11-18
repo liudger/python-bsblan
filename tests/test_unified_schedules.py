@@ -253,7 +253,9 @@ async def test_read_invalid_circuit_fails_before_io(circuit) -> None:
 async def test_read_without_mapping_fails_before_io() -> None:
     """Unknown schedule profiles cannot fall back to fixed integer IDs."""
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host="example.invalid"), session=session)
+        client = BSBLAN(
+            BSBLANConfig(host="example.invalid", schedule_profiles=()), session=session
+        )
         with pytest.raises(BSBLANScheduleMappingError, match="mapping_unknown"):
             await client.hot_water_schedule()
 
@@ -497,24 +499,31 @@ async def test_write_invalid_later_day_prevents_earlier_writes(bad_later_day) ->
 
 @pytest.mark.parametrize("kind", ["heating", "hot_water"])
 @pytest.mark.parametrize("bus", ["BSB", "LPB", "PPS"])
-async def test_write_rejects_known_read_only_bus(kind: str, bus: str) -> None:
-    """Read-only metadata is enforced independently of UI restrictions."""
+async def test_disabled_bus_defaults_need_explicit_parameter_permission(
+    kind: str, bus: str
+) -> None:
+    """BSB/LPB need positive parameter evidence; PPS schedules remain unsupported."""
     async with aiohttp.ClientSession() as session:
         client = BSBLAN(
             config(kind, None if kind == "hot_water" else 1), session=session
         )
         client._device = Device.model_construct(bus=bus, buswritable=0)
-        client._request = AsyncMock()
+        client._request = AsyncMock(return_value={})
         update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
         with pytest.raises(BSBLANUnsupportedFeatureError):
             await write(client, kind, 1, update)
-        client._request.assert_not_awaited()
+        if bus == "PPS":
+            client._request.assert_not_awaited()
+        else:
+            client._request.assert_awaited_once_with(base_path="/JC=700")
 
 
 async def test_write_missing_mapping_cannot_use_legacy_defaults() -> None:
     """A writer never falls back to the fixed integer schedule tables."""
     async with aiohttp.ClientSession() as session:
-        client = BSBLAN(BSBLANConfig(host="example.invalid"), session=session)
+        client = BSBLAN(
+            BSBLANConfig(host="example.invalid", schedule_profiles=()), session=session
+        )
         update = ScheduleUpdate(monday=DaySchedule.from_bsblan_format("06:00-08:00"))
         with pytest.raises(BSBLANScheduleMappingError):
             await client.set_hot_water_schedule(update)

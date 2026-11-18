@@ -15,6 +15,7 @@ from .exceptions import (
     BSBLANInvalidParameterError,
     BSBLANMalformedResponseError,
     BSBLANScheduleMappingError,
+    BSBLANScheduleProbeError,
     BSBLANScheduleWriteError,
     BSBLANUnsupportedFeatureError,
     BSBLANVersionError,
@@ -33,6 +34,13 @@ from .models import (
     State,
     StaticState,
 )
+from .schedule_profiles import (
+    STANDARD_SCHEDULE_PROFILES,
+    ScheduleAvailability,
+    ScheduleCandidateProbe,
+    ScheduleProfile,
+    ScheduleProfileIdentity,
+)
 from .schedules import (
     DaySchedule,
     ScheduleDay,
@@ -46,6 +54,7 @@ from .schedules import (
 
 __all__ = [
     "BSBLAN",
+    "STANDARD_SCHEDULE_PROFILES",
     "UNIT_DEVICE_CLASS_MAP",
     "UNIT_STATE_CLASS_MAP",
     "ApiVersion",
@@ -56,6 +65,7 @@ __all__ = [
     "BSBLANInvalidParameterError",
     "BSBLANMalformedResponseError",
     "BSBLANScheduleMappingError",
+    "BSBLANScheduleProbeError",
     "BSBLANScheduleWriteError",
     "BSBLANUnsupportedFeatureError",
     "BSBLANVersionError",
@@ -69,9 +79,13 @@ __all__ = [
     "HotWaterConfig",
     "HotWaterState",
     "Info",
+    "ScheduleAvailability",
+    "ScheduleCandidateProbe",
     "ScheduleDay",
     "ScheduleMapping",
     "ScheduleMappings",
+    "ScheduleProfile",
+    "ScheduleProfileIdentity",
     "ScheduleSnapshot",
     "ScheduleUpdate",
     "Sensor",

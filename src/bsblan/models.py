@@ -11,6 +11,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from bsblan._permissions import read_write_permission
 from bsblan.constants import (
     TEMPERATURE_UNITS,
     UNIT_DEVICE_CLASS_MAP,
@@ -119,7 +120,7 @@ class EntityInfo(BaseModel, Generic[T]):
         data_type: Type of data (see DataType enum).
         error: Error code (0 for no error).
         readonly: Whether the value is read-only.
-        readwrite: Whether the value is read-write.
+        readwrite: Permission code: 0=read/write, 1=read-only, 2=write-only.
         precision: Optional precision for numeric values.
         data_type_name: BSB-LAN data type name (e.g., "TEMP", "ENUM").
         data_type_family: BSB-LAN data type family (e.g., "VALS", "ENUM").
@@ -134,8 +135,8 @@ class EntityInfo(BaseModel, Generic[T]):
     value: T | None = None
     data_type: int = Field(validation_alias="dataType", default=0)
     error: int = 0
-    readonly: int = 0
-    readwrite: int = 0
+    readonly: int = Field(default=0, strict=True)
+    readwrite: int = Field(default=0, strict=True)
     precision: float | None = None
     data_type_name: str = Field(default="", validation_alias="dataType_name")
     data_type_family: str = Field(default="", validation_alias="dataType_family")
@@ -171,6 +172,17 @@ class EntityInfo(BaseModel, Generic[T]):
                 data["unit"] = match.group(2)
 
         return data
+
+    @property
+    def read_write_permission(self) -> bool | None:
+        """Return explicit permission without treating absent default zeros as proof."""
+        return read_write_permission(
+            {
+                name: getattr(self, name)
+                for name in ("readonly", "readwrite")
+                if name in self.model_fields_set
+            }
+        )
 
     @property
     def enum_description(self) -> str | None:
@@ -390,7 +402,11 @@ class Device(BaseModel):
 
     @property
     def is_bus_writable(self) -> bool:
-        """Return whether BSB-LAN reports global bus writes as enabled."""
+        """Return the gateway default write indicator, not per-parameter permission.
+
+        BSB/LPB active-table flags can permit individual parameters even when this
+        indicator is false. PPS still uses a gateway-wide write enable setting.
+        """
         return self.buswritable is None or bool(self.buswritable)
 
     @property

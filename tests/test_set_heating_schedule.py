@@ -165,7 +165,9 @@ async def test_missing_circuit_never_falls_back_to_another_profile(
     profiles = ScheduleMappings(heating={1: keyed_profiles().heating[1]})
     async with aiohttp.ClientSession() as session:
         client = BSBLAN(
-            BSBLANConfig(host="example.com", schedule_mappings=profiles),
+            BSBLANConfig(
+                host="example.com", schedule_mappings=profiles, schedule_profiles=()
+            ),
             session=session,
         )
         client._request = AsyncMock()
