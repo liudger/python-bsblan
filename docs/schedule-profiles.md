@@ -130,7 +130,8 @@ the mapping is cached, before normal sequential-write safety checks.
 
 Only successful mappings/availability are cached in memory for the client
 lifetime. No schedule values, negative outcomes or diagnostic candidates are
-cached. There is no TTL or background refresh. Cached reads still check the
+cached. Fresh layout/value permission proofs are not stored in the mapping cache.
+There is no TTL or background refresh. Cached reads still check the
 captured target and observed adapter/bus fingerprint, and verify compatibility of
 the fresh values they receive. Incomplete/incompatible/malformed automatic reads
 discard trust; later attempts can retry discovery rather than using stale proof.
@@ -240,9 +241,18 @@ The `/JI` `buswritable` indicator is derived from default settings. On BSB/LPB,
 active-table parameters can still be writable when it is zero. Schedule writers
 therefore require explicit per-parameter read/write proof in that case, reusing
 fresh automatic-probe metadata or reading `/JC` for the exact populated IDs.
-Every populated day is checked before the first `/JS`, and proof cannot survive
-a relevant metadata/default change between sequential commands. Explicit denial
-wins over enabled defaults whenever fresh probe metadata includes it.
+Every populated day is checked before the first `/JS`. Fresh `/JC` layout and
+`/JQ` value permissions are combined: an explicit denial from either response
+wins, even when the other omits flags or permits writes and gateway defaults are
+enabled. Complete update validation, no-op rejection and interval encoding happen
+locally before automatic discovery or any other update I/O.
+
+Each actual schedule write attempt, including backoff retries, rechecks the
+captured target, cached installation metadata and permission proof; automatic
+mappings additionally recheck their profile generation/layout scope. A revoked
+proof aborts before the retry rebuilds its destination. Normal unchanged-target
+retries remain bounded and supported. Attempt guards are task/client-local and
+are unwound on failures and cancellation, so unrelated reads are unaffected.
 Caller-confirmed mappings with enabled defaults retain their existing request
 pattern; the device still controls write acceptance. PPS schedules remain
 unsupported, and PPS thermostat writes retain the gateway-wide enable check.
@@ -265,8 +275,8 @@ repair. HA owns rendering repairs and collecting manual overrides; this library
 does not call HA APIs. After an override, recreate the client.
 
 Host, port or passkey changes invalidate the captured target. Cached adapter/bus
-metadata changes during automatic probes or between sequential writes also stop
-the operation. These guards are not a concurrent-reconfiguration API or proof
+metadata changes during automatic probes, between sequential writes or during
+retry backoff also stop the operation. These guards are not a concurrent-reconfiguration API or proof
 against unreported remote controller/table changes.
 
 ## Adding a standard profile

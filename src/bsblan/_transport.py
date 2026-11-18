@@ -11,6 +11,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
@@ -23,7 +25,7 @@ from .constants import ErrorMsg
 from .exceptions import BSBLANAuthError, BSBLANError, BSBLANMalformedResponseError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Generator, Mapping
 
     from aiohttp.client import ClientSession
 
@@ -80,6 +82,18 @@ class BSBLANTransport:
         self._config = config
         self._session_getter = session_getter
         self._firmware_getter = firmware_getter
+        self._attempt_guard: ContextVar[Callable[[], None] | None] = ContextVar(
+            "bsblan_attempt_guard", default=None
+        )
+
+    @contextmanager
+    def guard_attempts(self, guard: Callable[[], None]) -> Generator[None, None, None]:
+        """Apply a task-local guard to all attempts and reset it on every exit path."""
+        token = self._attempt_guard.set(guard)
+        try:
+            yield
+        finally:
+            self._attempt_guard.reset(token)
 
     @backoff.on_exception(
         backoff.expo,
@@ -117,6 +131,9 @@ class BSBLANTransport:
                 decoded, parsed as JSON, or is not an object for /JQ.
 
         """
+        guard = self._attempt_guard.get()
+        if guard is not None:
+            guard()
         session = self._session_getter()
         if session is None:
             raise BSBLANError(ErrorMsg.SESSION_NOT_INITIALIZED)

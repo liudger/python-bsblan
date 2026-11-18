@@ -170,6 +170,7 @@ class BSBLAN:
                 guard=lambda: self._schedules.profile_guard(),  # noqa: PLW0108
             ),
             metadata_key=self._schedule_metadata_key,
+            write_guard=self._transport.guard_attempts,
             bus_writable=lambda: self._is_bus_writable,
             uses_bsb_lpb_bus=lambda: (
                 self._device is not None and self._device.bus in {"BSB", "LPB"}

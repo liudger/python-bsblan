@@ -36,6 +36,15 @@ class _ScheduleResolution:
     availability: ScheduleAvailability
     mapping: ScheduleMapping | None = None
     response: dict[str, Any] | None = None
+    structure: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class _TableProbe:
+    """Keep a fresh layout response, including permission evidence, with its status."""
+
+    status: TableStatus
+    response: dict[str, Any] | None = None
 
 
 def _entity(raw: Any) -> dict[str, Any]:
@@ -209,7 +218,7 @@ class ScheduleProfileResolver:
             return ()
         identity, reason = await self._identity()
         self._identity_key = tuple(identity.items()) if identity is not None else None
-        tables: dict[TableKey, TableStatus] = {}
+        tables: dict[TableKey, _TableProbe] = {}
         resolutions = []
         for kind, circuit in groups:
             resolutions.append(
@@ -229,11 +238,11 @@ class ScheduleProfileResolver:
         self,
         profile: ScheduleProfile,
         mapping: ScheduleMapping,
-        tables: dict[TableKey, TableStatus],
-    ) -> TableStatus:
+        tables: dict[TableKey, _TableProbe],
+    ) -> _TableProbe:
         """Check only this group's declared layout; reuse probes within one call."""
         if not profile.table_parameters:
-            return "match"
+            return _TableProbe("match")
         names = dict(profile.table_parameters)
         expected = tuple(
             (getattr(mapping, day), names[getattr(mapping, day)]) for day in WEEKDAYS
@@ -258,7 +267,9 @@ class ScheduleProfileResolver:
             if key in self._table_facts and self._table_facts[key] != fact:
                 self._table_revision += 1
             self._table_facts[key] = fact
-            tables[key] = table_status(response, expected, profile.identity.destination)
+            tables[key] = _TableProbe(
+                table_status(response, expected, profile.identity.destination), response
+            )
         return tables[key]
 
     def _matching_candidates(
@@ -287,7 +298,7 @@ class ScheduleProfileResolver:
         circuit: int | None,
         identity: dict[str, Any] | None,
         reason: str,
-        tables: dict[TableKey, TableStatus],
+        tables: dict[TableKey, _TableProbe],
     ) -> _ScheduleResolution:
         """Require a unique matching group before requesting its candidate IDs."""
         common: dict[str, Any] = {"kind": kind, "circuit": circuit}
@@ -312,16 +323,16 @@ class ScheduleProfileResolver:
         incomplete = False
         for profile, mapping in candidates:
             result = await self._verify_table(profile, mapping, tables)
-            if result == "match":
-                verified.append((profile, mapping))
-            incomplete |= result == "retry"
+            if result.status == "match":
+                verified.append((profile, mapping, result.response))
+            incomplete |= result.status == "retry"
         failure = _selection_failure(len(verified), incomplete=incomplete)
         if failure is not None:
             status, reason = failure
             return _ScheduleResolution(
                 ScheduleAvailability(**common, status=status, reason=reason)
             )
-        profile, mapping = verified[0]
+        profile, mapping, structure = verified[0]
         response = await self._checked_request(
             {"Parameter": ",".join(getattr(mapping, name) for name in WEEKDAYS)}
         )
@@ -338,7 +349,7 @@ class ScheduleProfileResolver:
             profile_id=profile.id,
         )
         return _ScheduleResolution(
-            availability, mapping if availability.enabled else None, response
+            availability, mapping if availability.enabled else None, response, structure
         )
 
     @staticmethod

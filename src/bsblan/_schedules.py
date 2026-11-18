@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import partial
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from ._permissions import read_write_permission
@@ -37,6 +39,7 @@ from .schedules import (
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
+    from contextlib import AbstractContextManager
 
 
 def _parse_observation(name: Weekday, param: str, raw: Any) -> ScheduleDay:
@@ -124,6 +127,51 @@ def _structure_permission(raw: Any) -> bool | None:
     return read_write_permission(raw)
 
 
+def _combined_permission(value: Any, structure: Any) -> bool | None:
+    """Never lose an explicit denial from either fresh preflight response."""
+    permissions = (
+        read_write_permission(value) if isinstance(value, dict) else None,
+        _structure_permission(structure),
+    )
+    if False in permissions:
+        return False
+    if True in permissions:
+        return True
+    return None
+
+
+def _encoded_update(update: ScheduleUpdate) -> list[tuple[Weekday, str]]:
+    """Validate the entire update and all encodings before any network resolution."""
+    if not isinstance(update, ScheduleUpdate):
+        msg = "A ScheduleUpdate is required"
+        raise BSBLANInvalidParameterError(msg)
+    try:
+        validated = ScheduleUpdate(**{name: getattr(update, name) for name in WEEKDAYS})
+    except (ValueError, TypeError) as err:
+        raise BSBLANInvalidParameterError(str(err)) from err
+    commands = [
+        (name, day.to_bsblan_format())
+        for name in WEEKDAYS
+        if (day := getattr(validated, name)) is not None
+    ]
+    if not commands:
+        raise BSBLANInvalidParameterError(ErrorMsg.NO_SCHEDULE)
+    return commands
+
+
+@dataclass(frozen=True)
+class _WriteProof:
+    """Capture the scope and fresh permissions authorizing one sequential update."""
+
+    kind: ScheduleKind
+    circuit: int | None
+    automatic: bool
+    metadata: object
+    generation: int
+    permissions: dict[str, bool | None]
+    permission_key: tuple[object, bool]
+
+
 class ScheduleManager:
     """Reuse validated profiles for reads and freshly probe automatic writes."""
 
@@ -139,6 +187,7 @@ class ScheduleManager:
         profile_resolver: ScheduleProfileResolver,
         metadata_key: Callable[[], object],
         uses_bsb_lpb_bus: Callable[[], bool],
+        write_guard: Callable[[Callable[[], None]], AbstractContextManager[None]],
     ) -> None:
         """Capture validated mappings while resolving current transport/metadata."""
         self._request = request
@@ -147,6 +196,7 @@ class ScheduleManager:
         self._mappings = ScheduleMappings.model_validate(mappings)
         self._bus_writable = bus_writable
         self._uses_bsb_lpb_bus = uses_bsb_lpb_bus
+        self._write_guard = write_guard
         self._target_key = target_key
         self._confirmed_target = target_key()
         self._profile_resolver = profile_resolver
@@ -424,14 +474,18 @@ class ScheduleManager:
         return {param: _structure_permission(structure.get(param)) for param in params}
 
     async def _write_permissions(
-        self, params: tuple[str, ...], response: dict[str, Any] | None
+        self,
+        params: tuple[str, ...],
+        response: dict[str, Any] | None,
+        structure: dict[str, Any] | None = None,
     ) -> tuple[dict[str, bool | None], tuple[object, bool]]:
         """Check every populated ID before writing, using /JC only when needed."""
         key = self._permission_key()
         permissions = {
-            param: read_write_permission(raw) if isinstance(raw, dict) else None
+            param: _combined_permission(
+                (response or {}).get(param), (structure or {}).get(param)
+            )
             for param in params
-            for raw in [(response or {}).get(param)]
         }
         if not key[1]:
             if not self._uses_bsb_lpb_bus():
@@ -443,6 +497,22 @@ class ScheduleManager:
             self._ensure_writable(param, key, permission=permissions[param])
         return permissions, key
 
+    def _validate_write_attempt(self, proof: _WriteProof, param: str) -> None:
+        """Revalidate scope and permissions before every attempt, including retries."""
+        self._mapping(proof.kind, proof.circuit)
+        if proof.automatic:
+            self._check_profile_generation(proof.generation, proof.kind, proof.circuit)
+            metadata = self._profile_key()
+        else:
+            metadata = self._metadata_key()
+        if metadata != proof.metadata:
+            raise BSBLANScheduleMappingError(
+                proof.kind, proof.circuit, "metadata_changed"
+            )
+        self._ensure_writable(
+            param, proof.permission_key, permission=proof.permissions[param]
+        )
+
     async def write(
         self,
         kind: Literal["hot_water", "heating"],
@@ -450,46 +520,31 @@ class ScheduleManager:
         circuit: int | None = None,
     ) -> None:
         """Prevalidate every day, then stop at the first uncertain/rejected write."""
+        encoded = _encoded_update(update)
         resolution = await self._resolve(kind, circuit, refresh=True)
         mapping = resolution.mapping
-        metadata = self._profile_key()
+        automatic = resolution.availability.source == "profile"
+        metadata = self._profile_key() if automatic else self._metadata_key()
         generation = self._profile_generation
-        if not isinstance(update, ScheduleUpdate):
-            msg = "A ScheduleUpdate is required"
-            raise BSBLANInvalidParameterError(msg)
-        try:
-            validated = ScheduleUpdate(
-                **{name: getattr(update, name) for name in WEEKDAYS}
-            )
-        except (ValueError, TypeError) as err:
-            raise BSBLANInvalidParameterError(str(err)) from err
-        commands = [
-            (name, getattr(mapping, name), day.to_bsblan_format())
-            for name in WEEKDAYS
-            if (day := getattr(validated, name)) is not None
-        ]
-        if not commands:
-            raise BSBLANInvalidParameterError(ErrorMsg.NO_SCHEDULE)
+        commands = [(name, getattr(mapping, name), value) for name, value in encoded]
         permissions, permission_key = await self._write_permissions(
-            tuple(param for _, param, _ in commands), resolution.response
+            tuple(param for _, param, _ in commands),
+            resolution.response,
+            resolution.structure,
+        )
+        proof = _WriteProof(
+            kind, circuit, automatic, metadata, generation, permissions, permission_key
         )
         acknowledged: list[Weekday] = []
         for index, (name, param, value) in enumerate(commands):
             pending = tuple(command[0] for command in commands[index + 1 :])
             try:
-                self._mapping(kind, circuit)
-                if resolution.availability.source == "profile":
-                    self._check_profile_generation(generation, kind, circuit)
-                    if self._profile_key() != metadata:
-                        raise BSBLANScheduleMappingError(
-                            kind, circuit, "metadata_changed"
-                        )
-                self._ensure_writable(
-                    param, permission_key, permission=permissions[param]
-                )
-                response = await self._request(
-                    base_path="/JS", data=self._set_payload(param, value)
-                )
+                validate = partial(self._validate_write_attempt, proof, param)
+                validate()
+                with self._write_guard(validate):
+                    response = await self._request(
+                        base_path="/JS", data=self._set_payload(param, value)
+                    )
             except BSBLANError as err:
                 raise BSBLANScheduleWriteError(
                     kind=kind,
