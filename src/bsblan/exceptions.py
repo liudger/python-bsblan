@@ -103,6 +103,17 @@ class BSBLANScheduleMappingError(BSBLANError):
         super().__init__(f"{kind} circuit {circuit}: {reason}")
 
 
+class BSBLANScheduleProbeError(BSBLANError):
+    """Schedule compatibility is inconclusive; retry rather than repair mappings."""
+
+    def __init__(self, kind: str, circuit: int | None, reason: str) -> None:
+        """Retain group context without classifying this as a mapping failure."""
+        self.kind = kind
+        self.circuit = circuit
+        self.reason = reason
+        super().__init__(f"{kind} circuit {circuit}: {reason}; retry discovery")
+
+
 class BSBLANScheduleWriteError(BSBLANError):
     """A sequential write stopped; the failed day may have an uncertain outcome."""
 

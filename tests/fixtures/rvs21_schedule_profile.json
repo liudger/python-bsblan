@@ -1,0 +1,63 @@
+{
+  "identity": {
+    "firmware_version": "5.0.82-20251124154226",
+    "bus": "BSB",
+    "destination": 0,
+    "controller": "RVS21.831F/127",
+    "family": 211,
+    "variant": 127,
+    "table": "rvs21-211-127-integer-weekdays-v1"
+  },
+  "source": {
+    "file": "BSB_LAN_custom_defs.h.backup",
+    "sha256": "c970902ed43ea84ba1f8a1dfcce896b1067805f71c10e45b830c0789dd1847f6",
+    "owner_confirmed_firmware_project": true,
+    "verification_date": "2026-11-17",
+    "live_write_verified_groups": ["heating_1"],
+    "live_restore_full_week_verified": true,
+    "notes": "Source command/weekday rows agree across the owner's backup/current/new tables; live JC and JQ corroborate HC1 and DHW. The version-header commit is not a checksum of the untracked custom table. No current program values or credentials are recorded."
+  },
+  "weekdays": [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ],
+  "names": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+  ],
+  "heating_1": {
+    "ids": ["501", "502", "503", "504", "505", "506", "507"],
+    "commands": [
+      "0x053D0A8C",
+      "0x053D0A8D",
+      "0x053D0A8E",
+      "0x053D0A8F",
+      "0x053D0A90",
+      "0x053D0A91",
+      "0x053D0A92"
+    ]
+  },
+  "hot_water": {
+    "ids": ["561", "562", "563", "564", "565", "566", "567"],
+    "commands": [
+      "0x053D0AA0",
+      "0x053D0AA1",
+      "0x053D0AA2",
+      "0x053D0AA3",
+      "0x053D0AA4",
+      "0x053D0AA5",
+      "0x053D0AA6"
+    ]
+  },
+  "observed_structure": { "dataType": 9, "destination": 0, "readwrite": 0 }
+}

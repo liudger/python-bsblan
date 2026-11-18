@@ -14,6 +14,7 @@ from aiohttp.hdrs import METH_POST
 
 from ._hot_water import HotWaterManager
 from ._parameters import ParameterReader
+from ._schedule_profiles import ScheduleProfileResolver
 from ._schedules import ScheduleManager
 from ._temperature import TemperatureManager
 from ._thermostat import ThermostatWriter
@@ -46,6 +47,12 @@ from .models import (
     SetHotWaterParam,
     State,
     StaticState,
+)
+from .schedule_profiles import (
+    STANDARD_SCHEDULE_PROFILES,
+    ScheduleAvailability,
+    ScheduleCandidateProbe,
+    ScheduleProfile,
 )
 from .schedules import ScheduleMappings, ScheduleSnapshot, ScheduleUpdate
 from .utility import is_param_value_active
@@ -83,6 +90,8 @@ class BSBLANConfig:
     port: int = 80
     request_timeout: int = 10
     schedule_mappings: ScheduleMappings = field(default_factory=ScheduleMappings)
+    schedule_profiles: tuple[ScheduleProfile, ...] = STANDARD_SCHEDULE_PROFILES
+    schedule_table: str | None = None
 
 
 @dataclass
@@ -150,7 +159,21 @@ class BSBLAN:
             set_payload=self._set_payload,
             uses_pps_bus=lambda: self._uses_pps_bus,
             mappings=transport_config.schedule_mappings,
+            profile_resolver=ScheduleProfileResolver(
+                request=lambda **kw: self._request(**kw),  # noqa: PLW0108
+                device=lambda: self.device(),  # noqa: PLW0108
+                profiles=tuple(
+                    ScheduleProfile.model_validate(profile)
+                    for profile in transport_config.schedule_profiles
+                ),
+                table=transport_config.schedule_table,
+                guard=lambda: self._schedules.profile_guard(),  # noqa: PLW0108
+            ),
+            metadata_key=self._schedule_metadata_key,
             bus_writable=lambda: self._is_bus_writable,
+            uses_bsb_lpb_bus=lambda: (
+                self._device is not None and self._device.bus in {"BSB", "LPB"}
+            ),
             # Follow the same object as transport, even if client.config is replaced.
             target_key=lambda: (
                 transport_config.host,
@@ -621,8 +644,10 @@ class BSBLAN:
                 method, base_path, data, params
             )
         except TimeoutError as e:
+            self.invalidate_schedule_profiles()
             raise BSBLANConnectionError(BSBLANConnectionError.message_timeout) from e
         except aiohttp.ClientError as e:
+            self.invalidate_schedule_profiles()
             raise BSBLANConnectionError(BSBLANConnectionError.message_error) from e
 
     def _validate_single_parameter(self, *params: Any, error_msg: str) -> None:
@@ -1129,17 +1154,63 @@ class BSBLAN:
         """
         return await self._hot_water.config(include)
 
+    def _schedule_metadata_key(self) -> object:
+        """Identify cached installation metadata relevant to automatic profiles."""
+        device = self._device
+        if device is None:
+            return None
+        return tuple(
+            getattr(device, name, None)
+            for name in ("MAC", "version", "bus", "busaddr", "busdest")
+        )
+
+    def invalidate_schedule_profiles(self) -> None:
+        """Discard automatic mapping trust without I/O, e.g. after reconnect.
+
+        Manual overrides are unchanged. Existing clients retain their captured
+        profile/table configuration; recreate the client to change that evidence.
+        """
+        self._schedules.invalidate_profiles()
+
+    async def discover_schedules(
+        self, *, refresh: bool = False
+    ) -> tuple[ScheduleAvailability, ...]:
+        """Return independent HC1, HC2 and DHW availability without writes.
+
+        Explicit mappings win; successful automatic mappings are reused in memory.
+        Set refresh=True to discard cached trust and run fresh compatibility
+        probes. Connection/auth/malformed errors propagate; retry discovery rather
+        than creating a wrong-mapping repair. HA can defer this call until startup
+        traffic settles; no discovery runs during ordinary initialization.
+        """
+        return await self._schedules.discover(refresh=refresh)
+
+    async def probe_schedule_candidate(
+        self, candidate_id: str
+    ) -> ScheduleCandidateProbe:
+        """Diagnose a named candidate read-only, without enabling schedule groups.
+
+        Currently accepts only "issue_1668_dhw": the seven exact DHW IDs reported
+        in issue #1668. Compatibility is not proof of weekday meaning or the
+        active table. The result always requires independent confirmation.
+        This method is opt-in; discovery failures never trigger fallback scans.
+        """
+        return await self._schedules.probe_candidate(candidate_id)
+
     async def hot_water_schedule(self) -> ScheduleSnapshot:
-        """Read seven fresh DHW observations using the client-configured mapping.
+        """Read seven fresh DHW observations using an override or verified profile.
 
         Missing/inactive values and unsupported intervals remain explicit day
-        outcomes. Without a confirmed mapping, fail locally before schedule I/O.
+        outcomes. Without an override, reuse a validated profile or lazily match
+        and probe one. Schedule values are never reused from an earlier operation.
         No factory reset or default schedule parameter is requested.
         """
         return await self._schedules.read("hot_water")
 
     async def heating_schedule(self, *, circuit: int = 1) -> ScheduleSnapshot:
-        """Read seven fresh observations for configured heating circuit 1 or 2.
+        """Read seven fresh observations for heating circuit 1 or 2.
+
+        Explicit mappings override automatic evidence-backed profile resolution.
 
         A returned snapshot may be incomplete; use its day outcomes and
         retry_required property rather than treating object presence as success.
