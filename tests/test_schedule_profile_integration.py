@@ -208,8 +208,9 @@ async def test_incompatible_probe_blocks_writes_with_mapping_reason() -> None:
             {param: entity(dataType=0) for param in IDS},
         ]
     )
+    change = update()
     with pytest.raises(BSBLANScheduleMappingError, match="probe_incompatible"):
-        await subject.set_heating_schedule(update())
+        await subject.set_heating_schedule(change)
     assert subject._request.await_count == 3
 
 
@@ -248,8 +249,9 @@ async def test_target_change_during_resolution_or_write_never_redirects_next_wri
 
     subject._request = request
     expected = BSBLANScheduleWriteError if stage == 3 else BSBLANScheduleMappingError
+    change = update()
     with pytest.raises(expected):
-        await subject.set_heating_schedule(update())
+        await subject.set_heating_schedule(change)
     assert len(seen) == stage + 1
 
 
@@ -271,8 +273,9 @@ async def test_cached_metadata_change_during_probe_or_write_is_guarded(
 
     subject._request = request
     expected = BSBLANScheduleWriteError if stage == 3 else BSBLANScheduleMappingError
+    change = update()
     with pytest.raises(expected):
-        await subject.set_heating_schedule(update())
+        await subject.set_heating_schedule(change)
     assert len(seen) == stage + 1
 
 

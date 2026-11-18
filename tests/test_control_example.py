@@ -221,8 +221,9 @@ async def test_failed_preflight_prevents_clock_sync_too(
     """Do not synchronize time or mutate anything when an original is unavailable."""
     client, _ = configured_main
     client.temperature = float("nan")
+    options = example.parse_options(["--write"])
     with pytest.raises(BSBLANError):
-        await example.main(example.parse_options(["--write"]))
+        await example.main(options)
     client.set_time.assert_not_awaited()
     assert all(name != "thermostat" for name, _ in client.events)
 

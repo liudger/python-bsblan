@@ -229,8 +229,9 @@ async def test_zero_default_indicator_does_not_invent_missing_permissions(
         ),
         hvac_mode=EntityInfo[int](name="mode", unit="", desc="", value=1),
     )
+    options = example.ControlOptions(write=True)
     with pytest.raises(BSBLANError, match="readwrite=0"):
-        await example.run_roundtrip(device_client, example.ControlOptions(write=True))
+        await example.run_roundtrip(device_client, options)
     assert all(name != "thermostat" for name, _ in device_client.events)
 
 
@@ -246,8 +247,9 @@ async def test_readonly_or_writeonly_state_blocks_demo_before_any_write(
     raw = {"target_temperature": entity(21), "hvac_mode": entity(1)}
     raw[field]["readwrite"] = permission
     device_client.state_override = State(**raw)
+    options = example.ControlOptions(write=True)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(device_client, example.ControlOptions(write=True))
+        await example.run_roundtrip(device_client, options)
     assert all(name != "thermostat" for name, _ in device_client.events)
 
 
@@ -272,8 +274,9 @@ async def test_helper_requires_explicit_write_opt_in(
     example: Any, device_client: Any
 ) -> None:
     """Even a direct helper caller cannot accidentally bypass the read-only default."""
+    options = example.ControlOptions()
     with pytest.raises(BSBLANError, match="--write"):
-        await example.run_roundtrip(device_client, example.ControlOptions())
+        await example.run_roundtrip(device_client, options)
     assert not device_client.events
 
 
@@ -296,8 +299,9 @@ async def test_invalid_original_state_blocks_all_writes(
 ) -> None:
     """Unreadable/readonly/nonfinite or unsupported originals are not restorable."""
     device_client.state_override = state
+    options = example.ControlOptions(write=True)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(device_client, example.ControlOptions(write=True))
+        await example.run_roundtrip(device_client, options)
     assert all(name != "thermostat" for name, _ in device_client.events)
 
 
@@ -309,8 +313,9 @@ async def test_unknown_bus_blocks_writes(
     device_client.device_info = device_client.device_info.model_copy(
         update={"bus": bus}
     )
+    options = example.ControlOptions(write=True)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(device_client, example.ControlOptions(write=True))
+        await example.run_roundtrip(device_client, options)
     assert not device_client.events
 
 
@@ -319,8 +324,9 @@ async def test_readonly_pps_bus_blocks_writes(example: Any, device_client: Any) 
     device_client.device_info = device_client.device_info.model_copy(
         update={"bus": "PPS", "buswritable": 0}
     )
+    options = example.ControlOptions(write=True)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(device_client, example.ControlOptions(write=True))
+        await example.run_roundtrip(device_client, options)
     assert not device_client.events
 
 
@@ -333,10 +339,9 @@ async def test_pps_modes_must_be_restorable(
         update={"bus": "PPS"}
     )
     device_client.mode = original
+    options = example.ControlOptions(write=True, hvac_mode=requested)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(
-            device_client, example.ControlOptions(write=True, hvac_mode=requested)
-        )
+        await example.run_roundtrip(device_client, options)
     assert all(name != "thermostat" for name, _ in device_client.events)
 
 
@@ -348,10 +353,9 @@ async def test_temperature_preflight_checks_old_and_new_values(
 ) -> None:
     """Never enter a demo whose original cannot pass known heating bounds."""
     device_client.temperature = original
+    options = example.ControlOptions(write=True, temperature=requested)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(
-            device_client, example.ControlOptions(write=True, temperature=requested)
-        )
+        await example.run_roundtrip(device_client, options)
     assert all(name != "thermostat" for name, _ in device_client.events)
 
 
@@ -473,6 +477,7 @@ async def test_one_known_bound_still_blocks_unsafe_temperature_changes(
 ) -> None:
     """An absent second bound must not allow violating the known heating bound."""
     device_client.bounds = bounds
+    options = example.ControlOptions(write=True)
     with pytest.raises(BSBLANError):
-        await example.run_roundtrip(device_client, example.ControlOptions(write=True))
+        await example.run_roundtrip(device_client, options)
     assert all(name != "thermostat" for name, _ in device_client.events)
