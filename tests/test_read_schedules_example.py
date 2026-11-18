@@ -51,16 +51,16 @@ def test_invalid_cli_configuration_never_starts_discovery(args: list[str]) -> No
     assert "error:" in result.stderr
 
 
-def test_control_rejects_schedule_circuit_flag_before_writes() -> None:
-    """--circuit can no longer select circuit 2 then write circuit 1 by default."""
+def test_control_rejects_invalid_circuit_before_discovery_or_writes() -> None:
+    """Supported circuits are explicit; invalid selection fails before device I/O."""
     result = subprocess.run(  # noqa: S603 - fixed executable and test inputs
-        [sys.executable, str(EXAMPLES / "control.py"), "--circuit", "2"],
+        [sys.executable, str(EXAMPLES / "control.py"), "--circuit", "3"],
         capture_output=True,
         text=True,
         check=False,
     )
     assert result.returncode == 2
-    assert "unrecognized arguments" in result.stderr
+    assert "invalid choice" in result.stderr
     assert "Setting temperature" not in result.stdout
 
 
