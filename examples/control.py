@@ -1,36 +1,49 @@
 # pylint: disable=W0621
-"""Asynchronous Python client for BSBLan.
+"""Inspect BSB-LAN, or explicitly exercise reversible controls with --write.
 
-This example demonstrates separate hot water polling groups:
-- HotWaterState: Essential parameters for frequent polling.
-- HotWaterConfig: Configuration parameters checked less frequently.
+Without --write this example only reads, including any supplied schedule mapping.
+With --write it saves, changes, reads back and restores the thermostat setpoint,
+HVAC mode and optionally one selected schedule day. Restores are best effort:
+disconnects, repeated interrupts or process termination may prevent recovery.
+Do not run alongside HA/other writers. Local time synchronization is intentionally
+not reverted and also requires --write; gateway/system must share a timezone.
 
-This example changes device settings. For read-only schedule inspection, use
-read_schedules.py with independently confirmed weekday mappings.
+Schedule writes use automatic verified profiles or an independently confirmed
+mapping override, plus a nonempty --schedule target. Unknown/empty/unparsed days are
+never overwritten. For schedule-only inspection, read_schedules.py also exists.
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import math
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from bsblan import (
     BSBLAN,
     BSBLANConfig,
+    DaySchedule,
     Device,
     DeviceTime,
     HeatingCircuitStatus,
     HotWaterConfig,
     HotWaterState,
     Info,
+    ScheduleMapping,
+    ScheduleMappings,
     Sensor,
     State,
     StaticState,
     get_hvac_action_category,
 )
+from bsblan.schedules import WEEKDAYS
+from control_roundtrip import ControlOptions, read_schedule, run_roundtrip
 from discovery import get_bsblan_host, get_config_from_env
+
+if TYPE_CHECKING:
+    from bsblan.schedule_profiles import ScheduleKind
 
 
 def get_attribute(
@@ -294,8 +307,120 @@ def print_hot_water_config(hot_water_config: HotWaterConfig) -> None:
     print_attributes("Hot Water Configuration", attributes)
 
 
-async def main() -> None:
-    """Show example on controlling your BSBLan device."""
+def _temperature_argument(value: str) -> float:
+    """Reject nonfinite temperature input before discovery or device access."""
+    temperature = float(value)
+    if not math.isfinite(temperature):
+        msg = "Temperature must be finite"
+        raise argparse.ArgumentTypeError(msg)
+    return temperature
+
+
+def _schedule_argument(value: str) -> DaySchedule:
+    """Parse a nonempty target day without guessing a safe clear encoding."""
+    day = DaySchedule.from_bsblan_format(value)
+    if not day.slots:
+        msg = "The temporary schedule must contain at least one active interval"
+        raise argparse.ArgumentTypeError(msg)
+    return day
+
+
+def parse_options(argv: list[str] | None = None) -> ControlOptions:
+    """Validate opt-in intent, mappings and intervals before any device contact."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Opt in to reversible controls and persistent local time sync.",
+    )
+    parser.add_argument("--circuit", type=int, choices=(1, 2), default=1)
+    parser.add_argument(
+        "--temperature",
+        type=_temperature_argument,
+        default=18.0,
+        help="Temporary setpoint in the controller's native unit (default: 18).",
+    )
+    parser.add_argument(
+        "--hvac-mode",
+        type=int,
+        choices=(0, 1, 2, 3),
+        default=3,
+        help="Temporary normalized mode: 0=off, 1=auto, 2=eco, 3=heat (default).",
+    )
+    mappings = parser.add_mutually_exclusive_group()
+    mappings.add_argument(
+        "--heating-mapping",
+        type=ScheduleMapping.model_validate_json,
+        help=(
+            "JSON object of independently confirmed weekday IDs "
+            "for the selected heating circuit."
+        ),
+    )
+    mappings.add_argument(
+        "--hot-water-mapping",
+        type=ScheduleMapping.model_validate_json,
+        help="JSON object of independently confirmed DHW weekday IDs.",
+    )
+    parser.add_argument(
+        "--schedule-group",
+        choices=("heating", "hot-water"),
+        help=(
+            "Automatic schedule group to inspect or exercise; "
+            "--schedule defaults to heating."
+        ),
+    )
+    parser.add_argument("--weekday", choices=WEEKDAYS, default="monday")
+    parser.add_argument(
+        "--schedule",
+        type=_schedule_argument,
+        help=(
+            'Temporary nonempty day, e.g. "07:00-09:00 17:00-20:00"; '
+            "requires --write; uses a verified profile unless a mapping overrides it."
+        ),
+    )
+    args = parser.parse_args(argv)
+    has_mapping = args.heating_mapping is not None or args.hot_water_mapping is not None
+    if args.schedule is not None and not args.write:
+        parser.error("--schedule requires --write")
+    if args.write and (has_mapping or args.schedule_group) and args.schedule is None:
+        parser.error("A schedule write requires an explicit --schedule interval string")
+    requested: ScheduleKind | None = (
+        "hot_water"
+        if args.schedule_group == "hot-water"
+        else "heating"
+        if args.schedule_group == "heating"
+        else None
+    )
+    manual: ScheduleKind | None = (
+        "hot_water"
+        if args.hot_water_mapping is not None
+        else "heating"
+        if args.heating_mapping is not None
+        else None
+    )
+    if requested is not None and manual is not None and requested != manual:
+        parser.error("--schedule-group conflicts with the supplied mapping")
+    return ControlOptions(
+        write=args.write,
+        circuit=args.circuit,
+        temperature=args.temperature,
+        hvac_mode=args.hvac_mode,
+        weekday=args.weekday,
+        schedule=args.schedule,
+        schedule_kind=requested or manual or ("heating" if args.schedule else None),
+        mappings=ScheduleMappings(
+            hot_water=args.hot_water_mapping,
+            heating={args.circuit: args.heating_mapping}
+            if args.heating_mapping is not None
+            else {},
+        ),
+    )
+
+
+async def main(options: ControlOptions) -> None:
+    """Inspect the device, then optionally run reversible controls and time sync."""
+    if not options.write:
+        print("Read-only mode; pass --write to opt in to device changes")
     # Get host from environment variable or mDNS discovery
     host, port = await get_bsblan_host()
 
@@ -306,9 +431,10 @@ async def main() -> None:
     config = BSBLANConfig(
         host=host,
         port=port,
-        passkey=env_config.get("passkey"),  # type: ignore[arg-type]
-        username=env_config.get("username"),  # type: ignore[arg-type]
-        password=env_config.get("password"),  # type: ignore[arg-type]
+        passkey=cast("str | None", env_config.get("passkey")),
+        username=cast("str | None", env_config.get("username")),
+        password=cast("str | None", env_config.get("password")),
+        schedule_mappings=options.mappings,
     )
 
     # Initialize BSBLAN with the configuration object
@@ -323,16 +449,8 @@ async def main() -> None:
         )
 
         # Get and print state
-        state: State = await bsblan.state()
+        state: State = await bsblan.state(circuit=options.circuit)
         print_state(state)
-
-        # Set thermostat temperature
-        print("\nSetting temperature to 18°C")
-        await bsblan.thermostat(target_temperature="18")
-
-        # Set HVAC mode (using raw integer: 0=off, 1=auto, 2=eco, 3=heat)
-        print("Setting HVAC mode to heat")
-        await bsblan.thermostat(hvac_mode=3)  # 3 = heat
 
         # Get and print sensor information
         sensor: Sensor = await bsblan.sensor()
@@ -346,21 +464,30 @@ async def main() -> None:
             print("\nDevice time is not available for this bus type")
 
         # Get and print static state
-        static_state: StaticState = await bsblan.static_values()
+        static_state: StaticState = await bsblan.static_values(circuit=options.circuit)
         print_static_state(static_state)
 
-        # Get hot water state (essential parameters for frequent polling)
-        hot_water_state: HotWaterState = await bsblan.hot_water_state()
-        print_hot_water_state(hot_water_state)
+        if device.is_pps_bus:
+            print("\nHot water groups are not available for PPS")
+        else:
+            # Essential and configuration groups demonstrate separate polling.
+            hot_water_state: HotWaterState = await bsblan.hot_water_state()
+            print_hot_water_state(hot_water_state)
+            try:
+                hot_water_config: HotWaterConfig = await bsblan.hot_water_config()
+                print_hot_water_config(hot_water_config)
+            except Exception as e:  # noqa: BLE001 - Optional diagnostic group
+                print(f"Hot water configuration not available: {e}")
 
-        # Get hot water configuration (checked less frequently)
-        try:
-            hot_water_config: HotWaterConfig = await bsblan.hot_water_config()
-            print_hot_water_config(hot_water_config)
-        except Exception as e:  # noqa: BLE001 - Broad exception for demo purposes
-            print(f"Hot water configuration not available: {e}")
+        if not options.write:
+            snapshot = await read_schedule(bsblan, options)
+            if snapshot is not None:
+                print(snapshot.model_dump_json(indent=2))
+            return
 
-        # Example: Set device time
+        await run_roundtrip(bsblan, options)
+
+        # Deliberately keep the corrected local clock, after successful roundtrips.
         if bsblan.supports_time_sync:
             print("\nSetting device time to current system time")
             current_time = datetime.now()  # noqa: DTZ005
@@ -371,5 +498,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    argparse.ArgumentParser(description=__doc__).parse_args()
-    asyncio.run(main())
+    asyncio.run(main(parse_options()))

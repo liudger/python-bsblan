@@ -1,7 +1,8 @@
 """Read schedules without writes, using independently confirmed weekday mappings.
 
 Set BSBLAN_HOST (or use discovery), then supply one or both seven-day mappings
-as JSON. No default profile is assumed. The control example is not read-only.
+as JSON. No default profile is assumed. Unlike control.py, this script has no
+write mode; control.py is read-only unless --write is explicitly supplied.
 """
 
 from __future__ import annotations
