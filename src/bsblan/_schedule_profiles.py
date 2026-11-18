@@ -75,6 +75,57 @@ def _parameter_compatibility(
     return "enabled"
 
 
+def _identity_field_status(
+    response: dict[str, Any], param: str, expected: DataType
+) -> Literal["valid", "retry", "unsupported"]:
+    """Classify one controller field without short-circuiting peer validation."""
+    if param not in response:
+        return "retry"
+    raw = _entity(response[param])
+    if raw["error"] == 7:
+        return "unsupported"
+    if raw["error"] or raw["value"] in {None, "", "---", "None"}:
+        return "retry"
+    if type(raw.get("dataType")) is not int or raw["dataType"] != expected:
+        return "unsupported"
+    return "valid"
+
+
+def _controller_values(response: dict[str, Any]) -> tuple[list[str] | None, str]:
+    """Validate all controller fields and keep incomplete-data priority."""
+    values: list[str] = []
+    outcomes = set()
+    for param, expected in (
+        ("6224", DataType.STRING),
+        ("6225", DataType.PLAIN_NUMBER),
+        ("6226", DataType.PLAIN_NUMBER),
+    ):
+        status = _identity_field_status(response, param, expected)
+        outcomes.add(status)
+        if status == "valid":
+            values.append(response[param]["value"])
+    if "retry" in outcomes:
+        return None, "identity_incomplete"
+    if "unsupported" in outcomes or not all(
+        re.fullmatch(r"\d+", value, flags=re.ASCII) for value in values[1:]
+    ):
+        return None, "identity_unsupported"
+    return values, "identity_matched"
+
+
+def _selection_failure(
+    verified_count: int, *, incomplete: bool
+) -> tuple[Literal["retry", "unknown", "incompatible"], str] | None:
+    """Require conclusive and unique table evidence before selecting a profile."""
+    if incomplete:
+        return "retry", "table_incomplete"
+    if verified_count > 1:
+        return "unknown", "profile_ambiguous"
+    if verified_count == 0:
+        return "incompatible", "table_incompatible"
+    return None
+
+
 class ScheduleProfileResolver:
     """Refresh identity and probe candidates without caching failures or writing."""
 
@@ -130,33 +181,9 @@ class ScheduleProfileResolver:
         if device.bus not in {"BSB", "LPB"} or device.busdest is None:
             return None, "bus_unknown_or_unsupported"
         response = await self._checked_request({"Parameter": "6224,6225,6226"})
-        values: list[str] = []
-        retry = False
-        unsupported = False
-        for param, expected in (
-            ("6224", DataType.STRING),
-            ("6225", DataType.PLAIN_NUMBER),
-            ("6226", DataType.PLAIN_NUMBER),
-        ):
-            if param not in response:
-                retry = True
-                continue
-            raw = _entity(response[param])
-            if raw["error"] == 7:
-                unsupported = True
-                continue
-            if raw["error"] or raw["value"] in {None, "", "---", "None"}:
-                retry = True
-                continue
-            if type(raw.get("dataType")) is not int or raw["dataType"] != expected:
-                unsupported = True
-            values.append(raw["value"])
-        if retry:
-            return None, "identity_incomplete"
-        if unsupported or not all(
-            re.fullmatch(r"[0-9]+", value) for value in values[1:]
-        ):
-            return None, "identity_unsupported"
+        values, reason = _controller_values(response)
+        if values is None:
+            return None, reason
         identity = {
             "firmware_version": device.version,
             "bus": device.bus,
@@ -183,12 +210,12 @@ class ScheduleProfileResolver:
         identity, reason = await self._identity()
         self._identity_key = tuple(identity.items()) if identity is not None else None
         tables: dict[TableKey, TableStatus] = {}
-        return tuple(
-            [
+        resolutions = []
+        for kind, circuit in groups:
+            resolutions.append(
                 await self._resolve(kind, circuit, identity, reason, tables)
-                for kind, circuit in groups
-            ]
-        )
+            )
+        return tuple(resolutions)
 
     @staticmethod
     def _matches_identity(profile: ScheduleProfile, identity: dict[str, Any]) -> bool:
@@ -234,6 +261,26 @@ class ScheduleProfileResolver:
             tables[key] = table_status(response, expected, profile.identity.destination)
         return tables[key]
 
+    def _matching_candidates(
+        self, kind: ScheduleKind, circuit: int | None, identity: dict[str, Any]
+    ) -> tuple[list[tuple[ScheduleProfile, ScheduleMapping]], str]:
+        """Find source-declared groups without querying or inferring weekday IDs."""
+        matches = [
+            profile
+            for profile in self._profiles
+            if self._matches_identity(profile, identity)
+        ]
+        candidates = []
+        for profile in matches:
+            mapping = (
+                profile.mappings.hot_water
+                if kind == "hot_water"
+                else profile.mappings.heating.get(circuit)
+            )
+            if mapping is not None:
+                candidates.append((profile, mapping))
+        return candidates, "mapping_unknown" if matches else "profile_unknown"
+
     async def _resolve(
         self,
         kind: ScheduleKind,
@@ -252,29 +299,13 @@ class ScheduleProfileResolver:
                     reason=reason,
                 )
             )
-        matches = [
-            profile
-            for profile in self._profiles
-            if self._matches_identity(profile, identity)
-        ]
-        candidates = [
-            (profile, mapping)
-            for profile in matches
-            if (
-                mapping := (
-                    profile.mappings.hot_water
-                    if kind == "hot_water"
-                    else profile.mappings.heating.get(circuit)
-                )
-            )
-            is not None
-        ]
+        candidates, missing_reason = self._matching_candidates(kind, circuit, identity)
         if not candidates:
             return _ScheduleResolution(
                 ScheduleAvailability(
                     **common,
                     status="unknown",
-                    reason="mapping_unknown" if matches else "profile_unknown",
+                    reason=missing_reason,
                 )
             )
         verified = []
@@ -284,21 +315,11 @@ class ScheduleProfileResolver:
             if result == "match":
                 verified.append((profile, mapping))
             incomplete |= result == "retry"
-        if incomplete or len(verified) != 1:
+        failure = _selection_failure(len(verified), incomplete=incomplete)
+        if failure is not None:
+            status, reason = failure
             return _ScheduleResolution(
-                ScheduleAvailability(
-                    **common,
-                    status="retry"
-                    if incomplete
-                    else "unknown"
-                    if verified
-                    else "incompatible",
-                    reason="table_incomplete"
-                    if incomplete
-                    else "profile_ambiguous"
-                    if verified
-                    else "table_incompatible",
-                )
+                ScheduleAvailability(**common, status=status, reason=reason)
             )
         profile, mapping = verified[0]
         response = await self._checked_request(
@@ -329,13 +350,11 @@ class ScheduleProfileResolver:
             _parameter_compatibility(response, getattr(mapping, name))
             for name in WEEKDAYS
         }
-        return (
-            "retry"
-            if "retry" in outcomes
-            else "incompatible"
-            if "incompatible" in outcomes
-            else "enabled"
-        )
+        if "retry" in outcomes:
+            return "retry"
+        if "incompatible" in outcomes:
+            return "incompatible"
+        return "enabled"
 
     async def probe_candidate(self, candidate_id: str) -> ScheduleCandidateProbe:
         """Read the bounded #1668 DHW candidate, never select or enable a profile."""
@@ -367,15 +386,16 @@ class ScheduleProfileResolver:
         incompatible = tuple(
             param for param, status in outcomes.items() if status == "incompatible"
         )
+        status: Literal["retry", "incompatible", "compatible"] = "compatible"
+        if retry:
+            status = "retry"
+        elif incompatible:
+            status = "incompatible"
         return ScheduleCandidateProbe(
             candidate_id=candidate_id,
             evidence="https://github.com/liudger/python-bsblan/issues/1668",
             mapping=mapping,
-            status="retry"
-            if retry
-            else "incompatible"
-            if incompatible
-            else "compatible",
+            status=status,
             incompatible_parameters=incompatible,
             retry_parameters=retry,
         )

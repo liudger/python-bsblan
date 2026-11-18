@@ -109,6 +109,21 @@ def _write_outcome(response: Any, param: str) -> Literal["rejected", "unknown"] 
     return "unknown"
 
 
+def _structure_permission(raw: Any) -> bool | None:
+    """Check a schedule structure before interpreting its individual permissions."""
+    if not isinstance(raw, dict):
+        return None
+    valid_type = (
+        type(raw.get("dataType")) is int and raw["dataType"] == DataType.TIMEPROG
+    )
+    valid_error = "error" not in raw or (
+        type(raw["error"]) is int and raw["error"] == 0
+    )
+    if not valid_type or not valid_error:
+        return False
+    return read_write_permission(raw)
+
+
 class ScheduleManager:
     """Reuse validated profiles for reads and freshly probe automatic writes."""
 
@@ -395,6 +410,19 @@ class ScheduleManager:
             )
             raise BSBLANUnsupportedFeatureError(msg)
 
+    async def _read_permission_structure(
+        self, params: tuple[str, ...], key: tuple[object, bool]
+    ) -> dict[str, bool | None]:
+        """Fetch only the missing structures and keep permission proof target-bound."""
+        structure = await self._request(base_path=f"/JC={','.join(params)}")
+        if not isinstance(structure, dict):
+            msg = "Invalid schedule permission structure response"
+            raise BSBLANMalformedResponseError(msg)
+        if self._permission_key() != key:
+            msg = "Schedule permission metadata changed during preflight"
+            raise BSBLANUnsupportedFeatureError(msg)
+        return {param: _structure_permission(structure.get(param)) for param in params}
+
     async def _write_permissions(
         self, params: tuple[str, ...], response: dict[str, Any] | None
     ) -> tuple[dict[str, bool | None], tuple[object, bool]]:
@@ -410,29 +438,7 @@ class ScheduleManager:
                 self._ensure_writable(params[0], key, permission=None)
             missing = tuple(param for param in params if permissions[param] is None)
             if missing:
-                structure = await self._request(base_path=f"/JC={','.join(missing)}")
-                if not isinstance(structure, dict):
-                    msg = "Invalid schedule permission structure response"
-                    raise BSBLANMalformedResponseError(msg)
-                if self._permission_key() != key:
-                    msg = "Schedule permission metadata changed during preflight"
-                    raise BSBLANUnsupportedFeatureError(msg)
-                for param in missing:
-                    raw = structure.get(param)
-                    if not isinstance(raw, dict):
-                        continue
-                    valid_type = (
-                        type(raw.get("dataType")) is int
-                        and raw["dataType"] == DataType.TIMEPROG
-                    )
-                    valid_error = "error" not in raw or (
-                        type(raw["error"]) is int and raw["error"] == 0
-                    )
-                    permissions[param] = (
-                        read_write_permission(raw)
-                        if valid_type and valid_error
-                        else False
-                    )
+                permissions.update(await self._read_permission_structure(missing, key))
         for param in params:
             self._ensure_writable(param, key, permission=permissions[param])
         return permissions, key

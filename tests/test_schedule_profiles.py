@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -361,3 +362,61 @@ async def test_duplicate_identity_with_disjoint_groups_is_not_ambiguous() -> Non
         "synthetic",
         "dhw-only",
     ]
+
+
+@pytest.mark.parametrize(
+    ("param", "digits"),
+    [
+        ("6225", "\u0662\u0661\u0661"),
+        ("6226", "\u0661\u0662\u0667"),
+        ("6225", "\uff12\uff11\uff11"),
+        ("6226", "\uff11\uff12\uff17"),
+    ],
+)
+async def test_controller_numbers_reject_unicode_digit_lookalikes(
+    param: str,
+    digits: str,
+) -> None:
+    """Numeric identity checks intentionally accept ASCII decimal text only."""
+    identity = controller_data()
+    identity[param]["value"] = digits
+    subject, request, _ = resolver(identity=identity)
+    result = await subject.resolve("heating", 1)
+    assert result.availability.reason == "identity_unsupported"
+    assert request.await_count == 1
+
+
+async def test_multiple_resolutions_are_sequential_and_return_a_tuple() -> None:
+    """Keep awaited resolution eager and non-overlapping on a slow bus."""
+    hot_water_ids = tuple(str(9101 + index) for index in range(7))
+    hot_water = ScheduleMapping(**dict(zip(DAYS, hot_water_ids, strict=True)))
+    subject, request, _ = resolver(
+        registry=(
+            profile(
+                mappings=ScheduleMappings(heating={1: MAPPING}, hot_water=hot_water)
+            ),
+        )
+    )
+    active = 0
+    seen: list[str] = []
+
+    async def handler(**kwargs: Any) -> dict[str, Any]:
+        nonlocal active
+        active += 1
+        try:
+            assert active == 1
+            parameters = kwargs["params"]["Parameter"]
+            seen.append(parameters)
+            await asyncio.sleep(0)
+            if parameters == "6224,6225,6226":
+                return controller_data()
+            return {param: entity() for param in parameters.split(",")}
+        finally:
+            active -= 1
+
+    request.side_effect = handler
+    result = await subject.resolve_many((("heating", 1), ("hot_water", None)))
+    assert isinstance(result, tuple)
+    assert [item.availability.kind for item in result] == ["heating", "hot_water"]
+    assert all(item.availability.enabled for item in result)
+    assert seen == ["6224,6225,6226", ",".join(IDS), ",".join(hot_water_ids)]
