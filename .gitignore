@@ -88,6 +88,9 @@ docs/_build/
 venv/
 ENV/
 
+# Local secrets
+.env
+
 # mypy
 .mypy_cache/
 
