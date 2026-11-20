@@ -15,8 +15,11 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import importlib
+import importlib.util
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Self
 
 from zeroconf import ServiceStateChange, Zeroconf
@@ -35,6 +38,7 @@ ENV_BSBLAN_PORT = "BSBLAN_PORT"
 
 # Default discovery wait time
 DEFAULT_DISCOVERY_SECONDS = 5.0
+DOTENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 
 @dataclass
@@ -172,6 +176,16 @@ async def get_first_bsblan(
     return devices[0] if devices else None
 
 
+def _load_dotenv_fallback() -> None:
+    """Load .env only when python-dotenv is installed."""
+    if importlib.util.find_spec("dotenv") is None:
+        return
+    module = importlib.import_module("dotenv")
+    loader = getattr(module, "load_dotenv", None)
+    if callable(loader):
+        loader(dotenv_path=DOTENV_PATH, override=False)
+
+
 def get_config_from_env() -> dict[str, str | int | None]:
     """Get BSB-LAN configuration from environment variables.
 
@@ -182,10 +196,26 @@ def get_config_from_env() -> dict[str, str | int | None]:
         BSBLAN_PASS: Password for authentication
         BSBLAN_PASSKEY: Passkey for authentication
 
+    If one or more values are missing, load the repository-root .env file as a
+    non-overriding fallback. Install the examples' dev dependencies for dotenv
+    support.
+
     Returns:
         Dictionary with configuration values.
 
     """
+    if any(
+        os.getenv(name) is None
+        for name in (
+            ENV_BSBLAN_HOST,
+            ENV_BSBLAN_PORT,
+            ENV_BSBLAN_USER,
+            ENV_BSBLAN_PASS,
+            ENV_BSBLAN_PASSKEY,
+        )
+    ):
+        _load_dotenv_fallback()
+
     port_str = os.getenv(ENV_BSBLAN_PORT)
     return {
         "host": os.getenv(ENV_BSBLAN_HOST),
