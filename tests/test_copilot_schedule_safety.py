@@ -26,10 +26,8 @@ from bsblan import (
 )
 from tests.test_standard_schedule_profiles import (
     HC,
-    HC_DECIMAL,
     controller,
     device,
-    incompatible_structure,
     structure,
     values,
 )
@@ -64,14 +62,13 @@ async def test_layout_denial_wins_over_absent_or_allowing_value_permissions(
             device(buswritable=1),
             controller(),
             layout,
-            incompatible_structure(HC_DECIMAL),
             value_response(value_permission),
             {HC[0]: {"status": 1}},
         ]
     )
     with pytest.raises(BSBLANUnsupportedFeatureError):
         await client.set_heating_schedule(CHANGE)
-    assert client._request.await_count == 5
+    assert client._request.await_count == 4
     assert all(
         c.kwargs.get("base_path") != "/JS" for c in client._request.await_args_list
     )
@@ -85,13 +82,12 @@ async def test_fresh_layout_allowance_avoids_redundant_permission_request() -> N
             device(buswritable=0),
             controller(),
             structure(),
-            incompatible_structure(HC_DECIMAL),
             value_response(None),
             {HC[0]: {"status": 1}},
         ]
     )
     await client.set_heating_schedule(CHANGE)
-    assert client._request.await_count == 6
+    assert client._request.await_count == 5
     assert client._request.await_args_list[-1].kwargs["base_path"] == "/JS"
 
 
@@ -105,12 +101,10 @@ async def test_cached_discovery_does_not_cache_layout_write_permissions() -> Non
             device(buswritable=1),
             controller(),
             structure(),
-            incompatible_structure(HC_DECIMAL),
             values(),
             device(buswritable=1),
             controller(),
             denied,
-            incompatible_structure(HC_DECIMAL),
             value_response(None),
             {HC[0]: {"status": 1}},
         ]
@@ -118,7 +112,7 @@ async def test_cached_discovery_does_not_cache_layout_write_permissions() -> Non
     await client.heating_schedule()
     with pytest.raises(BSBLANUnsupportedFeatureError):
         await client.set_heating_schedule(CHANGE)
-    assert client._request.await_count == 10
+    assert client._request.await_count == 8
 
 
 @pytest.mark.parametrize(
@@ -210,10 +204,7 @@ async def test_automatic_retry_rechecks_current_mapping_and_permission_proof(
             if url.path == "/JI":
                 return reply(device(buswritable=1))
             if url.path.startswith("/JC="):
-                params = tuple(url.path.split("=", 1)[1].split(","))
-                if params == HC:
-                    return reply(structure())
-                return reply(incompatible_structure(params))
+                return reply(structure())
             if url.path == "/JQ":
                 return reply(
                     controller()
