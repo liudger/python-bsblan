@@ -21,8 +21,10 @@ from bsblan import (
 from tests.test_standard_schedule_profiles import (
     DHW,
     HC,
+    HC_DECIMAL,
     controller,
     device,
+    incompatible_structure,
     structure,
     values,
 )
@@ -87,11 +89,13 @@ async def test_invalid_refresh_cannot_preserve_a_cached_automatic_mapping(
             device(),
             controller(),
             structure(),
+            incompatible_structure(HC_DECIMAL),
             values(),
             device(busdest=destination),
             device(),
             controller(),
             structure(),
+            incompatible_structure(HC_DECIMAL),
             values(),
         ]
     )
@@ -103,7 +107,7 @@ async def test_invalid_refresh_cannot_preserve_a_cached_automatic_mapping(
     assert client.device_info is valid_metadata
     assert type(valid_metadata.busdest) is int
     assert (await client.heating_schedule()).complete
-    assert client._request.await_count == 9
+    assert client._request.await_count == 11
 
 
 @pytest.mark.parametrize("present", [False, True])
