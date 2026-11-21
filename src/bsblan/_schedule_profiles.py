@@ -368,8 +368,8 @@ class ScheduleProfileResolver:
         return "enabled"
 
     async def probe_candidate(self, candidate_id: str) -> ScheduleCandidateProbe:
-        """Read the bounded #1668 DHW candidate, never select or enable a profile."""
-        if candidate_id != "issue_1668_dhw":
+        """Read the bounded decimal DHW candidate without enabling it."""
+        if candidate_id != "rvs21_211_127_dhw_decimal":
             raise BSBLANInvalidParameterError(candidate_id)
         self._guard()
         device = await self._device()
@@ -377,8 +377,7 @@ class ScheduleProfileResolver:
         if device.bus not in {"BSB", "LPB"}:
             msg = "Schedule candidate probes require an explicit BSB or LPB bus"
             raise BSBLANUnsupportedFeatureError(msg)
-        # Issue #1668 supplies these custom-table rows for family 211/variant 127.
-        # They are not certified for this caller's active installation/table.
+        # This candidate remains diagnostic outside a matching standard profile.
         mapping = ScheduleMapping(
             monday="561",
             tuesday="561.1",
@@ -404,7 +403,7 @@ class ScheduleProfileResolver:
             status = "incompatible"
         return ScheduleCandidateProbe(
             candidate_id=candidate_id,
-            evidence="https://github.com/liudger/python-bsblan/issues/1668",
+            evidence="docs/schedule-profiles.md#decimal-rvs21-profile",
             mapping=mapping,
             status=status,
             incompatible_parameters=incompatible,

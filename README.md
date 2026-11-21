@@ -56,11 +56,14 @@ describes the shared read/write API and the separate read-only
 weekday mappings, supplied as manual overrides or evidence-backed profiles with
 read-only compatibility probes. `discover_schedules()` exposes per-group
 availability and repair/retry advice. Validated mappings are reused for fresh
-reads, and HA can defer discovery until startup traffic settles. An explicit
-`probe_schedule_candidate("issue_1668_dhw")` diagnoses the reported decimal DHW
-IDs without enabling schedules. A source-backed RVS21 profile now provides
-automatic HC1/DHW selection for the exact verified controller/build/layout;
-unknown installations remain disabled rather than guessing weekday IDs. See [schedule profiles](docs/schedule-profiles.md) and the
+reads, and HA can defer discovery until startup traffic settles. Built-in RVS21
+profiles support integer weekday IDs for HC1, HC2 and DHW on the verified
+`5.0.82` build, and the issue-confirmed decimal IDs for HC1/DHW on the exact
+`5.1.1-20260316232429` BSB installation. Decimal HC2 is not included. Other
+installations remain disabled unless an evidence-backed profile or manual mapping
+is configured. `probe_schedule_candidate("rvs21_211_127_dhw_decimal")` remains a
+read-only diagnostic for other candidate DHW installations; it does not enable a
+group. See [schedule profiles](docs/schedule-profiles.md) and the
 [breaking API migration guide](docs/schedule-migration.md)
 before updating the Home Assistant integration.
 

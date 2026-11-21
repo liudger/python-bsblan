@@ -31,8 +31,9 @@ from interpreting response names or values. `discover_schedules()` separately
 reports mapping source, profile ID and repair/retry advice; snapshots retain the
 same shared shape. See [evidence-backed profiles](schedule-profiles.md).
 
-The built-in registry now includes the narrowly scoped RVS21 integer-weekday
-profile, with source-backed roles and read-only active-layout validation. Supported
+The built-in registry includes a narrowly scoped RVS21 integer profile and an
+issue-evidenced decimal profile for HC1/DHW on one exact build. Both use read-only
+active-layout validation; HC2 uses integer IDs in both profiles. Supported
 installations need no manual weekday mapping or table assertion. Other verified
 deployments can supply `schedule_profiles` with declared `table_parameters`, or
 assert a verified `schedule_table`; overrides below still take precedence per group.
@@ -84,10 +85,15 @@ fresh values with validated mappings; automatic writes retain fresh identity and
 compatibility preflight. HA controls deferred discovery timing and polling
 coordination. See [cache and timing guidance](schedule-profiles.md).
 
-The explicit `probe_schedule_candidate("issue_1668_dhw")` diagnoses the reported
-DHW IDs `561,561.1,561.2,561.3,561.4,561.5,561.6`. Compatibility alone never enables
-a group or populates the automatic cache. Active-table confirmation and separate
-manual configuration are still required; no failure triggers a blind fallback.
+The decimal profile automatically supports DHW IDs
+`561,561.1,561.2,561.3,561.4,561.5,561.6` only for the exact BSB-LAN build and
+controller scope documented in [schedule profiles](schedule-profiles.md). Fresh
+active-layout and value checks are still required. The explicit
+`probe_schedule_candidate("rvs21_211_127_dhw_decimal")` remains a read-only
+diagnostic for other candidate installations; compatibility alone never enables
+a group or populates the automatic cache. Its candidate ID replaces the former
+`issue_1668_dhw` name; update callers when migrating. No failure triggers a blind
+fallback.
 
 Do not infer a mapping from firmware version, descriptions, sequential IDs, or
 seven successful TIMEPROG responses. Persist it per HA config entry/group and
