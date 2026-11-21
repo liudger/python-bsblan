@@ -49,9 +49,11 @@ Read and write methods share the immutable manual overrides in
 `heating={1: profile_1, 2: profile_2}` and selected by the same `circuit` identifier
 used by the read/write methods. Missing groups attempt evidence-backed automatic
 resolution using `schedule_profiles`, matching declared `table_parameters` or an
-asserted active `schedule_table`. The built-in RVS21 profile covers only the
-verified controller/build/bus/destination and integer-weekday layout. Unknown
-installations never receive guessed fallback IDs; `schedule_profiles=()` opts out.
+asserted active `schedule_table`. Built-in RVS21 profiles cover the exact verified
+integer `5.0.82` layout and issue-confirmed decimal HC1/DHW `5.1.1` layout; HC2
+uses integer IDs in both. Decimal HC2 and other installations are not inferred.
+Unknown installations never receive guessed fallback IDs; `schedule_profiles=()`
+opts out.
 
 `discover_schedules(refresh=False)` performs no writes and returns HC1, HC2 and
 DHW `ScheduleAvailability` outcomes independently. Manual overrides take precedence.
@@ -73,11 +75,11 @@ Schedule setters validate and encode the entire update before discovery I/O.
 Fresh layout/value permission denials are both retained, and target/proof guards
 run before every actual schedule request attempt, including transport retries.
 
-`probe_schedule_candidate("issue_1668_dhw")` performs an explicit read-only probe
-of the issue's seven decimal DHW IDs. Its immutable `ScheduleCandidateProbe`
-result is **never enabled** and always requires confirmation of weekday meaning.
-It does not populate the automatic mapping cache or run as a fallback on failure.
-See [evidence-backed profiles](../schedule-profiles.md) for identity provenance,
+`probe_schedule_candidate("rvs21_211_127_dhw_decimal")` remains an explicit read-only probe
+of the issue's seven decimal DHW IDs for devices outside the exact built-in profile
+scope. Its immutable `ScheduleCandidateProbe` result is **never enabled** and does
+not populate the automatic mapping cache or run as a fallback on failure. See
+[evidence-backed profiles](../schedule-profiles.md) for identity provenance,
 current limitations and consumer retry/repair guidance.
 See [structured schedules](../getting-started.md#structured-schedules) and the
 [breaking API migration guide](../schedule-migration.md).

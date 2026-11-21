@@ -1,80 +1,65 @@
-# Automatic Decimal Schedule Profile Selection Implementation Plan
+# RVS21 integer and decimal schedule profiles Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep default automatic schedule support strictly within independently
-verified scope; only add integer/decimal/HC2 groups to `STANDARD_SCHEDULE_PROFILES`
-when group-level evidence and a conclusive layout discriminator are documented.
+**Goal:** Automatically support integer schedule IDs for HC1, HC2 and DHW, plus the issue-confirmed decimal IDs for HC1 and DHW on the exact reported installation.
 
-**Architecture:** Start with a read-only evidence gate. If evidence proves a safe,
-conclusive discriminator for overlapping variants, implement profile additions with
-existing fail-closed resolver behavior. If evidence is incomplete/inconclusive,
-preserve current narrow defaults and keep broader mappings explicit/diagnostic.
+**Architecture:** Add one narrowly scoped decimal `ScheduleProfile` alongside the existing integer profile. Keep the existing per-group resolver and strict identity/layout/value checks; profiles hold mappings per group so later groups can be added independently.
 
-**Tech Stack:** Python 3.12+, pydantic, pytest.
+**Tech Stack:** Python 3.12+, Pydantic, pytest.
 
-### Task 1: Evidence gate (read-only, mandatory before code changes)
+**Spec:** `docs/superpowers/specs/2026-11-20-rvs21-decimal-schedule-profile-design.md`
+
+## Global Constraints
+
+- Preserve exact profile identity matching and fail-closed behavior.
+- Keep decimal IDs as canonical strings; never coerce them to floats.
+- Only enable a profile after matching active `/JC` layout and compatible `/JQ` values.
+- Do not add decimal HC2 IDs or scan parameter ranges.
+- Keep line length <= 88 and all functions fully typed.
+
+## Review Focus
+
+- Integer-only profile regression: HC1, HC2, and DHW retain exact IDs.
+- Decimal profile is limited to the exact reported firmware/BSB/destination/controller scope.
+- Decimal DHW layout mismatch/incomplete response never enables the group.
+- HC2 remains integer in both profiles; no decimal HC2 is inferred.
+- Decimal IDs remain unchanged through reads and writes.
+
+---
+
+### Task 1: Add issue-backed profile regression tests and profile data
+
+**Files:**
+- Modify: `tests/test_standard_schedule_profiles.py`
+- Modify: `src/bsblan/schedule_profiles.py`
+- Modify: `tests/fixtures/rvs21_schedule_profile.json`
+
+**Interfaces:** Existing `ScheduleProfile`, `ScheduleMappings`, and resolver APIs.
+
+- [ ] Add failing tests for exact integer HC1/HC2/DHW mappings and exact-scope decimal HC1/DHW plus integer HC2 mappings.
+- [ ] Add failing automatic discovery/read/write tests for the decimal DHW/HC1 IDs and integer HC2 IDs, using the French `/JC` weekday labels from issue #1668.
+- [ ] Add/retain fail-closed tests for wrong firmware, wrong bus/destination, incompatible layout, and incomplete probe results.
+- [ ] Run `uv run pytest --no-cov tests/test_standard_schedule_profiles.py` and verify the new expectations fail before implementation.
+- [ ] Add the profile constants and a separate decimal `ScheduleProfile` scoped to `5.1.1-20260316232429`, BSB, destination 0, `RVS21.831F/127`, family 211, variant 127. Map HC1/DHW to decimal IDs and HC2 to integer IDs. Use exact French weekday signatures for this profile.
+- [ ] Update the sanitized fixture with only profile provenance/IDs/labels/scope, not credentials or live program values.
+- [ ] Rerun the focused test module and verify it passes.
+
+### Task 2: Sync user-facing documentation and validate
 
 **Files:**
 - Modify: `docs/schedule-profiles.md`
-- Modify: `tests/fixtures/rvs21_schedule_profile.json` (only if new sanitized evidence exists)
 - Modify: `docs/superpowers/plans/2026-11-20-auto-select-decimal-schedule-profile.md`
 
-- [ ] **Record per-group evidence.** For each candidate group (integer HC2,
-      decimal HC1/HC2/DHW), document exact installation scope and independent
-      weekday-role evidence. If evidence is missing for a group, mark that group
-      out-of-scope for default registry updates.
-- [ ] **Record discriminator evidence.** Capture/document sanitized read-only `/JC`
-      responses for both candidate requests in overlapping scopes. Confirm the
-      losing variant is rejected conclusively (not merely incomplete/omitted).
-- [ ] **Decision gate.**
-  - If all required evidence is conclusive: proceed to Task 2.
-  - If any required evidence is missing/inconclusive: skip Task 2 profile expansion
-    and keep current default support unchanged.
-
-### Task 2: Conditional profile implementation (only after Task 1 passes)
-
-**Files (if gate passes):**
-- Modify: `src/bsblan/schedule_profiles.py`
-- Modify: `tests/test_standard_schedule_profiles.py`
-- Modify: `tests/test_copilot_schedule_safety.py` and/or `tests/test_device_destination_validation.py` as needed
-
-- [ ] **Write regression tests first (RED).** Assert only evidence-backed groups
-      are default-enabled. Include regression for overlap handling where an omitted
-      losing-layout `/JC` result stays inconclusive and must not silently select a
-      winner.
-- [ ] **Run RED check.**
-
-  ```bash
-  uv run pytest --no-cov tests/test_standard_schedule_profiles.py
-  ```
-
-- [ ] **Implement minimal profile changes.** Add/update only evidence-backed
-      mappings with distinct `identity.table` values and complete signatures.
-      Preserve fail-closed behavior for ambiguous/incomplete probes.
-- [ ] **Run GREEN check.** Re-run the same module until passing.
-
-### Task 3: Validation and documentation sync
-
-- [ ] **Run focused schedule tests.**
+- [ ] Document both exact firmware scopes, supported IDs, group coverage, and the lack of decimal HC2 support.
+- [ ] Run focused schedule tests:
 
   ```bash
   uv run pytest --no-cov tests/test_standard_schedule_profiles.py \
     tests/test_schedule_profiles.py tests/test_schedule_profile_integration.py \
-    tests/test_copilot_schedule_safety.py tests/test_device_destination_validation.py
+    tests/test_set_heating_schedule.py tests/test_set_hot_water_schedule.py
   ```
 
-- [ ] **Run full test suite.**
-
-  ```bash
-  uv run pytest --no-cov
-  ```
-
-- [ ] **Run required repository checks.**
-
-  ```bash
-  uv run prek run --all-files
-  ```
-
-- [ ] **Sync supported-scope docs.** Ensure `docs/schedule-profiles.md` and any
-      evidence fixture text exactly match what is default-enabled in code.
+- [ ] Run full tests: `uv run pytest --no-cov`.
+- [ ] Run required checks: `uv run prek run --all-files`.
+- [ ] Request a fresh Sol 6.2 review and update existing PR #1680 to close issue #1668 after review findings are resolved.

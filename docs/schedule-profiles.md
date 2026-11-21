@@ -7,11 +7,15 @@ TIMEPROG parameters are not evidence of weekday assignments.
 
 ## Current support and defaults
 
-`STANDARD_SCHEDULE_PROFILES` includes the narrowly scoped
-[verified RVS21 profile](#verified-rvs21-profile) below. Matching installations can
-enable HC1 and DHW without manual weekday mappings or a `schedule_table` option.
-Unknown installations/groups stay disabled; ordinary climate monitoring is
-unaffected. Use `schedule_profiles=()` to disable automatic profile selection.
+`STANDARD_SCHEDULE_PROFILES` currently includes two narrowly scoped entries:
+
+- [Verified RVS21 integer profile](#verified-rvs21-profile)
+- [Decimal RVS21 profile](#decimal-rvs21-profile)
+
+Matching installations can enable HC1, HC2 and DHW without manual weekday
+mappings or a `schedule_table` option. Unknown installations/groups stay
+disabled; ordinary climate monitoring is unaffected. Use
+`schedule_profiles=()` to disable automatic profile selection.
 
 Verified deployments can supply `BSBLANConfig.schedule_profiles`. Each immutable
 `ScheduleProfile` records an ID, an evidence reference, an exact
@@ -26,28 +30,52 @@ Profile ID: `rvs21-211-127-integer-20251124`.
 
 - Controller: `RVS21.831F/127`, family **211**, variant **127**.
 - Adapter build: **`5.0.82-20251124154226`**, BSB, destination **0**.
-- HC1: Monday–Sunday **501–507**; DHW: Monday–Sunday **561–567**.
-- HC2 and other builds/buses/variants are not certified by this entry.
+- HC1: Monday–Sunday **501–507**.
+- HC2: Monday–Sunday **521–527**.
+- DHW: Monday–Sunday **561–567**.
+- Other builds/buses/variants are not certified by this entry.
 
 The installation owner confirmed the firmware project's provenance. Its current,
-backup and newer custom definition files agree on these weekday-to-command rows.
-The backup source SHA256 is
-`c970902ed43ea84ba1f8a1dfcce896b1067805f71c10e45b830c0789dd1847f6`.
-Live `/JC` corroborated all fourteen names, integer TIMEPROG types, destination 0
-and read/write flags, and `/JQ` confirmed readable values for both groups. The
+backup and newer custom definition files agree on the documented HC1 and DHW
+weekday-to-command rows. The backup source SHA256 is
+`c970902ed43ea84ba1f8a1dfcce896b1067805f71c10e45b830c0789dd1847f6`. The
 sanitized `tests/fixtures/rvs21_schedule_profile.json` records source command IDs,
-roles and observed scope without credentials, addresses or current programs.
-An authorized live test on 2026-11-17 selected this profile with the default
-registry and no manual mapping/table assertion, then changed and restored one HC1
-day. Fresh readback verified all seven parsed and raw day values were restored,
-with thermostat settings unchanged. DHW discovery/reads were verified; DHW was
-not modified. No private program values or credentials are recorded in fixtures.
+roles and observed scope without credentials, addresses or current programs. An
+authorized live test on 2026-11-17 selected this profile with the default registry
+and no manual mapping/table assertion, then changed and restored one HC1 day.
+Fresh readback verified all seven parsed and raw day values were restored, with
+thermostat settings unchanged. DHW discovery/reads were verified; DHW was not
+modified. HC2 integer IDs (`521`–`527`) are included as requested, but the library
+enables HC2 only after fresh `/JC` confirms its weekday labels, TIMEPROG type and
+destination and `/JQ` confirms compatible values. No HC2 live write verification
+is claimed. No private program values or credentials are recorded in fixtures.
 The firmware version-header commit is **not** a checksum of the untracked custom
 table; no such claim is made.
 
 This supports the observed older build without requiring a firmware upgrade. It
-does not broadly certify firmware 5.x, all RVS21 installations, or the decimal-ID
-table from issue #1668. Add broader scope only after independent verification.
+does not broadly certify firmware 5.x or all RVS21 installations.
+
+## Decimal RVS21 profile
+
+Profile ID: `rvs21-211-127-decimal-20260316`.
+
+- Controller: `RVS21.831F/127`, family **211**, variant **127**.
+- Adapter build: **`5.1.1-20260316232429`**, BSB, destination **0**.
+- HC1: Monday–Sunday **501**, **501.1–501.6**.
+- HC2: Monday–Sunday **521–527** (integer IDs).
+- DHW: Monday–Sunday **561**, **561.1–561.6**.
+- **No decimal HC2 mapping is certified.**
+
+The reporter's response at
+[#1668](https://github.com/liudger/python-bsblan/issues/1668#issuecomment-7044555252)
+provides the adapter version, destination, controller/family/variant identity,
+HC1 decimal definitions, French weekday labels, and HC1 `/JC`/`/JQ` observations.
+The repository owner separately confirmed BSB as the bus type. The issue body
+provides decimal DHW source rows, but no DHW `/JC` or `/JQ` response. HC2 integer
+IDs are an owner-requested extension; the reporter supplied no HC2 rows or live
+observations. The sanitized fixture keeps these facts distinct. The runtime
+resolver requires exact `/JC` weekday labels, TIMEPROG metadata, destination
+checks and compatible `/JQ` values before enabling any group.
 
 ## Installation identity
 
@@ -191,16 +219,21 @@ underlying bus load. Once discovery succeeds, normal reads no longer repeat the
 identity work. Call invalidation rather than eager discovery on reconnect if the
 consumer needs to defer that traffic again.
 
-## Issue #1668: explicit diagnostic candidate
+## Decimal DHW candidate and diagnostic probe
 
-The [issue report](https://github.com/liudger/python-bsblan/issues/1668) supplies
-custom-table rows for family **211**, variant **127**, with DHW Monday at `561` and
-Tuesday through Sunday at `561.1`–`561.6`. The linked HA report describes an
-Atlantic/Siemens RVS21 installation. This is useful candidate evidence, not proof
-that the same table is active on another installation.
+The [issue report](https://github.com/liudger/python-bsblan/issues/1668) and
+[reporter response](https://github.com/liudger/python-bsblan/issues/1668#issuecomment-7044555252)
+confirm decimal weekday definitions for family **211**, variant **127**. The
+reporter provides BSB-LAN `5.1.1-20260316232429`, destination 0, controller
+`RVS21.831F/127`, French weekday labels, and active HC1 `/JC` and `/JQ` responses.
+The repository owner separately confirmed the BSB bus type.
+The issue body supplies the corresponding DHW source rows. The built-in profile
+uses decimal HC1 and DHW IDs, and integer HC2 IDs, only for this exact scope; fresh
+`/JC` and `/JQ` checks still gate each group. No decimal HC2 mapping is included.
+Other builds/installations remain unsupported by this profile.
 
 ```python
-result = await client.probe_schedule_candidate("issue_1668_dhw")
+result = await client.probe_schedule_candidate("rvs21_211_127_dhw_decimal")
 print(result.status)  # compatible / incompatible / retry
 print(result.incompatible_parameters, result.retry_parameters)
 print(result.enabled, result.requires_confirmation)  # always False, True
@@ -212,14 +245,15 @@ reads controller identity parameters, scans ranges, enables groups or promotes a
 candidate into the validated-profile cache. Unknown candidate names fail locally;
 known PPS is rejected before network requests. Transport/auth/malformed failures
 keep their exceptions; missing/inactive/transient parameters produce retry advice.
+The built-in decimal profile's documented BSB scope comes from the repository
+owner's separate confirmation, not from this candidate probe or issue metadata.
 
 A default profile failure or timeout does **not** automatically run this probe.
-HA can offer it as a bounded diagnostic action, or explicitly schedule it after a
-conclusive incompatibility. Even a `compatible` result still requires independent
-active-table/weekday confirmation before configuring `ScheduleMappings` with the
-returned `result.mapping`. Recreate the client after setting such a manual
-override. Explicit mappings preserve decimal IDs on both reads and writes,
-including Tuesday `561.1` and Sunday `561.6`; they do not fall back to `562`/`567`.
+HA can offer it as a bounded diagnostic action for other candidate devices. Even
+a `compatible` result remains diagnostic only and never enables a group or
+populates the profile cache. Explicit mappings preserve decimal IDs on both reads
+and writes, including Tuesday `561.1` and Sunday `561.6`; they do not fall back to
+`562`/`567`.
 
 ## Home Assistant: repairs versus retries
 

@@ -1199,9 +1199,10 @@ class BSBLAN:
     ) -> ScheduleCandidateProbe:
         """Diagnose a named candidate read-only, without enabling schedule groups.
 
-        Currently accepts only "issue_1668_dhw": the seven exact DHW IDs reported
-        in issue #1668. Compatibility is not proof of weekday meaning or the
-        active table. The result always requires independent confirmation.
+        Currently accepts only "rvs21_211_127_dhw_decimal": the seven decimal
+        DHW IDs for the RVS21 family 211/variant 127 layout. Compatibility is not
+        proof of weekday meaning or the active table. The result always requires
+        independent confirmation.
         This method is opt-in; discovery failures never trigger fallback scans.
         """
         return await self._schedules.probe_candidate(candidate_id)
