@@ -79,10 +79,10 @@ A diagnostic candidate is never enabled, even when compatible. Its proposed
 mapping requires independent active-table/weekday confirmation before use.
 
 See [profile evidence and compatibility](../schedule-profiles.md) before adding
-profiles. The standard registry includes one narrowly scoped, verified RVS21
-entry. `ScheduleProfile.table_parameters` declares immutable ID/name pairs covering
-every mapped ID exactly once; a matching profile can then recognize each group's
-active `/JC` layout without a caller `schedule_table` assertion.
+profiles. The standard registry includes narrowly scoped integer and decimal RVS21
+entries. `ScheduleProfile.table_parameters` declares immutable ID/name pairs
+covering every mapped ID exactly once; a matching profile can then recognize each
+group's active `/JC` layout without a caller `schedule_table` assertion.
 
 ### ScheduleSnapshot
 

@@ -136,15 +136,49 @@ class ScheduleCandidateProbe(BaseModel):
         return self.status == "retry"
 
 
-# Owner-confirmed firmware table plus live JC/JQ evidence; no blanket claim for
-# other builds or custom tables. See docs/schedule-profiles.md and the sanitized
-# tests/fixtures/rvs21_schedule_profile.json provenance/command excerpts.
-_RVS21_HEATING = ScheduleMapping(
+# Keep exact installation scope and per-group layout provenance in the profile
+# guide and sanitized fixtures. Runtime discovery validates each selected group.
+_RVS21_ENGLISH_WEEKDAY_SIGNATURE = tuple(day.title() for day in WEEKDAYS)
+_RVS21_FRENCH_WEEKDAY_SIGNATURE = (
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dimanche",
+)
+
+_RVS21_HC1_INTEGER = ScheduleMapping(
     **{day: str(501 + index) for index, day in enumerate(WEEKDAYS)}
 )
-_RVS21_HOT_WATER = ScheduleMapping(
+_RVS21_HC2_INTEGER = ScheduleMapping(
+    **{day: str(521 + index) for index, day in enumerate(WEEKDAYS)}
+)
+_RVS21_DHW_INTEGER = ScheduleMapping(
     **{day: str(561 + index) for index, day in enumerate(WEEKDAYS)}
 )
+
+_RVS21_HC1_DECIMAL = ScheduleMapping(
+    **dict(
+        zip(
+            WEEKDAYS,
+            ("501", "501.1", "501.2", "501.3", "501.4", "501.5", "501.6"),
+            strict=True,
+        )
+    )
+)
+# The decimal weekday definitions cover HC1 and DHW; HC2 remains integer.
+_RVS21_DHW_DECIMAL = ScheduleMapping(
+    **dict(
+        zip(
+            WEEKDAYS,
+            ("561", "561.1", "561.2", "561.3", "561.4", "561.5", "561.6"),
+            strict=True,
+        )
+    )
+)
+
 STANDARD_SCHEDULE_PROFILES: tuple[ScheduleProfile, ...] = (
     ScheduleProfile(
         id="rvs21-211-127-integer-20251124",
@@ -159,12 +193,51 @@ STANDARD_SCHEDULE_PROFILES: tuple[ScheduleProfile, ...] = (
             table="rvs21-211-127-integer-weekdays-v1",
         ),
         mappings=ScheduleMappings(
-            heating={1: _RVS21_HEATING}, hot_water=_RVS21_HOT_WATER
+            heating={1: _RVS21_HC1_INTEGER, 2: _RVS21_HC2_INTEGER},
+            hot_water=_RVS21_DHW_INTEGER,
         ),
         table_parameters=tuple(
-            (getattr(mapping, day), day.title())
-            for mapping in (_RVS21_HEATING, _RVS21_HOT_WATER)
-            for day in WEEKDAYS
+            (getattr(mapping, day), name)
+            for mapping in (
+                _RVS21_HC1_INTEGER,
+                _RVS21_HC2_INTEGER,
+                _RVS21_DHW_INTEGER,
+            )
+            for day, name in zip(
+                WEEKDAYS,
+                _RVS21_ENGLISH_WEEKDAY_SIGNATURE,
+                strict=True,
+            )
+        ),
+    ),
+    ScheduleProfile(
+        id="rvs21-211-127-decimal-20260316",
+        evidence="docs/schedule-profiles.md#decimal-rvs21-profile",
+        identity=ScheduleProfileIdentity(
+            firmware_version="5.1.1-20260316232429",
+            bus="BSB",
+            destination=0,
+            controller="RVS21.831F/127",
+            family=211,
+            variant=127,
+            table="rvs21-211-127-decimal-hc1-dhw-v1",
+        ),
+        mappings=ScheduleMappings(
+            heating={1: _RVS21_HC1_DECIMAL, 2: _RVS21_HC2_INTEGER},
+            hot_water=_RVS21_DHW_DECIMAL,
+        ),
+        table_parameters=tuple(
+            (getattr(mapping, day), name)
+            for mapping in (
+                _RVS21_HC1_DECIMAL,
+                _RVS21_HC2_INTEGER,
+                _RVS21_DHW_DECIMAL,
+            )
+            for day, name in zip(
+                WEEKDAYS,
+                _RVS21_FRENCH_WEEKDAY_SIGNATURE,
+                strict=True,
+            )
         ),
     ),
 )

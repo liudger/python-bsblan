@@ -1,0 +1,62 @@
+{
+  "identity": {
+    "firmware_version": "5.1.1-20260316232429",
+    "bus": "BSB",
+    "destination": 0,
+    "controller": "RVS21.831F/127",
+    "family": 211,
+    "variant": 127,
+    "table": "rvs21-211-127-decimal-hc1-dhw-v1"
+  },
+  "source": {
+    "issue": "https://github.com/liudger/python-bsblan/issues/1668",
+    "comment": "https://github.com/liudger/python-bsblan/issues/1668#issuecomment-7044555252",
+    "notes": "Issue reporter supplied BSB-LAN version, destination, controller identity, decimal HC1 definitions, French weekday labels, and HC1 JC/JQ observations. BSB bus type was separately confirmed by the repository owner. The issue body supplies decimal DHW source definitions using the same weekday symbols, but no DHW JC/JQ observations. HC2 integer IDs are user-requested and only enabled after active JC/JQ checks. No credentials or current schedule values are stored."
+  },
+  "weekdays": [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ],
+  "names": [
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dimanche"
+  ],
+  "heating_1": {
+    "ids": ["501", "501.1", "501.2", "501.3", "501.4", "501.5", "501.6"],
+    "commands": [
+      "0x053D0A8C",
+      "0x053D0A8D",
+      "0x053D0A8E",
+      "0x053D0A8F",
+      "0x053D0A90",
+      "0x053D0A91",
+      "0x053D0A92"
+    ],
+    "observed_structure": { "dataType": 9, "destination": 0, "readwrite": 0 }
+  },
+  "heating_2": {
+    "ids": ["521", "522", "523", "524", "525", "526", "527"]
+  },
+  "hot_water": {
+    "ids": ["561", "561.1", "561.2", "561.3", "561.4", "561.5", "561.6"],
+    "commands": [
+      "0x053D0AA0",
+      "0x053D0AA1",
+      "0x053D0AA2",
+      "0x053D0AA3",
+      "0x053D0AA4",
+      "0x053D0AA5",
+      "0x053D0AA6"
+    ]
+  }
+}
