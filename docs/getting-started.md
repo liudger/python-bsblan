@@ -261,19 +261,22 @@ Connection failures propagate for retries, not wrong-mapping repairs;
 incomplete device probes return
 `retry` availability or raise `BSBLANScheduleProbeError` from readers/setters.
 
-**The verified RVS21 profile enables HC1/DHW automatically** for the exact
+**Built-in RVS21 profiles support integer IDs for HC1, HC2 and DHW** on the exact
 `RVS21.831F/127` family 211/variant 127 BSB destination 0 installation running
-`5.0.82-20251124154226`, after read-only active-layout and value checks. Other
-installations remain disabled until a supported profile or explicit override is
-available. Additional deployments can supply evidence-backed `schedule_profiles`
-with declared `table_parameters`, or assert a verified `schedule_table`.
-Firmware alone is not sufficient. See
-[evidence-backed profiles](schedule-profiles.md) for setup, limitations and HA
-consumer guidance. HA can defer discovery until at least 15 seconds after initial
-reads and coordinate it with polling; the library adds no startup timer. The
-explicit `probe_schedule_candidate("issue_1668_dhw")` diagnoses the reported
-`561,561.1`–`561.6` IDs read-only without enabling them. Explicit
-`schedule_mappings` take precedence per group.
+`5.0.82-20251124154226`. The issue-confirmed profile for the exact same controller
+identity on BSB-LAN `5.1.1-20260316232429` uses decimal IDs for HC1
+(`501`, `501.1`–`501.6`) and DHW (`561`, `561.1`–`561.6`); HC2 remains integer.
+Both profiles require fresh active-layout and value checks. Decimal HC2 and other
+firmware/builds are not included. Other installations remain disabled until a
+supported profile or explicit override is available. Additional deployments can
+supply evidence-backed `schedule_profiles` with declared `table_parameters`, or
+assert a verified `schedule_table`. Firmware alone is not sufficient. See
+[evidence-backed profiles](schedule-profiles.md) for scope and HA consumer
+guidance. HA can defer discovery until at least 15 seconds after initial reads and
+coordinate it with polling; the library adds no startup timer. The explicit
+`probe_schedule_candidate("rvs21_211_127_dhw_decimal")` remains a read-only diagnostic for
+other candidate devices; it never enables a group. Explicit `schedule_mappings`
+take precedence per group.
 
 Without an override or compatible profile, that group raises
 `BSBLANScheduleMappingError`; with no profiles configured this remains a local

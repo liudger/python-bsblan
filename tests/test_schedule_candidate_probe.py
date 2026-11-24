@@ -1,4 +1,4 @@
-"""Issue #1668 candidates are diagnostic evidence, never automatic mappings."""
+"""Bounded decimal DHW candidates are diagnostic, never automatic mappings."""
 
 from __future__ import annotations
 
@@ -34,10 +34,10 @@ from tests.test_schedule_profiles import entity
 if TYPE_CHECKING:
     from aresponses import ResponsesMockServer
 
-CANDIDATE = "issue_1668_dhw"
+CANDIDATE = "rvs21_211_127_dhw_decimal"
 IDS = ("561", "561.1", "561.2", "561.3", "561.4", "561.5", "561.6")
 QUERY = ",".join(IDS)
-EVIDENCE = "https://github.com/liudger/python-bsblan/issues/1668"
+EVIDENCE = "docs/schedule-profiles.md#decimal-rvs21-profile"
 
 
 def response() -> dict[str, Any]:
@@ -221,7 +221,7 @@ async def test_target_change_during_candidate_probe_is_rejected(stage: int) -> N
     assert len(seen) == stage + 1
 
 
-async def test_issue_1668_confirmed_manual_override_writes_decimal_weekdays() -> None:
+async def test_confirmed_manual_override_writes_decimal_weekdays() -> None:
     """Independently confirmed overrides fix Tuesday/Sunday without integer fallback."""
     diagnostic = subject()
     diagnostic._request = AsyncMock(side_effect=[device(), response()])
@@ -251,7 +251,7 @@ async def test_issue_1668_confirmed_manual_override_writes_decimal_weekdays() ->
     ]
 
 
-async def test_issue_1668_probe_real_http_boundary(
+async def test_decimal_probe_real_http_boundary(
     aresponses: ResponsesMockServer,
 ) -> None:
     """The actual transport sends only /JI then one exact seven-ID /JQ request."""
